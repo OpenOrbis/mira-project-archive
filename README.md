@@ -44,7 +44,7 @@ We want to give a special shout out to these people in no paticular order.
 
 * Rogero
 
-* Jooni
+* Joonie
 
 * AlexAltea
 
@@ -52,13 +52,13 @@ We want to give a special shout out to these people in no paticular order.
 
 * Abkarino
 
-* qwerty
+* qwertyoruiop
 
 * CTurT
 
 * Mathieu
 
-* enaxx
+* Senaxx
 
 * m0rph3us1987
 
