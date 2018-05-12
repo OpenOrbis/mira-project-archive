@@ -1,0 +1,127 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraFW", "Firmware\MiraFW\MiraFW.vcxproj", "{DB146B77-3C14-4680-85AC-50B83292B1A8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {73D88A70-8F6F-49A7-B921-9DB254527F92}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{1F457151-6069-41BD-B8A0-80E71C81B9E1}"
+	ProjectSection(SolutionItems) = preProject
+		Scripts\clean_all.cmd = Scripts\clean_all.cmd
+		Scripts\clean_all.sh = Scripts\clean_all.sh
+		Scripts\config.txt = Scripts\config.txt
+		Scripts\init_development_environment.cmd = Scripts\init_development_environment.cmd
+		Scripts\init_development_environment.sh = Scripts\init_development_environment.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Firmware", "Firmware", "{108E0975-87E1-4DA3-9D1A-8FC900B15521}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Output", "Output", "{FE93FC17-67D9-491B-98BF-D905BC085FBF}"
+	ProjectSection(SolutionItems) = preProject
+		Output\README.md = Output\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraLib", "Tools\MiraLib\MiraLib.csproj", "{7F17F9F8-0220-4814-824A-30BC4E919341}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B51D4C03-AC1C-483F-8280-B864DDDA8F56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraLibTests", "Tests\MiraLibTests\MiraLibTests.csproj", "{EC822E41-97A2-448C-958F-88F8D55C3100}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{EBF5AE95-E479-4541-AF8B-CE7F1DCA420D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraFileTransferPlugin", "Firmware\Plugins\MiraFileTransferPlugin\MiraFileTransferPlugin.vcxproj", "{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {73D88A70-8F6F-49A7-B921-9DB254527F92}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{FFABB202-681E-492F-B3CC-A1E862EC5E13}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oni-framework", "Firmware\Dependencies\oni-framework\oni-framework.vcxproj", "{73D88A70-8F6F-49A7-B921-9DB254527F92}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freebsd-headers", "Firmware\Dependencies\freebsd-headers\freebsd-headers.vcxproj", "{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM = Release|ARM
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Debug|ARM.ActiveCfg = Debug|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Debug|x64.ActiveCfg = Debug|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Debug|x64.Build.0 = Debug|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Debug|x86.ActiveCfg = Debug|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Release|ARM.ActiveCfg = Release|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Release|x64.ActiveCfg = Release|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Release|x64.Build.0 = Release|x64
+		{DB146B77-3C14-4680-85AC-50B83292B1A8}.Release|x86.ActiveCfg = Release|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Debug|ARM.ActiveCfg = Debug|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Debug|x64.ActiveCfg = Debug|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Debug|x64.Build.0 = Debug|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Debug|x86.ActiveCfg = Debug|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Release|ARM.ActiveCfg = Release|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Release|x64.ActiveCfg = Release|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Release|x64.Build.0 = Release|x64
+		{7F17F9F8-0220-4814-824A-30BC4E919341}.Release|x86.ActiveCfg = Release|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Debug|ARM.ActiveCfg = Debug|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Debug|x64.ActiveCfg = Debug|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Debug|x64.Build.0 = Debug|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Debug|x86.ActiveCfg = Debug|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Release|ARM.ActiveCfg = Release|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Release|x64.ActiveCfg = Release|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Release|x64.Build.0 = Release|x64
+		{EC822E41-97A2-448C-958F-88F8D55C3100}.Release|x86.ActiveCfg = Release|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Debug|ARM.ActiveCfg = Debug|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Debug|x64.ActiveCfg = Debug|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Debug|x64.Build.0 = Debug|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Debug|x86.ActiveCfg = Debug|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Release|ARM.ActiveCfg = Release|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Release|x64.ActiveCfg = Release|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Release|x64.Build.0 = Release|x64
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF}.Release|x86.ActiveCfg = Release|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Debug|ARM.ActiveCfg = Debug|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Debug|x64.ActiveCfg = Debug|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Debug|x64.Build.0 = Debug|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Debug|x86.ActiveCfg = Debug|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Release|ARM.ActiveCfg = Release|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Release|x64.ActiveCfg = Release|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Release|x64.Build.0 = Release|x64
+		{73D88A70-8F6F-49A7-B921-9DB254527F92}.Release|x86.ActiveCfg = Release|x64
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|ARM.ActiveCfg = Debug|ARM
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|ARM.Build.0 = Debug|ARM
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|x64.ActiveCfg = Debug|x64
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|x64.Build.0 = Debug|x64
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|x86.ActiveCfg = Debug|x86
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Debug|x86.Build.0 = Debug|x86
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|ARM.ActiveCfg = Release|ARM
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|ARM.Build.0 = Release|ARM
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x64.ActiveCfg = Release|x64
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x64.Build.0 = Release|x64
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x86.ActiveCfg = Release|x86
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DB146B77-3C14-4680-85AC-50B83292B1A8} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
+		{7F17F9F8-0220-4814-824A-30BC4E919341} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
+		{EC822E41-97A2-448C-958F-88F8D55C3100} = {B51D4C03-AC1C-483F-8280-B864DDDA8F56}
+		{EBF5AE95-E479-4541-AF8B-CE7F1DCA420D} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
+		{C58F0ECB-1B49-42F4-B05E-4E5C6211D8EF} = {EBF5AE95-E479-4541-AF8B-CE7F1DCA420D}
+		{FFABB202-681E-492F-B3CC-A1E862EC5E13} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
+		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {FFABB202-681E-492F-B3CC-A1E862EC5E13}
+		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A} = {FFABB202-681E-492F-B3CC-A1E862EC5E13}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A6AF288B-CD5B-480E-A2E9-FF6B003EFBCC}
+	EndGlobalSection
+EndGlobal
