@@ -56,7 +56,7 @@ We want to give a special shout out to these people in no paticular order.
 
 * CTurT
 
-* Mathieu
+* Mathieulh
 
 * Senaxx
 
