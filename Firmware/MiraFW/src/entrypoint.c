@@ -15,6 +15,7 @@
 #include <oni/utils/log/logger.h>
 
 #include <mira/boot/patches.h>
+#include <mira/plugins/filetransfer/filetransfer_plugin.h>
 
 #include <sys/sysent.h>					// sysent_t
 #include <sys/proc.h>					// proc
@@ -192,7 +193,18 @@ void oni_kernelInitialization(void* args)
 	pluginmanager_init(gFramework->pluginManager);
 
 	// Initialize default plugins
-	//mira_registerDefaultPlugins(gFramework->pluginManager);
+	{
+		// Register file transfer plugin
+		struct filetransfer_plugin_t* filetransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
+		if (!filetransferPlugin)
+		{
+			WriteLog(LL_Error, "Error allocating file transfer plugin");
+			kthread_exit();
+			return;
+		}
+		filetransfer_plugin_init(filetransferPlugin);
+		pluginmanager_registerPlugin(gFramework->pluginManager, &filetransferPlugin->plugin);
+	}
 
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "[+] Allocating rpc server");

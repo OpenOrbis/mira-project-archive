@@ -23,15 +23,35 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+    <RemoteRootDir>~/mira/Firmware/Plugins</RemoteRootDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+    <RemoteRootDir>~/mira/Firmware/Plugins</RemoteRootDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;</NMakePreprocessorDefinitions>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraFileTransferPlugin.a</RemoteBuildOutputs>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;</NMakePreprocessorDefinitions>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraFileTransferPlugin.a</RemoteBuildOutputs>
+  </PropertyGroup>
   <ItemGroup>
   </ItemGroup>
   <ItemDefinitionGroup />
