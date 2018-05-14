@@ -34,7 +34,7 @@ The users guide is found at USERS.md yamsayin' check it out if you want instruct
 
 ## Special Thanks To
 
-We want to give a special shout out to these people in no paticular order.
+We want to give a special shout out to these people in no particular order.
 
 * flatz
 
