@@ -16,6 +16,7 @@
 
 #include <mira/boot/patches.h>
 #include <mira/plugins/filetransfer/filetransfer_plugin.h>
+#include <mira/plugins/pluginloader.h>
 
 #include <sys/sysent.h>					// sysent_t
 #include <sys/proc.h>					// proc
@@ -58,6 +59,7 @@ int init_oni()
 	// TODO: Configure parameters
 	// TODO: Call Kernel Initialization
 	
+
 	// TODO: Send notification with text from userland
 	/*
 		Credits: CrazyVoid
@@ -168,9 +170,11 @@ void oni_kernelInitialization(void* args)
 		return;
 	}
 
-	gFramework->configPath = "/user/config";
-	gFramework->downloadPath = "/user/download";
-	gFramework->homePath = ONI_BASE_PATH;
+	// Set configuration paths
+	gFramework->homePath = "/user/mira";
+	gFramework->configPath = "/user/mira/config.ini";
+	gFramework->downloadPath = "/user/mira/download";
+	gFramework->pluginsPath = "/user/mira/plugins";
 
 	// Initialize the rpc dispatcher
 	WriteLog(LL_Debug, "MessageManager initialization");
@@ -204,6 +208,18 @@ void oni_kernelInitialization(void* args)
 		}
 		filetransfer_plugin_init(filetransferPlugin);
 		pluginmanager_registerPlugin(gFramework->pluginManager, &filetransferPlugin->plugin);
+
+		// Initialize the plugin loader to read from file
+		struct pluginloader_t* pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
+		if (!pluginLoader)
+		{
+			WriteLog(LL_Error, "Error allocating plugin loader.");
+			kthread_exit();
+			return;
+		}
+		pluginloader_init(pluginLoader);
+
+		pluginloader_loadPlugins(pluginLoader);
 	}
 
 	// Kick off the rpc server thread
@@ -216,6 +232,9 @@ void oni_kernelInitialization(void* args)
 	}
 	rpcserver_init(gFramework->rpcServer, gInitParams->process);
 	WriteLog(LL_Debug, "[+] Finished Initializing rpc server proc: %p", gInitParams->process);
+
+	kthread_exit();
+	return;
 
 	// Startup the server, it will kick off the thread
 	if (!rpcserver_startup(gFramework->rpcServer, 9999))

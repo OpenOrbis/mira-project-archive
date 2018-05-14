@@ -12,7 +12,7 @@ struct filetransfer_transfer_t
 	uint64_t length;
 };
 
-int32_t filetransfer_pluginInit(void* args);
-int32_t filetransfer_pluginClose();
+uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin);
+uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin);
 
 void filetransfer_plugin_init(struct filetransfer_plugin_t* plugin);

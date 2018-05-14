@@ -1,4 +1,5 @@
 #include "filetransfer_plugin.h"
+#include <oni/framework.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/messaging/messagemanager.h>
 #include <oni/messaging/message.h>
@@ -7,8 +8,6 @@
 #include <sys/stat.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/log/logger.h>
-
-#include <oni/framework.h>
 
 #ifndef MIN
 #define MIN ( x, y ) ( (x) < (y) ? : (x) : (y) )
@@ -27,6 +26,8 @@ enum FileTransferCmds
 	FileTransfer_Delete = 0xB74A88DC,
 	FileTransfer_Move = 0x13E11408,
 	FileTransfer_Stat = 0xDC67DC51,
+	FileTransfer_Mkdir = 0x5EB439FE,
+	FileTransfer_Rmdir = 0x996F6671,
 	FileTransfer_COUNT
 };
 
@@ -40,6 +41,17 @@ struct filetransfer_getdents_t
 	uint8_t type;
 
 	// Path of a return entry
+	char path[FileTransfer_MaxPath];
+};
+
+struct filetransfer_mkdir_t
+{
+	char path[FileTransfer_MaxPath];
+	int mode;
+};
+
+struct filetransfer_rmdir_t
+{
 	char path[FileTransfer_MaxPath];
 };
 
@@ -139,6 +151,9 @@ void filetransfer_writefile_callback(struct allocation_t* ref);
 void filetransfer_getdents_callback(struct allocation_t* ref);
 void filetransfer_delete_callback(struct allocation_t* ref);
 void filetransfer_stat_callback(struct allocation_t* ref);
+void filetransfer_mkdir_callback(struct allocation_t* ref);
+void filetransfer_rmdir_callback(struct allocation_t* ref);
+void filetransfer_unlink_callback(struct allocation_t* ref);
 
 extern struct logger_t* gLogger;
 
@@ -150,11 +165,11 @@ void filetransfer_plugin_init(struct filetransfer_plugin_t* plugin)
 	plugin->plugin.name = "FileTransfer";
 	plugin->plugin.description = "File transfer plugin using a custom standalone protocol";
 
-	plugin->plugin.plugin_init = filetransfer_pluginInit;
-	plugin->plugin.plugin_close = filetransfer_pluginClose;
+	plugin->plugin.plugin_load = filetransfer_load;
+	plugin->plugin.plugin_unload = filetransfer_unload;
 }
 
-int32_t filetransfer_pluginInit(void* args)
+uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
 {
 	// Register all of the callbacks
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Open, filetransfer_open_callback);
@@ -166,13 +181,15 @@ int32_t filetransfer_pluginInit(void* args)
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Delete, filetransfer_delete_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Stat, filetransfer_stat_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
 
-	return 1;
+	return true;
 }
 
-int32_t filetransfer_pluginClose()
+uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 {
-	return 1;
+	return true;
 }
 
 void filetransfer_stat_callback(struct allocation_t* ref)
@@ -257,6 +274,70 @@ void filetransfer_open_callback(struct allocation_t* ref)
 	// Send to socket if needed
 	if (message->socket > 0)
 		kwrite(message->socket, openRequest, sizeof(*openRequest));
+
+cleanup:
+	__dec(ref);
+}
+
+void filetransfer_rmdir_callback(struct allocation_t* ref)
+{
+	if (!ref)
+		return;
+
+	struct message_t* message = __get(ref);
+	if (!message)
+		return;
+
+	if (message->header.request != true)
+		goto cleanup;
+
+	if (!message->payload)
+	{
+		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		goto cleanup;
+	}
+
+	struct filetransfer_rmdir_t* rmdirRequest = (struct filetransfer_rmdir_t*)message->payload;
+
+	WriteLog(LL_Debug, "rmdir (%s)", rmdirRequest->path);
+
+	int result = krmdir(rmdirRequest->path);
+	if (result == -1)
+		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOENT);
+	else
+		messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+
+cleanup:
+	__dec(ref);
+}
+
+void filetransfer_mkdir_callback(struct allocation_t* ref)
+{
+	if (!ref)
+		return;
+
+	struct message_t* message = __get(ref);
+	if (!message)
+		return;
+
+	if (message->header.request != true)
+		goto cleanup;
+
+	if (!message->payload)
+	{
+		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		goto cleanup;
+	}
+
+	struct filetransfer_mkdir_t* mkdirRequest = (struct filetransfer_mkdir_t*)message->payload;
+
+	WriteLog(LL_Debug, "mk (%s) (%d)", mkdirRequest->path, mkdirRequest->mode);
+
+	int result = kmkdir(mkdirRequest->path, mkdirRequest->mode);
+	if (result == -1)
+		messagemanager_sendErrorMessage(gFramework->messageManager, ref, EACCES);
+	else
+		messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
 
 cleanup:
 	__dec(ref);

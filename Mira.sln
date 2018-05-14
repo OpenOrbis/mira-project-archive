@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oni-framework", "Firmware\D
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freebsd-headers", "Firmware\Dependencies\freebsd-headers\freebsd-headers.vcxproj", "{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraExamplePlugin", "Firmware\Plugins\MiraExamplePlugin\MiraExamplePlugin.vcxproj", "{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -107,6 +109,18 @@ Global
 		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x64.Build.0 = Release|x64
 		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x86.ActiveCfg = Release|x86
 		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A}.Release|x86.Build.0 = Release|x86
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|ARM.ActiveCfg = Debug|ARM
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|ARM.Build.0 = Debug|ARM
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|x64.ActiveCfg = Debug|x64
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|x64.Build.0 = Debug|x64
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|x86.ActiveCfg = Debug|x86
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Debug|x86.Build.0 = Debug|x86
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|ARM.ActiveCfg = Release|ARM
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|ARM.Build.0 = Release|ARM
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|x64.ActiveCfg = Release|x64
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|x64.Build.0 = Release|x64
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|x86.ActiveCfg = Release|x86
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,6 +134,7 @@ Global
 		{FFABB202-681E-492F-B3CC-A1E862EC5E13} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {FFABB202-681E-492F-B3CC-A1E862EC5E13}
 		{72FCDDFB-59B4-4D4C-B1FE-1C3E9404900A} = {FFABB202-681E-492F-B3CC-A1E862EC5E13}
+		{C62EA872-92C1-42B8-9BF3-C14D3FC05A64} = {EBF5AE95-E479-4541-AF8B-CE7F1DCA420D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6AF288B-CD5B-480E-A2E9-FF6B003EFBCC}

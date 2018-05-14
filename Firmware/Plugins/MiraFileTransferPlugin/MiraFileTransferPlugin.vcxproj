@@ -53,6 +53,7 @@
     <RemoteBuildOutputs>MiraFileTransferPlugin.a</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="src\crt0.s" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
