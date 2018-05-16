@@ -26,9 +26,13 @@ This is the linker to be used with newlib-ps4 to create Orbis compatible ELF fil
 
 This is the communications library that will be specialized for operation with the Mira firmware.
 
+#### PS4 Payload Sender
+
+A simple Android application to send payloads to your PS4.
+
 ## User Guide
 
-The users guide is found at USERS.md yamsayin' check it out if you want instructions on how to build, install, and use the firmware once it has been installed on the console with any of the methods described within
+The users guide is found at [USERS.md](https://github.com/OpenOrbis/mira-project/blob/master/USERS.md) yamsayin' check it out if you want instructions on how to build, install, and use the firmware once it has been installed on the console with any of the methods described within
 
 ## Developer Guide
 
@@ -79,5 +83,7 @@ We want to give a special shout out to these people in no particular order.
 * fail0verflow
 
 * idc
+
+* valentinbreiz
 
 * Anonymous Contributors (You know who you are)

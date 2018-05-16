@@ -29,3 +29,7 @@ TODO: Instructions on using the features and configuring options
 #### Using MiraLib
 
 TODO: Instructions on how to use MiraLib
+
+#### PS4 Payload Sender
+
+To send payloads from your Android device, you can follow the instructions [here](https://github.com/valentinbreiz/PS4-Payload-Sender-Android/blob/master/DOCUMENTATION.md).
