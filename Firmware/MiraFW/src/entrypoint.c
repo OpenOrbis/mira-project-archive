@@ -17,6 +17,7 @@
 #include <mira/boot/patches.h>
 #include <mira/plugins/filetransfer/filetransfer_plugin.h>
 #include <mira/plugins/pluginloader.h>
+#include <mira/plugins/logserver/logserver_plugin.h>
 
 #include <sys/sysent.h>					// sysent_t
 #include <sys/proc.h>					// proc
@@ -221,6 +222,17 @@ void oni_kernelInitialization(void* args)
 
 		pluginloader_loadPlugins(pluginLoader);
 	}
+
+	WriteLog(LL_Info, "Allocating logserver");
+	struct logserver_plugin_t* logServer = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
+	if (!logServer)
+	{
+		WriteLog(LL_Error, "Could not allocate log server.");
+		kthread_exit();
+		return;
+	}
+	logserver_init(logServer);
+	pluginmanager_registerPlugin(gFramework->pluginManager, &logServer->plugin);
 
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "[+] Allocating rpc server");
