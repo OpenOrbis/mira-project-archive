@@ -30,6 +30,12 @@ This is the communications library that will be specialized for operation with t
 
 A simple Android application to send payloads to your PS4.
 
+### Plugins
+
+#### PS4 Linux Loader
+
+A simple plugin that let you run the Linux kernel from a remote device without webkit.
+
 ## User Guide
 
 The users guide is found at [USERS.md](https://github.com/OpenOrbis/mira-project/blob/master/USERS.md) yamsayin' check it out if you want instructions on how to build, install, and use the firmware once it has been installed on the console with any of the methods described within
