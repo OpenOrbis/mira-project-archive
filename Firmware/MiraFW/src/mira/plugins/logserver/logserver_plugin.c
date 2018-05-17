@@ -16,6 +16,7 @@ void logserver_init(struct logserver_plugin_t* plugin)
 	plugin->plugin.name = "LogServer";
 	plugin->plugin.description = "(empty)";
 	plugin->plugin.plugin_load = logserver_load;
+	plugin->plugin.plugin_unload = logserver_unload;
 
 	plugin->socket = -1;
 	plugin->port = 9998;
@@ -128,7 +129,7 @@ void logserver_serverThread(void* data)
 
 		int32_t bytesRead = 0;
 		
-		while ((bytesRead = kread(klog, buffer, 1)) > -1)
+		while ((bytesRead = kread(klog, buffer, 1)) > 0)
 		{
 			if (!plugin->isRunning)
 				break;

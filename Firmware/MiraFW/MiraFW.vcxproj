@@ -65,15 +65,22 @@
     <ClCompile Include="src\mira\boot\patches.c" />
     <ClCompile Include="src\mira\boot\patches\patches501.c" />
     <ClCompile Include="src\entrypoint.c" />
+    <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
+    <ClCompile Include="src\mira\utils\hde\hde64.c" />
+    <ClCompile Include="src\mira\utils\hook.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\boot\patches.h" />
+    <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
+    <ClInclude Include="src\mira\utils\hde\hde64.h" />
+    <ClInclude Include="src\mira\utils\hde\table64.h" />
+    <ClInclude Include="src\mira\utils\hook.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

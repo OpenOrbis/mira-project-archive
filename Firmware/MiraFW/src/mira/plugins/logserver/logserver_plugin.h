@@ -7,8 +7,6 @@
 
 struct logserver_plugin_t;
 
-typedef void(*onLogClientDisconnect_t)(struct logserver_plugin_t*, struct logserver_client_t*);
-
 struct logserver_client_t
 {
 	int32_t socket;
@@ -20,8 +18,6 @@ struct logserver_client_t
 
 	// Address of the client
 	struct sockaddr_in address;
-	
-	onLogClientDisconnect_t disconnect;
 
 	struct loginserver_plugin_t* server;
 };
