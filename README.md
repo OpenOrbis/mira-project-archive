@@ -1,7 +1,7 @@
 # The Mira Project
 
-The Mira Project is a set of Framework, Plugins, Tools, Payloads, that will gives you more power to control your Jailbreaked PS4 console.
-It is not a complete CFW like that we used to use back in PS3 days, so it can not be installed permenentaly through modofed PUP file like what we used to do in PS3 for example it is not installable like Rebug CFW, but it will gives you the CFW functionality once installed and run.
+The Mira Project is a set of Framework, Plugins, Tools, Payloads, that will gives you more power to control your jailbroken PS4 console.
+It is a CFW framework for PS4, something like TaiHEN for PS Vita, It is not as robust we are used to back in PS3 days, so it can not be installed permenentaly through modifyed PUP file like what we used to do in PS3 for example Rebug CFW PUP, but it will gives you the CFW functionality once installed and run.
 The Mira Project is the result of the hard work from the OpenOrbis team. We believe in quality over quantity releases. There are numerious components to the project and each one will be explained below.
 
 ## Components
