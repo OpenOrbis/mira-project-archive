@@ -16,6 +16,11 @@ This is the linker to be used with newlib-ps4 to create Orbis compatible ELF fil
 #### MiraLib
 This is the communications library that will be specialized for operation with the Mira firmware.
 
+#### Open Orbis Store
+
+Community driven store and application that will allow you to download new plugins, payloads, tweaks, trainers from a trusted centralized source without ever leaving the comfort of your console.
+
+Inspired by vitaDB <3 Rin
 #### PS4 Payload Sender
 A simple Android application to send payloads to your PS4.
 
@@ -57,4 +62,4 @@ We want to give a special shout out to these people in no particular order.
 * fail0verflow
 * idc
 * valentinbreiz
-* Anonymous Contributors (You know who you are)
+* Anonymous Contributors (you know who you are)
