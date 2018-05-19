@@ -15,8 +15,8 @@ void logserver_init(struct logserver_plugin_t* plugin)
 {
 	plugin->plugin.name = "LogServer";
 	plugin->plugin.description = "(empty)";
-	plugin->plugin.plugin_load = logserver_load;
-	plugin->plugin.plugin_unload = logserver_unload;
+	plugin->plugin.plugin_load = (uint8_t(*)(void*)) logserver_load;
+	plugin->plugin.plugin_unload = (uint8_t(*)(void*)) logserver_unload;
 
 	plugin->socket = -1;
 	plugin->port = 9998;
