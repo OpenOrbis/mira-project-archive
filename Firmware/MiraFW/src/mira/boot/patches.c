@@ -6,6 +6,9 @@ void oni_installPrePatches()
 {
 	switch (ONI_PLATFORM)
 	{
+	case ONI_PLATFORM_ORBIS_BSD_455:
+		install_prerunPatches_455();
+			break;
 	case ONI_PLATFORM_ORBIS_BSD_501:
 		install_prerunPatches_501();
 		break;
