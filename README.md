@@ -1,5 +1,7 @@
 # The Mira Project
 
+The Mira Project is a set of Framework, Plugins, Tools, Payloads, that will gives you more power to control your Jailbreaked PS4 console.
+It is not a complete CFW like that we used to use back in PS3 days, so it can not be installed permenentaly through modofed PUP file like what we used to do in PS3 for example it is not installable like Rebug CFW, but it will gives you the CFW functionality once installed and run.
 The Mira Project is the result of the hard work from the OpenOrbis team. We believe in quality over quantity releases. There are numerious components to the project and each one will be explained below.
 
 ## Components
@@ -32,6 +34,8 @@ A simple Android application to send payloads to your PS4.
 
 ### Plugins
 
+Mira offer two types of plugins, one is defualt plugins that will be embedded inside MiraFW it self (file transfer, log server, debugger), and the other type is external modules that can be loaded from internel/external HDD for example PS4 Linux Loader.
+
 #### PS4 Linux Loader
 
 A simple plugin that let you run the Linux kernel from a remote device without webkit.
@@ -41,6 +45,7 @@ A simple plugin that let you run the Linux kernel from a remote device without w
 The users guide is found at [USERS.md](https://github.com/OpenOrbis/mira-project/blob/master/USERS.md) yamsayin' check it out if you want instructions on how to build, install, and use the firmware once it has been installed on the console with any of the methods described within
 
 ## Developer Guide
+You will need VS2017, with Linux plugin and WSL (Ubuntu on Windows) or real Linux machine or Linux VM at least to be able to build the current project.We will post more details about building process here shortly.
 
 ## Special Thanks To
 
