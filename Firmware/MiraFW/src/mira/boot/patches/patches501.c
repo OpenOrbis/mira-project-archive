@@ -15,6 +15,9 @@ void install_prerunPatches_501()
 	critical_enter();
 	cpu_disable_wp();
 
+	// enable UART
+	gKernelBase[0x09ECAE0] = 0;
+	
 	// Verbose Panics
 	uint8_t *kmem = (uint8_t *)&gKernelBase[0x171517];
 	kmem[0] = 0x90; kmem[1] = 0x90; kmem[2] = 0x90; kmem[3] = 0x90;
@@ -75,6 +78,7 @@ void install_prerunPatches_501()
 	gKernelBase[0x0030D633 + 3] = 0x90;
 	gKernelBase[0x0030D633 + 4] = 0x90;
 	gKernelBase[0x0030D633 + 5] = 0x90;
+	
 
 	cpu_enable_wp();
 	crtical_exit();
