@@ -69,8 +69,8 @@ void install_prerunPatches_501()
 	gKernelBase[0x001EA42D] = 0xEB;
 	
 	//UART 5.05
-	kmem = (uint8_t*)&gKernelBase[0x09ECAE0];
-	kmem[0] = 0x00;
+	//kmem = (uint8_t*)&gKernelBase[0x09ECAE0];
+	//kmem[0] = 0x00;
 
 	// ptrace patches
 	gKernelBase[0x0030D633] = 0x90;
