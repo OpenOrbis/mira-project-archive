@@ -47,7 +47,7 @@ LIBS	:= -l:OniFramework.a
 ORB_VER	:= -D_KERNEL -D_DEBUG=1
 
 # C++ Flags
-CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O2 -fno-builtin -nostartfiles -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror=implicit-function-declaration -Wno-unknown-pragmas
+CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O2 -fno-builtin -nostartfiles -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
 
 # Assembly flags
 SFLAGS	:= -nostartfiles -nodefaultlibs -nostdlib -fPIC

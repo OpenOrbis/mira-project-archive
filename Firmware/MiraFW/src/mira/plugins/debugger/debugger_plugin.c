@@ -112,8 +112,8 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	plugin->plugin.name = "Debugger";
 	plugin->plugin.description = "Kernel mode debugger";
 
-	plugin->plugin.plugin_load = debugger_load;
-	plugin->plugin.plugin_unload = debugger_unload;
+	plugin->plugin.plugin_load = (uint8_t(*)(void*)) debugger_load;
+	plugin->plugin.plugin_unload = (uint8_t(*)(void*)) debugger_unload;
 }
 
 void debugger_readmem_callback(struct allocation_t* ref)
@@ -150,7 +150,6 @@ void debugger_readmem_callback(struct allocation_t* ref)
 		goto error;
 	}
 
-	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 
@@ -212,7 +211,6 @@ void debugger_writemem_callback(struct allocation_t* ref)
 	if (process == 0)
 		goto cleanup;
 
-	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 	int result = proc_rw_mem(process, (void*)request->address, request->dataLength, request->data, &request->dataLength, 1);
@@ -254,8 +252,6 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	uint64_t procCount = 0;
 	struct proc* p = NULL;
 	struct debugger_getprocs_t getproc = { 0 };
-
-	allproc->lh_first;
 
 	sx_slock(allproclock);
 	FOREACH_PROC_IN_SYSTEM(p)

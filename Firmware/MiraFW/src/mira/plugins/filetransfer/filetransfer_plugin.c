@@ -165,8 +165,8 @@ void filetransfer_plugin_init(struct filetransfer_plugin_t* plugin)
 	plugin->plugin.name = "FileTransfer";
 	plugin->plugin.description = "File transfer plugin using a custom standalone protocol";
 
-	plugin->plugin.plugin_load = filetransfer_load;
-	plugin->plugin.plugin_unload = filetransfer_unload;
+	plugin->plugin.plugin_load = (uint8_t(*)(void*)) filetransfer_load;
+	plugin->plugin.plugin_unload = (uint8_t(*)(void*)) filetransfer_unload;
 }
 
 uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
