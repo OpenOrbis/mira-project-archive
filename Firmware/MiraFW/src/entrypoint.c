@@ -35,6 +35,7 @@
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
 #include <oni/utils/kdlsym.h>
+#include <oni/utils/dynlib.h>
 
 //
 //	Free-BSD Specifics
@@ -86,10 +87,10 @@ int init_oni()
 	SelfElevateAndRun((uint8_t*)0x926200000, 0x80000, oni_kernelInitialization);
 	
 	// Prompt the user
-	int moduleId = syscall1(594, "libSceSysUtil.sprx");
+	int64_t moduleId = sys_dynlib_load_prx("libSceSysUtil.sprx");
 	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, int userID, char* message) = NULL;
 
-	syscall3(591, (void*)moduleId, (void*)"sceSysUtilSendSystemNotificationWithText", (void*)&sceSysUtilSendSystemNotificationWithText);
+	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
 
 	if (sceSysUtilSendSystemNotificationWithText)
 	{
