@@ -10,11 +10,11 @@ Here is the list of components with a description of what they do
 
 ### Firmware
 
-Previously known as MiraHEN, this has been expanded into a full expansion custom firmware
+Previously known as MiraHEN, this has been expanded into a full expansion custom firmware.
 
 ### Tools
 
-There are many tools included in the Mira project and they are listed out below
+There are many tools included in the Mira project and they are listed out below.
 
 #### newlib-ps4
 
@@ -22,12 +22,17 @@ This is the libc implementation ported for PS4. It's a pain in the ass to compil
 
 #### ld-ps4
 
-This is the linker to be used with newlib-ps4 to create Orbis compatible ELF files, or you could use CrazyVoid's elfFixupTool
+This is the linker to be used with newlib-ps4 to create Orbis compatible ELF files, or you could use CrazyVoid's elfFixupTool.
 
 #### MiraLib
 
 This is the communications library that will be specialized for operation with the Mira firmware.
 
+#### Open Orbis Store
+
+Community driven store and application that will allow you to download new plugins, payloads, tweaks, trainers from a trusted centralized source without ever leaving the comfort of your console.
+
+Inspired by vitaDB <3 Rin
 #### PS4 Payload Sender
 
 A simple Android application to send payloads to your PS4.
