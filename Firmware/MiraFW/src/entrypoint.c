@@ -98,6 +98,8 @@ int init_oni()
 		sceSysUtilSendSystemNotificationWithText(36, 0x10000000, initMessage);
 	}
 
+	sys_dynlib_unload_prx(moduleId);
+
 	return true;
 }
 
