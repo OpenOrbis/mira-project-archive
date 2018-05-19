@@ -14,6 +14,9 @@ void install_prerunPatches_505()
 	// Apply patches
 	critical_enter();
 	cpu_disable_wp();
+	
+	// enable UART
+  	gKernelBase[0x09ECEB0] = 0;
 
 	// Verbose Panics
 	uint8_t *kmem = (uint8_t *)&gKernelBase[0x00171580];
