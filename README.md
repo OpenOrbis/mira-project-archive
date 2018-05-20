@@ -33,7 +33,7 @@ A simple Android application to send payloads to your PS4.
 
 ## Plugins
 
-The Mira Project offers two types of plugins: built-in plugins and external plugins. Default plugins are embedded inside Mira firmware and include file transfer, a log server and a debugger. External plugins can be loaded from internel/external HDD, for example PS4 Linux Loader.
+The Mira Project offers two types of plugins: built-in plugins and external plugins. Default plugins are embedded inside Mira firmware and include file transfer, a log server and a debugger. External plugins can be loaded from internal/external HDD, for example PS4 Linux Loader.
 
 ### PS4 Linux Loader
 
