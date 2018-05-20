@@ -39,8 +39,11 @@ void install_prerunPatches_505()
 	kmem[0] = 0x07;
 
 	// Patch copy(in/out)
-	//uint16_t *copyinpatch = &gKernelBase[0x1EA657];
-	//uint16_t *copyoutpatch = &gKernelBase[0x1EA572];
+	uint16_t *copyinpatch = (uint16_t*)&gKernelBase[0x001EA767];
+	uint16_t *copyoutpatch = (uint16_t*)&gKernelBase[0x001EA682];
+
+	*copyinpatch = 0x9090;
+	*copyoutpatch = 0x9090;
 
 	// Enable MAP_SELF
 	kmem = (uint8_t*)&gKernelBase[0x000117b0];
