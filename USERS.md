@@ -1,39 +1,29 @@
 # Mira Users Guide
-
-Shwaoop dere it is
+This user guide will help you build, install and use the Mira Framework on your Playstation 4 console.
 
 ## How to install
+You can install Mira firmware via several methods. You should choose the method that works best for you. Typically, this will be via a webkit exploit in the web browser.
 
-There are many ways that you can install the firmware, you will have to choose an option that suites your use case. The typical install will be done via a WebKit exploit via the web browser.
+### Webkit exploit (non-permanent installation)
+This involves using a webkit userland exploit to elevate the kernel to install MiraCFW. The changes will be lost upon reboot, but should survive sleep mode.
 
-### WebKit (Web Browser Install) Non-Permanent
-
-This will involve using a WebKit userland exploit, and then elevating to kernel to install the MiraCFW. The changes will be lost upon reboot, but should survive sleep mode.
-
-### Permanent Install
-
-There is not permanent install options at this time, nor will one be offered in the near future.
+### Permanent installation
+There is no permanent install option at this time, nor will one be offered in the near future.
 
 #### Preparing
-
 TODO: Instructions on how to prepare
 
 #### Installing
-
 TODO: Instructions on how to install
 
 #### Using MiraCFW
-
 TODO: Instructions on using the features and configuring options
 
 #### Using MiraLib
-
 TODO: Instructions on how to use MiraLib
 
 #### PS4 Payload Sender
-
-To send payloads from your Android device without webkit, you can follow the instructions [here](https://github.com/valentinbreiz/PS4-Payload-Sender-Android/blob/master/DOCUMENTATION.md).
+To send payloads from your Android device without webkit, you can follow [these instructions](https://github.com/valentinbreiz/PS4-Payload-Sender-Android/blob/master/DOCUMENTATION.md).
 
 ### Plugins
-
 TODO: Instructions for plugins
