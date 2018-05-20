@@ -73,6 +73,24 @@ void install_prerunPatches_501()
 
 	// Patch memcpy stack
 	gKernelBase[0x001EA42D] = 0xEB;
+	
+	//UART 5.05
+	//kmem = (uint8_t*)&gKernelBase[0x09ECAE0];
+	//kmem[0] = 0x00;
+	
+	//Target ID patches
+	//kmem = (uint8_t*)&gKernelBase[0x1CD068C];
+	//kmem[0] = 0x8101;
+	//kmem = (uint8_t*)&gKernelBase[0x236B7FC];
+	//kmem[0] = 0x8101;
+	
+	//Debug Menu
+	//kmem = (uint8_t*)&gKernelBase[0x4F8C78];
+	//kmem[0] = 0x00;
+	//kmem = (uint8_t*)&gKernelBase[0x4F9D8C];
+	//kmem[0] = 0x00;
+
+	
 
 	// ptrace patches
 	gKernelBase[0x0030D633] = 0x90;

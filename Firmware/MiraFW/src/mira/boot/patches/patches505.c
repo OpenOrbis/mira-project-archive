@@ -76,6 +76,10 @@ void install_prerunPatches_505()
 
 	// Patch memcpy stack
 	gKernelBase[0x001EA53D] = 0xEB;
+	
+	//UART 5.05
+	//kmem = (uint8_t*)&gKernelBase[0x09ECEB0];
+	//kmem[0] = 0x00;
 
 	// ptrace patches
 	gKernelBase[0x0030D9C3] = 0x90;
