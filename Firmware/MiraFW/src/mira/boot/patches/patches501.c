@@ -18,6 +18,13 @@ void install_prerunPatches_501()
 	// enable UART
 	gKernelBase[0x09ECAE0] = 0;
 	
+	//disable pfs signature
+	gKernelBase[0x6A2320] = 0x90C3C031;
+	
+	// target_id patches
+	gKernelBase[0x1CD068C] = 0x8101;
+	gKernelBase[0x236B7FC] = 0x8101;
+	
 	// Verbose Panics
 	uint8_t *kmem = (uint8_t *)&gKernelBase[0x171517];
 	kmem[0] = 0x90; kmem[1] = 0x90; kmem[2] = 0x90; kmem[3] = 0x90;
