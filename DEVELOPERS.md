@@ -32,10 +32,15 @@ This is the most reccomended way to develop for Mira. Since Mira is developed us
 
 ### Linux Setup
 
-To build Mira on Linux, you will need to clone the entire git, along with submodules:
+To build Mira on Linux, you will need to:
+
+1.Clone the entire git, along with submodules:
 `git clone https://github.com/OpenOrbis/mira-project.git --recurse-submodules`
 
-You will then need to run the initialisation script:
+2. Enter new directory
+`cd mira-project`
+
+3. You will then need to run the initialisation script:
 `./Scripts/init_development_environment.sh`
 
 The output files will be generated and can be found in the Firmware/MiraFW directory.
@@ -62,5 +67,3 @@ Build in this order
 1. freebsd-headers
 2. oni-framework
 3. mira
-
-TODO: Linux build instructions
