@@ -59,24 +59,24 @@ No matter if you are using Windows or Linux, these commands will be the same.
     * `cd ../../MiraFW`
     * `make create`
 
-### Building the project
+## Building the project
 
-#### Windows
+### Windows
 In Visual Studio, there are three core projects in the solution. They are as follows:
 1. freebsd-headers
 2. oni-framework
 3. MiraFW
 
-#### freebsd-headers
+##### freebsd-headers
 This project should only need to be built once. Note that copying the sources remotely may take a while.
 
-#### oni-framework
+##### oni-framework
 Most of the time, this project also only needs to be built once unless you're editing the framework. If you're creating plugins, you don't need to edit the framework.
 
-#### MiraFW
+##### MiraFW
 If you edited Mira's core / core plugins, you will need to rebuild this project. The previous two projects must be built in order at least once or MiraFW will fail to build.
 
-#### Linux
+### Linux
 The installation script `Scripts/init_development_environment.sh` will setup directories and build. To build after setup, you need only to build what you've changed. If you've only edited parts of Mira, you do not need to rebuild `oni-framework`. The build instructions for both are below:
 
 ##### oni-framework
