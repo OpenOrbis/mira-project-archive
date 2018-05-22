@@ -55,6 +55,10 @@ Once Mira has been installed, there will be a notification prompting you to whic
 
 Currently there is no application or tools that support using MiraLib, there will be tools avaiable in the future.
 
+#### Mira Companion
+
+Manage your PS4 and MiraCFW from an Android application (plugin manager, file browser...) using Mira Connection. If you are interested see [this project](https://github.com/OpenOrbis/mira-toolbox/tree/master/Mira-Companion).
+
 #### PS4 Payload Sender
 
 To send payloads from your Android device without webkit, you can follow [these instructions](https://github.com/valentinbreiz/PS4-Payload-Sender-Android/blob/master/DOCUMENTATION.md).

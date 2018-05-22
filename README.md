@@ -27,6 +27,10 @@ Community driven store and application that will allow you to download new plugi
 
 Inspired by vitaDB <3 Rin
 
+### Mira Companion
+
+An Android application to control MiraCFW and manage your PS4.
+
 ### PS4 Payload Sender
 
 A simple Android application to send payloads to your PS4.
