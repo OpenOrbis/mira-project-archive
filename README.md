@@ -31,7 +31,7 @@ Inspired by vitaDB <3 Rin
 
 An Android application to control MiraCFW and manage your PS4.
 
-### [PS4 Payload Sender](https://github.com/valentinbreiz/PS4-Payload-Sender)
+### [PS4 Payload Sender](https://github.com/valentinbreiz/PS4-Payload-Sender-Android)
 
 A simple Android application to send payloads to your PS4.
 
