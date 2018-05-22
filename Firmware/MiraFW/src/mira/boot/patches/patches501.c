@@ -82,6 +82,12 @@ void install_prerunPatches_501()
 	gKernelBase[0x0030D633 + 4] = 0x90;
 	gKernelBase[0x0030D633 + 5] = 0x90;
 	
+	// setlogin patch (for autolaunch check)
+	gKernelBase[0x5775C] = 0x48;
+	gKernelBase[0x5775C + 1] = 0x31;
+	gKernelBase[0x5775C + 2] = 0xC0;
+	gKernelBase[0x5775C + 3] = 0x90;
+	gKernelBase[0x5775C + 4] = 0x90;
 
 	cpu_enable_wp();
 	crtical_exit();
