@@ -5,7 +5,7 @@
 At first glance, it may seem like the Mira-Project is very complicated, but once you understand the basic layout it is very clear and simple.
 
 * `Tools/` - The tooling folder, which may contain additional libraries and tools to assist with Mira development. These tools are not required to build Mira, but will help developers.
-* `Scripts/` - These are general puropse scripts that may get executed automatically by the build, or are there for initializing development environments.
+* `Scripts/` - These are general puropse scripts that may get executed automatically by the build, or there for initializing development environments.
 * `Output/` - When configured (by default it's not) will be the output directory for all builds
 * `Firmware/` - This directory contains all the components to Mira's core
     * `Dependencies/` - The dependencies for the Mira project, usually just freebsd-headers, and oni-framework
@@ -32,16 +32,7 @@ This is the most reccomended way to develop for Mira. Since Mira is developed us
 
 ### Linux Setup
 
-Linux setup has now been made easy thanks to the script `Scripts/init_development_environment.sh`. Running this script will export necessary environment variables, create needed directories, and ultimately build Mira. The script will also prompt you for a firmware option, allowing you to easily setup Mira for whichever firmware you need. **This should only be ran once, for building after installation, see the "Building the project" sub-section for Linux.**
-
-```
-$ cd Scripts
-$ ./init_development_environment.sh
-Please choose a firmware:
-        [0] 5.01 Firmware
-        [1] 5.05 Firmware
-Option?
-```
+TODO: Implement Linux setup instructions
 
 ### Cloning the project
 
@@ -59,38 +50,11 @@ No matter if you are using Windows or Linux, these commands will be the same.
     * `cd ../../MiraFW`
     * `make create`
 
-## Building the project
+### Building the project
 
-### Windows
-In Visual Studio, there are three core projects in the solution. They are as follows:
+Build in this order
 1. freebsd-headers
 2. oni-framework
-3. MiraFW
+3. mira
 
-##### freebsd-headers
-This project should only need to be built once. Note that copying the sources remotely may take a while.
-
-##### oni-framework
-Most of the time, this project also only needs to be built once unless you're editing the framework. If you're creating plugins, you don't need to edit the framework.
-
-##### MiraFW
-If you edited Mira's core / core plugins, you will need to rebuild this project. The previous two projects must be built in order at least once or MiraFW will fail to build.
-
-### Linux
-The installation script `Scripts/init_development_environment.sh` will setup directories and build. To build after setup, you need only to build what you've changed. If you've only edited parts of Mira, you do not need to rebuild `oni-framework`. The build instructions for both are below:
-
-##### oni-framework
-```
-cd Firmware/Dependencies/oni-framework
-make clean
-make
-```
-
-##### MiraFW
-```
-cd Firmware/MiraFW
-make clean
-make
-```
-
-The output files by default will be labelled `MiraFW_Orbis.bin` and `MiraFW_Orbis.elf` inside the `Firmware/MiraFW` directory. `MiraFW_Orbis.bin` is the payload you want to send to your PS4. 
+TODO: Linux build instructions

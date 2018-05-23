@@ -1,11 +1,11 @@
 # If ONI_FRAMEWORK is not set, we will use a default path of same directory
 ifeq ($(ONI_FRAMEWORK),)
-ONI_FRAMEWORK := ../../Dependencies/oni-framework
+ONI_FRAMEWORK := ../Dependencies/oni-framework
 endif
 
 # If the FREEBSD headers path is not set we will try to use the relative path
 ifeq ($(BSD_INC),)
-BSD_INC := ../../Dependencies/freebsd-headers
+BSD_INC := ../Dependencies/freebsd-headers
 endif
 
 # Project name
