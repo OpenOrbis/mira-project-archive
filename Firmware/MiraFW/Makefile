@@ -4,11 +4,9 @@ ONI_FRAMEWORK := ../Dependencies/oni-framework
 endif
 
 # If the FREEBSD headers path is not set we will try to use the relative path
-#ifeq ($(BSD_INC),)
-#BSD_INC := ../Dependencies/freebsd-headers
-#endif
-
-BSD_INC := /mnt/d/PS4/freebsd-headers
+ifeq ($(BSD_INC),)
+BSD_INC := ../Dependencies/freebsd-headers
+endif
 
 # Project name
 PROJ_NAME := MiraFW
