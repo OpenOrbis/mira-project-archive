@@ -3,10 +3,6 @@ The Mira Project is a set of tools that grants you more power and control over y
 
 It works differently to the custom firmware experience on Playstation 3, where CFW would be installed on the system via modified PUP files (e.g. Rebug), however once the framework is installed and ran it gives users the same functionality they were previously used to.
 
-## WARNING
-
-There are quite a few fake, scam OpenOrbis websites, youtube, twitter etc. Take note, WE DO NOT HAVE A WEBSITE, OR ANY SOCIAL MEDIA. All information will be here on the GitHub repository ONLY! All other outlets about this project are fake, possibly contain viruses, and should be avoided at all costs. Once again, THIS GitHub repository is the only way to get official news, information, and releases about the Mira-Project.
-
 ## Firmware
 
 Formerly known as MiraHEN, this has now been developed into a full custom firmware. Thanks to everyone who helped Mira reach a 1.0 beta goal (May 20, 2018). There will be updated goals placed within the [GitHub issue tracker](https://github.com/OpenOrbis/mira-project/milestones) so the community can follow the internal progress, contribute and help provide the best platform possible for users.
@@ -31,11 +27,7 @@ Community driven store and application that will allow you to download new plugi
 
 Inspired by vitaDB <3 Rin
 
-### [Mira Companion](https://github.com/OpenOrbis/mira-toolbox/tree/master/Mira-Companion)
-
-An Android application to control MiraCFW and manage your PS4.
-
-### [PS4 Payload Sender](https://github.com/valentinbreiz/PS4-Payload-Sender-Android)
+### PS4 Payload Sender
 
 A simple Android application to send payloads to your PS4.
 
