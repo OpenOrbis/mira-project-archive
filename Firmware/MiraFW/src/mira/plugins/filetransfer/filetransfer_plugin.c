@@ -189,6 +189,7 @@ uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
 
 uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 {
+	messagemanager_unregisterCallback(gFramework->messageManager);
 	return true;
 }
 

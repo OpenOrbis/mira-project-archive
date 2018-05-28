@@ -45,15 +45,11 @@ struct logger_t* gLogger = NULL;
 struct initparams_t* gInitParams = NULL;
 struct framework_t* gFramework = NULL;
 
-// TODO: Enable better management of plugins
-struct debugger_plugin_t* gDebugger = NULL;
-
 // TODO: Move this somewhere
 #define kdlsym_addr_self_orbis_sysvec						 0x019bbcd0
 
 // Forward declarations
 int init_oni();
-uint8_t __noinline mira_installDefaultPlugins();
 
 void* mira_entry(void* args)
 /*
@@ -180,11 +176,13 @@ void oni_kernelInitialization(void* args)
 	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");
 
 	// Initialize miraframework
-	if (!mira_getFramework())
+	gFramework = (struct framework_t*)mira_getFramework();
+	if (!gFramework)
 	{
 		WriteLog(LL_Error, "FATAL ERROR: could not initialize the framework");
 		kthread_exit();
 	}
+	miraframework_initialize((struct miraframework_t*)gFramework);
 
 	// At this point we don't need kernel context anymore
 	WriteLog(LL_Info, "Mira initialization complete");

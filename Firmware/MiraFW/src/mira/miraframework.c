@@ -20,6 +20,8 @@
 //	Utilities
 //
 #include <oni/utils/logger.h>
+#include <oni/utils/memory/allocator.h>
+#include <oni/utils/kdlsym.h>
 
 //
 //	Free-BSD Specifics
@@ -29,7 +31,8 @@
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 
-uint8_t miraframework_initalize(struct miraframework_t* framework);
+uint8_t __noinline mira_installDefaultPlugins();
+uint8_t miraframework_installHandlers(struct miraframework_t* framework);
 uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char* iniPath);
 
 //
@@ -37,18 +40,14 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 //
 
 // Handle the kernel panics due to suspending
-static void mira_onSuspend(void* a __unused, u_int cmd, int* error);
-static void mira_onResume(void* a __unused, u_int cmd, int* error);
-static void mira_onShutdown(void* a __unused, u_int cmd, int* error);
+static void mira_onSuspend(void* a __unused, u_int cmd, struct miraframework_t* framework);
+static void mira_onResume(void* a __unused, u_int cmd, struct miraframework_t* framework);
+static void mira_onShutdown(void* a __unused, u_int cmd, struct miraframework_t* framework);
 
 // Handle execution of new processes for trainers
-static void mira_onExec(void* a __unused, u_int cmd, int* error);
+static void mira_onExec(void* a __unused, u_int cmd, struct miraframework_t* framework);
 
 typedef void(*callback_fn)(void*, u_int, int*);
-EVENTHANDLER_DECLARE(onSuspend, callback_fn);
-EVENTHANDLER_DECLARE(onResume, callback_fn);
-EVENTHANDLER_DECLARE(onShutdown, callback_fn);
-EVENTHANDLER_DECLARE(onExec, callback_fn);
 
 //
 //	Start code
@@ -56,30 +55,43 @@ EVENTHANDLER_DECLARE(onExec, callback_fn);
 
 struct miraframework_t* mira_getFramework()
 {
+	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	WriteLog(LL_Info, "here");
 	if (!gFramework)
 	{
+		WriteLog(LL_Info, "here");
 		// We intentionally allocate the larger struct and cast to the basic
-		gFramework = (struct framework_t*)kmalloc(sizeof(struct miraframework_t));
-		if (!gFramework)
+		struct miraframework_t* framework = (struct miraframework_t*)kmalloc(sizeof(struct miraframework_t));
+		memset(framework, 0, sizeof(*framework));
+
+		WriteLog(LL_Info, "here");
+		if (!framework)
 		{
 			// Consider this a fatal error
+			WriteLog(LL_Error, "could not allocate framework.");
+
 			for (;;)
-				WriteLog(LL_Error, "could not allocate framework.");
+				__asm__("nop");
 
 			return NULL;
 		}
 
-		// Initialize the original framework + extensions
-		miraframework_initalize(gFramework);
+		WriteLog(LL_Info, "here");
+		// Assign the global variable
+		gFramework = (struct framework_t*)framework;
 	}
+
+	WriteLog(LL_Info, "here");
 
 	return (struct miraframework_t*)gFramework;
 }
 
-uint8_t miraframework_initalize(struct miraframework_t* framework)
+uint8_t miraframework_initialize(struct miraframework_t* framework)
 {
 	if (!framework)
 		return false;
+
+	WriteLog(LL_Info, "here");
 
 	// Load the settings from file if it exists
 	if (miraframework_loadSettings(framework, MIRA_CONFIG_PATH))
@@ -87,29 +99,35 @@ uint8_t miraframework_initalize(struct miraframework_t* framework)
 
 	// Initialize the message manager
 	WriteLog(LL_Debug, "MessageManager initialization");
-	gFramework->messageManager = (struct messagemanager_t*)kmalloc(sizeof(struct messagemanager_t));
-	if (!gFramework->messageManager)
+	framework->framework.messageManager = (struct messagemanager_t*)kmalloc(sizeof(struct messagemanager_t));
+	if (!framework->framework.messageManager)
 		return false;
 
-	messagemanager_init(gFramework->messageManager);
+	WriteLog(LL_Info, "here");
+
+	messagemanager_init(framework->framework.messageManager);
 
 	// Initialize the plugin manager
 	WriteLog(LL_Debug, "[+] Initializing plugin manager");
-	gFramework->pluginManager = (struct pluginmanager_t*)kmalloc(sizeof(struct pluginmanager_t));
-	if (!gFramework->pluginManager)
+	framework->framework.pluginManager = (struct pluginmanager_t*)kmalloc(sizeof(struct pluginmanager_t));
+	if (!framework->framework.pluginManager)
 		return false;
 
-	pluginmanager_init(gFramework->pluginManager);
+	WriteLog(LL_Info, "here");
+	pluginmanager_init(framework->framework.pluginManager);
 
+	WriteLog(LL_Info, "here");
 	// Initialize the default plugins
-	if (!mira_installDefaultPlugins())
+	if (!mira_installDefaultPlugins(framework))
 	{
 		WriteLog(LL_Error, "could not initialize plugins");
 		return false;
 	}
 
+	WriteLog(LL_Info, "here");
+
 	// Register our event handlers
-	if (!miraframework_installHandlers((struct miraframework_t*)gFramework))
+	if (!miraframework_installHandlers(framework))
 	{
 		WriteLog(LL_Error, "could not install handlers");
 		return false;
@@ -120,38 +138,52 @@ uint8_t miraframework_initalize(struct miraframework_t* framework)
 
 uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 {
+	eventhandler_tag
+	(*eventhandler_register)(struct eventhandler_list *list, const char *name,
+		void *func, void *arg, int priority) = kdlsym(eventhandler_register);
+
+	WriteLog(LL_Info, "here");
+
 	// Register our event handlers
-	EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, NULL, EVENTHANDLER_PRI_FIRST);
-	EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, NULL, EVENTHANDLER_PRI_FIRST);
-	EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, NULL, EVENTHANDLER_PRI_FIRST);
-	EVENTHANDLER_REGISTER(process_exec, mira_onExec, NULL, EVENTHANDLER_PRI_FIRST);
+	EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, framework, EVENTHANDLER_PRI_ANY);
+	EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, framework, EVENTHANDLER_PRI_ANY);
+	EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_ANY);
+	EVENTHANDLER_REGISTER(process_exec, mira_onExec, framework, EVENTHANDLER_PRI_LAST);
+
+	WriteLog(LL_Info, "here");
 
 	return true;
 }
 
 uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char* iniPath)
 {
+	WriteLog(LL_Info, "here");
 	if (!framework || !iniPath)
 		return false;
+	WriteLog(LL_Info, "here");
 
 	// TODO: Load the home directory
-	gFramework->homePath = "";
+	framework->framework.homePath = "";
 
+	WriteLog(LL_Info, "here");
 	// TODO: Load the configuration directory
-	gFramework->configPath = "";
+	framework->framework.configPath = "";
 
+	WriteLog(LL_Info, "here");
 	// TODO: Load the download path
-	gFramework->downloadPath = "";
+	framework->framework.downloadPath = "";
 
+	WriteLog(LL_Info, "here");
 	// TODO: Load the plugins path
-	gFramework->pluginsPath = "";
+	framework->framework.pluginsPath = "";
 
+	WriteLog(LL_Info, "here");
 	return true;
 }
 
-static void mira_onSuspend(void* a __unused, u_int cmd, int* error)
+static void mira_onSuspend(void* a __unused, u_int cmd, struct miraframework_t* framework)
 {
-	if (!gFramework)
+	if (!framework)
 		return;
 
 	// Notify the user that we are suspending
@@ -159,47 +191,57 @@ static void mira_onSuspend(void* a __unused, u_int cmd, int* error)
 
 	// Stop the RPC server
 	WriteLog(LL_Info, "stopping RPC server.");
-	if (!rpcserver_shutdown(gFramework->rpcServer))
+	if (!rpcserver_shutdown(framework->framework.rpcServer))
 		WriteLog(LL_Error, "there was an error stopping the rpc server.");
 	
 	// Stop the klog server
 	WriteLog(LL_Info, "Shutting down plugin manager");
-	pluginmanager_shutdown(gFramework->pluginManager);
+	pluginmanager_shutdown(framework->framework.pluginManager);
 
 	WriteLog(LL_Info, "Everything *should* be stable m8");
+
 }
 
-static void mira_onResume(void* a __unused, u_int cmd, int* error)
+static void mira_onResume(void* a __unused, u_int cmd, struct miraframework_t* framework)
 {
+	if (!framework)
+		return;
+
 	// TODO: Handle resuming
 	WriteLog(LL_Warn, "ON RESUME");
+
 	// Initialize the default plugins
-	if (!mira_installDefaultPlugins())
-	{
+	if (!mira_installDefaultPlugins(framework))
 		WriteLog(LL_Error, "could not initialize plugins");
-		return false;
-	}
-
-
 }
-static void mira_onShutdown(void* a __unused, u_int cmd, int* error)
+
+static void mira_onShutdown(void* a __unused, u_int cmd, struct miraframework_t* framework)
 {
+	if (!framework)
+		return;
+
 	// Shut down everything, we packin' our bags bois
 	WriteLog(LL_Warn, "ON SHUTDOWN");
 }
 
-static void mira_onExec(void* a __unused, u_int cmd, int* error)
+static void mira_onExec(void* a __unused, u_int cmd, struct miraframework_t* framework)
 {
+	if (!framework)
+		return;
+
 	// TOOD: Handle trainers
-	WriteLog(LL_Warn, "ON EXEC");
+	WriteLog(LL_Warn, "ON EXEC cmd %d");
 }
 
-uint8_t __noinline mira_installDefaultPlugins()
+uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 {
-	struct miraframework_t* framework = (struct miraframework_t*)gFramework;
 	// Initialize default plugins
 
 	// Register file transfer plugin
+	WriteLog(LL_Info, "allocating file transfer plugin");
+	if (framework->fileTransferPlugin)
+		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
+
 	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
 	if (!framework->fileTransferPlugin)
 	{
@@ -207,9 +249,12 @@ uint8_t __noinline mira_installDefaultPlugins()
 		return false;
 	}
 	filetransfer_plugin_init(framework->fileTransferPlugin);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &framework->fileTransferPlugin->plugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
 	WriteLog(LL_Info, "allocating logserver");
+	if (framework->logServerPlugin)
+		kfree(framework->logServerPlugin, sizeof(*framework->logServerPlugin));
+
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
 	if (!framework->logServerPlugin)
 	{
@@ -217,9 +262,13 @@ uint8_t __noinline mira_installDefaultPlugins()
 		return false;
 	}
 	logserver_init(framework->logServerPlugin);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &framework->logServerPlugin->plugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->logServerPlugin->plugin);
 
 	// Initialize the plugin loader to read from file
+	WriteLog(LL_Info, "allocating pluginloader");
+	if (framework->pluginLoader)
+		kfree(framework->pluginLoader, sizeof(*framework->pluginLoader));
+
 	framework->pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
 	if (!framework->pluginLoader)
 	{
@@ -232,28 +281,34 @@ uint8_t __noinline mira_installDefaultPlugins()
 	// Debugger
 	WriteLog(LL_Debug, "allocating debugger");
 
+	if (framework->debuggerPlugin)
+		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
+
 	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
-	if (!((struct miraframework_t*)gFramework)->debuggerPlugin)
+	if (!framework->debuggerPlugin)
 	{
 		WriteLog(LL_Error, "could not allocate debugger plugin");
 		return false;
 	}
 	debugger_plugin_init(framework->debuggerPlugin);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &framework->debuggerPlugin->plugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
-	gFramework->rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
-	if (!gFramework->rpcServer)
+	if (framework->framework.rpcServer)
+		kfree(framework->framework.rpcServer, sizeof(*framework->framework.rpcServer));
+
+	framework->framework.rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
+	if (!framework->framework.rpcServer)
 	{
 		WriteLog(LL_Error, "could not allocate rpc server.");
 		return false;
 	}
-	rpcserver_init(gFramework->rpcServer, curthread->td_proc);
+	rpcserver_init(framework->framework.rpcServer, curthread->td_proc);
 
 	// Startup the server, it will kick off the thread
 	WriteLog(LL_Info, "starting rpc server");
-	if (!rpcserver_startup(gFramework->rpcServer, ONI_RPC_PORT))
+	if (!rpcserver_startup(framework->framework.rpcServer, ONI_RPC_PORT))
 	{
 		WriteLog(LL_Error, "rpcserver_startup failed");
 		return false;

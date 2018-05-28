@@ -21,3 +21,4 @@ struct miraframework_t
 };
 
 struct miraframework_t* mira_getFramework();
+uint8_t miraframework_initialize(struct miraframework_t* framework);
