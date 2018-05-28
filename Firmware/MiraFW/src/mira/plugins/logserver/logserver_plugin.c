@@ -1,6 +1,6 @@
 #include "logserver_plugin.h"
 #include <oni/utils/sys_wrappers.h>
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 #include <oni/framework.h>
 
 #include <sys/socket.h>
@@ -82,8 +82,20 @@ uint8_t logserver_unload(struct logserver_plugin_t* plugin)
 	if (!plugin)
 		return false;
 
-
+	// Stop running
 	plugin->isRunning = false;
+
+	// Free all of the server bullshit
+	if (plugin->socket != -1)
+	{
+		kshutdown(plugin->socket, 2);
+		kclose(plugin->socket);
+		plugin->socket = -1;
+	}
+
+	// Zero address space
+	kmemset(&plugin->address, 0, sizeof(plugin->address));
+
 	return true;
 }
 

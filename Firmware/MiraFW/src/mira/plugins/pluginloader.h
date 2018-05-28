@@ -1,7 +1,7 @@
 #pragma once
 #include <oni/utils/types.h>
 
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 
 struct pluginheader_t
 {

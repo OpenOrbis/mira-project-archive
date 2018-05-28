@@ -66,6 +66,7 @@
     <ClCompile Include="src\mira\boot\patches\patches501.c" />
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\boot\patches\patches505.c" />
+    <ClCompile Include="src\mira\miraframework.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
@@ -75,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\boot\patches.h" />
+    <ClInclude Include="src\mira\miraframework.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />

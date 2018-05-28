@@ -7,7 +7,7 @@
 #include <sys/dirent.h>
 #include <sys/stat.h>
 #include <oni/utils/memory/allocator.h>
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 
 #ifndef MIN
 #define MIN ( x, y ) ( (x) < (y) ? : (x) : (y) )

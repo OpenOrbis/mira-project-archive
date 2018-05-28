@@ -11,7 +11,7 @@
 //
 //	Mira Core
 //
-#include <mira/plugins/pluginloader.h>	// Load plugins from file
+#include <mira/miraframework.h>
 
 //
 //	Console specific patches
@@ -19,19 +19,12 @@
 #include <mira/boot/patches.h>
 
 //
-//	Built-in plugins
-//
-#include <mira/plugins/filetransfer/filetransfer_plugin.h>
-#include <mira/plugins/logserver/logserver_plugin.h>
-#include <mira/plugins/debugger/debugger_plugin.h>
-
-//
 //	Utilities
 //
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/memory/install.h>
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
 #include <oni/utils/kdlsym.h>
@@ -184,119 +177,16 @@ void oni_kernelInitialization(void* args)
 	curthread->td_ucred->cr_sceCaps[1] = 0xFFFFFFFFFFFFFFFFULL;
 
 	// Show over UART that we are running in a new process
-	WriteLog(LL_Info, "[!] oni_kernel_startup in new process!\n");
+	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");
 
-	gFramework = (struct framework_t*)kmalloc(sizeof(struct framework_t));
-	if (!gFramework)
+	// Initialize miraframework
+	if (!mira_getFramework())
 	{
-		WriteLog(LL_Error, "could not allocate framework :(");
+		WriteLog(LL_Error, "FATAL ERROR: could not initialize the framework");
 		kthread_exit();
-		return;
-	}
-
-	// Set configuration paths
-	gFramework->homePath = "/user/mira";
-	gFramework->configPath = "/user/mira/config.ini";
-	gFramework->downloadPath = "/user/mira/download";
-	gFramework->pluginsPath = "/user/mira/plugins";
-
-	// Initialize the rpc dispatcher
-	WriteLog(LL_Debug, "MessageManager initialization");
-	gFramework->messageManager = (struct messagemanager_t*)kmalloc(sizeof(struct messagemanager_t));
-	if (!gFramework->messageManager)
-	{
-		kthread_exit();
-		return;
-	}
-	messagemanager_init(gFramework->messageManager);
-
-	// Initialize the plugin manager
-	WriteLog(LL_Debug, "[+] Initializing plugin manager");
-	gFramework->pluginManager = (struct pluginmanager_t*)kmalloc(sizeof(struct pluginmanager_t));
-	if (!gFramework->pluginManager)
-	{
-		kthread_exit();
-		return;
-	}
-	pluginmanager_init(gFramework->pluginManager);
-
-	// Initialize the default plugins
-	if (!mira_installDefaultPlugins())
-	{
-		WriteLog(LL_Error, "could not initialize plugins");
-		kthread_exit();
-		return;
 	}
 
 	// At this point we don't need kernel context anymore
-	WriteLog(LL_Info, "[!] Mira initialization complete");
+	WriteLog(LL_Info, "Mira initialization complete");
 	kthread_exit();
-}
-
-uint8_t __noinline mira_installDefaultPlugins()
-{
-	// Initialize default plugins
-
-	// Register file transfer plugin
-	struct filetransfer_plugin_t* filetransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
-	if (!filetransferPlugin)
-	{
-		WriteLog(LL_Error, "Error allocating file transfer plugin");
-		return false;
-	}
-	filetransfer_plugin_init(filetransferPlugin);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &filetransferPlugin->plugin);
-
-	WriteLog(LL_Info, "Allocating logserver");
-	struct logserver_plugin_t* logServer = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
-	if (!logServer)
-	{
-		WriteLog(LL_Error, "Could not allocate log server.");
-		return false;
-	}
-	logserver_init(logServer);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &logServer->plugin);
-
-	// Initialize the plugin loader to read from file
-	struct pluginloader_t* pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
-	if (!pluginLoader)
-	{
-		WriteLog(LL_Error, "Error allocating plugin loader.");
-		return false;
-	}
-	pluginloader_init(pluginLoader);
-
-	pluginloader_loadPlugins(pluginLoader);
-
-	// Debugger
-	WriteLog(LL_Debug, "Allocating debugger");
-	gDebugger = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
-	if (!gDebugger)
-	{
-		WriteLog(LL_Error, "could not allocate debugger plugin");
-		return false;
-	}
-	debugger_plugin_init(gDebugger);
-	pluginmanager_registerPlugin(gFramework->pluginManager, &gDebugger->plugin);
-
-	// Kick off the rpc server thread
-	WriteLog(LL_Debug, "[+] Allocating rpc server");
-	gFramework->rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
-	if (!gFramework->rpcServer)
-	{
-		WriteLog(LL_Error, "could not allocate rpc server.");
-		return false;
-	}
-	rpcserver_init(gFramework->rpcServer, gInitParams->process);
-	
-	WriteLog(LL_Debug, "[+] Finished Initializing rpc server proc: %p", gInitParams->process);
-
-	// Startup the server, it will kick off the thread
-	if (!rpcserver_startup(gFramework->rpcServer, 9999))
-	{
-		WriteLog(LL_Error, "[-] rpcserver_startup failed");
-		return false;
-	}
-
-	return true;
 }
