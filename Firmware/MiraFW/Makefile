@@ -35,16 +35,16 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(ONI_FRAMEWORK)/depends/include -I$(ONI_FRAMEWORK)/include -I$(BSD_INC)
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
-L_DIRS	:=	-L.	-Llib -L$(ONI_FRAMEWORK)
+L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
 
 # Included libraries
 LIBS	:= -l:OniFramework.a
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL -D_DEBUG=1
+ORB_VER	:= -D_KERNEL=1 -D_DEBUG=1 -D"ONI_PLATFORM=${ONI_PLATFORM}"
 
 # C++ Flags
 CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O2 -fno-builtin -nostartfiles -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
@@ -78,6 +78,7 @@ TARGET = $(PROJ_NAME)_Orbis.elf
 PAYLOAD = $(PROJ_NAME)_Orbis.bin
 
 $(TARGET): $(ALL_OBJ)
+	@echo "Building for Firmware $(ONI_PLATFORM)..."
 	@echo Compiling $(PROJ_NAME)...
 	@$(LNK) $(ALL_OBJ) -o $(TARGET) $(LFLAGS) $(LIBS)
 	@echo "Creating Payload..."
@@ -85,7 +86,7 @@ $(TARGET): $(ALL_OBJ)
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo "Compiling $< ..."
-	@$(CC) $(CFLAGS) $(IDIRS) -c $< -o $@
+	$(CC) $(CFLAGS) $(IDIRS) -c $< -o $@
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "Compiling $< ..."

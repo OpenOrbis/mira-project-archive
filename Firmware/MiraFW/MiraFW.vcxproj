@@ -40,19 +40,19 @@
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;_DEBUG;_KERNEL;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>Oni_Orbis.elf;Oni_Orbis.bin</RemoteBuildOutputs>
+    <RemoteBuildOutputs>$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.bin;$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.elf;</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;_KERNEL;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>Oni_Orbis.elf;Oni_Orbis.bin</RemoteBuildOutputs>
+    <RemoteBuildOutputs>$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.bin;$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.elf;</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
     <None Include="src\crt0.s" />

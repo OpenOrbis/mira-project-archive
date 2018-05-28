@@ -36,3 +36,10 @@ Output/**
 
 #Do not ignore the README file that is in output
 !Output/README.md
+
+# Ignore binary files
+*.bin
+*.elf
+*.o
+*.a
+*.so
