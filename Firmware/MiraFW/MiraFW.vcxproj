@@ -38,7 +38,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;_DEBUG;_KERNEL;</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505;_DEBUG;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteReBuildCommandLine>
@@ -47,7 +47,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;_KERNEL;</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_505</RemoteReBuildCommandLine>
@@ -70,6 +70,7 @@
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
+    <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
     <ClCompile Include="src\mira\utils\hde\hde64.c" />
     <ClCompile Include="src\mira\utils\hook.c" />
@@ -80,6 +81,7 @@
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
+    <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
     <ClInclude Include="src\mira\utils\hde\hde64.h" />
     <ClInclude Include="src\mira\utils\hde\table64.h" />

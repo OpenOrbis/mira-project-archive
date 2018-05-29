@@ -15,6 +15,7 @@
 #include <mira/plugins/logserver/logserver_plugin.h>
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
+#include <mira/plugins/orbisutils/orbisutils_plugin.h>
 
 //
 //	Utilities
@@ -40,14 +41,14 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 //
 
 // Handle the kernel panics due to suspending
-static void mira_onSuspend(void* a __unused, u_int cmd, struct miraframework_t* framework);
-static void mira_onResume(void* a __unused, u_int cmd, struct miraframework_t* framework);
-static void mira_onShutdown(void* a __unused, u_int cmd, struct miraframework_t* framework);
+static void mira_onSuspend(struct miraframework_t* framework);
+static void mira_onResume(struct miraframework_t* framework);
+static void mira_onShutdown(struct miraframework_t* framework);
 
 // Handle execution of new processes for trainers
-static void mira_onExec(void* a __unused, u_int cmd, struct miraframework_t* framework);
+static void mira_onExec(struct miraframework_t* framework);
 
-typedef void(*callback_fn)(void*, u_int, int*);
+typedef void(*callback_fn)(struct miraframework_t*);
 
 //
 //	Start code
@@ -145,8 +146,8 @@ uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 	WriteLog(LL_Info, "here");
 
 	// Register our event handlers
-	EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, framework, EVENTHANDLER_PRI_ANY);
-	EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, framework, EVENTHANDLER_PRI_ANY);
+	EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, framework, EVENTHANDLER_PRI_FIRST);
+	EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, framework, EVENTHANDLER_PRI_FIRST);
 	EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_ANY);
 	EVENTHANDLER_REGISTER(process_exec, mira_onExec, framework, EVENTHANDLER_PRI_LAST);
 
@@ -182,13 +183,13 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 	return true;
 }
 
-static void mira_onSuspend(void* a __unused, u_int cmd, struct miraframework_t* framework)
+static void mira_onSuspend(struct miraframework_t* framework)
 {
 	if (!framework)
 		return;
 
 	// Notify the user that we are suspending
-	WriteLog(LL_Warn, "ON SUSPEND");
+	WriteLog(LL_Warn, "ON SUSPEND %p", framework);
 
 	// Stop the RPC server
 	WriteLog(LL_Info, "stopping RPC server.");
@@ -203,40 +204,57 @@ static void mira_onSuspend(void* a __unused, u_int cmd, struct miraframework_t* 
 
 }
 
-static void mira_onResume(void* a __unused, u_int cmd, struct miraframework_t* framework)
+static void mira_onResume(struct miraframework_t* framework)
 {
 	if (!framework)
 		return;
 
 	// TODO: Handle resuming
-	WriteLog(LL_Warn, "ON RESUME");
+	WriteLog(LL_Warn, "ON RESUME %p", framework);
 
 	// Initialize the default plugins
 	if (!mira_installDefaultPlugins(framework))
 		WriteLog(LL_Error, "could not initialize plugins");
 }
 
-static void mira_onShutdown(void* a __unused, u_int cmd, struct miraframework_t* framework)
+static void mira_onShutdown(struct miraframework_t* framework)
 {
 	if (!framework)
 		return;
 
 	// Shut down everything, we packin' our bags bois
-	WriteLog(LL_Warn, "ON SHUTDOWN");
+	WriteLog(LL_Warn, "ON SHUTDOWN %p", framework);
 }
 
-static void mira_onExec(void* a __unused, u_int cmd, struct miraframework_t* framework)
+static void mira_onExec(struct miraframework_t* framework)
 {
 	if (!framework)
 		return;
 
 	// TOOD: Handle trainers
-	WriteLog(LL_Warn, "ON EXEC cmd %d");
+	WriteLog(LL_Warn, "ON EXEC %p", framework);
 }
 
 uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 {
 	// Initialize default plugins
+	//
+	//	Initialize the orbis utilities plugin
+	//
+	WriteLog(LL_Info, "allocating orbis utilities");
+	if (framework->orbisUtilsPlugin)
+	{
+		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
+		framework->fileTransferPlugin = NULL;
+	}
+	struct orbisutils_plugin_t* orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
+	if (!orbisUtilsPlugin)
+	{
+		WriteLog(LL_Error, "error allocating orbis utils plugin");
+		return false;
+	}
+	orbisutils_init(orbisUtilsPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &orbisUtilsPlugin->plugin);
 
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
@@ -245,8 +263,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
 		framework->fileTransferPlugin = NULL;
 	}
-		
-
+	
 	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
 	if (!framework->fileTransferPlugin)
 	{
