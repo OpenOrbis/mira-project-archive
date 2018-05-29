@@ -160,6 +160,7 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 	WriteLog(LL_Info, "here");
 	if (!framework || !iniPath)
 		return false;
+
 	WriteLog(LL_Info, "here");
 
 	// TODO: Load the home directory
@@ -240,7 +241,11 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
 	if (framework->fileTransferPlugin)
+	{
 		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
+		framework->fileTransferPlugin = NULL;
+	}
+		
 
 	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
 	if (!framework->fileTransferPlugin)
@@ -253,7 +258,11 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	WriteLog(LL_Info, "allocating logserver");
 	if (framework->logServerPlugin)
+	{
 		kfree(framework->logServerPlugin, sizeof(*framework->logServerPlugin));
+		framework->logServerPlugin = NULL;
+	}
+		
 
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
 	if (!framework->logServerPlugin)
@@ -267,7 +276,10 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	// Initialize the plugin loader to read from file
 	WriteLog(LL_Info, "allocating pluginloader");
 	if (framework->pluginLoader)
+	{
 		kfree(framework->pluginLoader, sizeof(*framework->pluginLoader));
+		framework->pluginLoader = NULL;
+	}
 
 	framework->pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
 	if (!framework->pluginLoader)
@@ -282,8 +294,11 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	WriteLog(LL_Debug, "allocating debugger");
 
 	if (framework->debuggerPlugin)
+	{
 		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
-
+		framework->debuggerPlugin = NULL;
+	}
+		
 	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
 	if (!framework->debuggerPlugin)
 	{
@@ -296,7 +311,10 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
 	if (framework->framework.rpcServer)
+	{
 		kfree(framework->framework.rpcServer, sizeof(*framework->framework.rpcServer));
+		framework->framework.rpcServer = NULL;
+	}
 
 	framework->framework.rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
 	if (!framework->framework.rpcServer)

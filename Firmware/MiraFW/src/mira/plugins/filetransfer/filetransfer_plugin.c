@@ -189,7 +189,18 @@ uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
 
 uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 {
-	messagemanager_unregisterCallback(gFramework->messageManager);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Open, filetransfer_open_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Close, filetransfer_close_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Read, filetransfer_read_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_ReadFile, filetransfer_readfile_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Write, filetransfer_write_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_WriteFile, filetransfer_writefile_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Delete, filetransfer_delete_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Stat, filetransfer_stat_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
+
 	return true;
 }
 

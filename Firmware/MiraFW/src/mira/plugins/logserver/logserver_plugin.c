@@ -96,6 +96,8 @@ uint8_t logserver_unload(struct logserver_plugin_t* plugin)
 	// Zero address space
 	kmemset(&plugin->address, 0, sizeof(plugin->address));
 
+	plugin->thread = NULL;
+
 	return true;
 }
 
