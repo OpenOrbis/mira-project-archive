@@ -9,7 +9,7 @@ void install_prerunPatches_501()
 		return;
 
 	void(*critical_enter)(void) = kdlsym(critical_enter);
-	void(*crtical_exit)(void) = kdlsym(critical_exit);
+	void(*critical_exit)(void) = kdlsym(critical_exit);
 
 	// Apply patches
 	critical_enter();
@@ -90,5 +90,5 @@ void install_prerunPatches_501()
 	gKernelBase[0x5775C + 4] = 0x90;
 
 	cpu_enable_wp();
-	crtical_exit();
+	critical_exit();
 }
