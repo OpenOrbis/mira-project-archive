@@ -22,7 +22,7 @@
 
 struct utility_dumphddkeys_t
 {
-	uint8_t encrypted[0x70];
+	uint8_t encrypted[0x60];
 	uint8_t key[0x20];
 };
 
