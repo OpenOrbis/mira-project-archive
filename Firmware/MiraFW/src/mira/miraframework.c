@@ -41,8 +41,8 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 //
 
 // Handle the kernel panics due to suspending
-static void mira_onSuspend(struct miraframework_t* framework);
-static void mira_onResume(struct miraframework_t* framework);
+//static void mira_onSuspend(struct miraframework_t* framework); // uncommenting this code would make Rest Mode not work
+//static void mira_onResume(struct miraframework_t* framework); // uncommenting this code would make Rest Mode not work
 static void mira_onShutdown(struct miraframework_t* framework);
 
 // Handle execution of new processes for trainers
@@ -146,8 +146,8 @@ uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 	WriteLog(LL_Info, "here");
 
 	// Register our event handlers
-	EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, framework, EVENTHANDLER_PRI_FIRST);
-	EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, framework, EVENTHANDLER_PRI_FIRST);
+	//EVENTHANDLER_REGISTER(system_suspend_phase1, mira_onSuspend, framework, EVENTHANDLER_PRI_FIRST); // uncommenting this code would make Rest Mode not work
+	//EVENTHANDLER_REGISTER(system_resume_phase1, mira_onResume, framework, EVENTHANDLER_PRI_FIRST); // uncommenting this code would make Rest Mode not work
 	EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_ANY);
 	EVENTHANDLER_REGISTER(process_exec, mira_onExec, framework, EVENTHANDLER_PRI_LAST);
 
@@ -183,7 +183,7 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 	return true;
 }
 
-static void mira_onSuspend(struct miraframework_t* framework)
+/*static void mira_onSuspend(struct miraframework_t* framework) // uncommenting this code would make Rest Mode not work
 {
 	if (!framework)
 		return;
@@ -215,7 +215,7 @@ static void mira_onResume(struct miraframework_t* framework)
 	// Initialize the default plugins
 	if (!mira_installDefaultPlugins(framework))
 		WriteLog(LL_Error, "could not initialize plugins");
-}
+}*/
 
 static void mira_onShutdown(struct miraframework_t* framework)
 {
