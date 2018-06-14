@@ -25,7 +25,7 @@
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/cpu.h>
 
-#include <mira/utils/hook.h>
+#include <oni/utils/hook.h>
 
 //
 //	Free-BSD Specifics

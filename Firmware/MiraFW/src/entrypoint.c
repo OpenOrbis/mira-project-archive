@@ -16,7 +16,7 @@
 //
 //	Console specific patches
 //
-#include <mira/boot/patches.h>
+#include <oni/boot/patches.h>
 
 //
 //	Utilities
