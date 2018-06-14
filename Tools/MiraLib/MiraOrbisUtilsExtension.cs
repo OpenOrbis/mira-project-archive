@@ -23,7 +23,7 @@ namespace MiraLib
         {
             p_Output = new DumpHddKeys
             {
-                Encrypted = new byte[0x70],
+                Encrypted = new byte[0x60],
                 Key = new byte[0x20]
             };
 
