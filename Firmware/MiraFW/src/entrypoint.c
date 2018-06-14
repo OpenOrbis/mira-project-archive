@@ -45,9 +45,6 @@ struct logger_t* gLogger = NULL;
 struct initparams_t* gInitParams = NULL;
 struct framework_t* gFramework = NULL;
 
-// TODO: Move this somewhere
-#define kdlsym_addr_self_orbis_sysvec						 0x019bbcd0
-
 // Forward declarations
 int init_oni();
 

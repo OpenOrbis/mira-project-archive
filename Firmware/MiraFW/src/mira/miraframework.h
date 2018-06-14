@@ -7,7 +7,8 @@ struct logserver_plugin_t;
 struct orbisutils_plugin_t;
 struct pluginloader_t;
 struct trainermanager_t;
-
+struct hook_t;
+struct thread;
 
 struct miraframework_t
 {

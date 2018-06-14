@@ -9,6 +9,7 @@
 #include <oni/utils/logger.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/sys_wrappers.h>
+#include <oni/utils/cpu.h>
 
 //
 // Mira specific
@@ -18,6 +19,9 @@
 #if ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_505
 #define kdlsym_addr_icc_nvs_read 0x00395830
 #define kdlsym_addr_sceSblGetEAPInternalPartitionKey 0x006256E0
+#elif ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_501
+#define kdlsym_addr_icc_nvs_read							 0x00395460
+#define kdlsym_addr_sceSblGetEAPInternalPartitionKey		 0x00625300
 #endif
 
 struct utility_dumphddkeys_t
@@ -26,14 +30,21 @@ struct utility_dumphddkeys_t
 	uint8_t key[0x20];
 };
 
+struct orbisutils_toggleaslr_t
+{
+	uint8_t aslrEnabled;
+};
+
 uint8_t orbisutils_load(struct orbisutils_plugin_t* plugin);
 uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin);
 
 void orbisutils_dumpHddKeys_callback(struct allocation_t* message);
+void orbisutils_toggleASLR(struct allocation_t* message);
 
 enum UtilityCmds
 {
 	OrbisUtils_DumpHddKeys = 0xA5020F62,
+	OrbisUtils_ToggleASLR = 0xE6572B02,
 };
 
 
@@ -117,7 +128,9 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 #endif
 
 	int result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
-	WriteLog(LL_Debug, "icc_nvs_sread returned %d", result);
+
+	if (result < 0)
+		WriteLog(LL_Debug, "icc_nvs_sread returned %d", result);
 
 	result = sceSblGetEAPInternalPartitionKey(request->encrypted, request->key);
 	WriteLog(LL_Debug, "sceSblGetEAPInternalPartitionKey returned %d", result);
@@ -126,6 +139,57 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 
 	message->header.request = false;
 	messagemanager_sendMessage(gFramework->messageManager, ref);
+cleanup:
+	__dec(ref);
+}
+
+void orbisutils_toggleASLR(struct allocation_t* ref)
+{
+	if (!ref)
+	{
+		WriteLog(LL_Error, "invalid ref");
+		return;
+	}
+
+	struct message_t* message = __get(ref);
+	if (!message)
+	{
+		WriteLog(LL_Error, "invalid message");
+		return;
+	}
+
+	if (message->header.request != true)
+	{
+		WriteLog(LL_Error, "response ignored");
+		goto cleanup;
+	}
+
+	if (!message->payload)
+	{
+		WriteLog(LL_Error, "no payload");
+		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		goto cleanup;
+	}
+
+	struct orbisutils_toggleaslr_t* payload = (struct orbisutils_toggleaslr_t*)message->payload;
+
+	void(*critical_enter)(void) = kdlsym(critical_enter);
+	void(*critical_exit)(void) = kdlsym(critical_exit);
+
+	WriteLog(LL_Debug, "%s ASLR for Userland Executables.", payload->aslrEnabled ? "Enabling" : "Disabling");
+
+	critical_enter();
+	cpu_disable_wp();
+
+#if ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_501
+	*(uint8_t*)(gKernelBase + 0x00389555) = payload->aslrEnabled ? 0x74 : 0xEB;
+#elif ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_505
+	* (uint8_t*)(gKernelBase + 0x00389925) = payload->aslrEnabled ? 0x74 : 0xEB;
+#endif
+
+	cpu_enable_wp();
+	critical_exit();
+
 cleanup:
 	__dec(ref);
 }

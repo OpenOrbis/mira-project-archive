@@ -9,7 +9,7 @@ BSD_INC := ../Dependencies/freebsd-headers
 endif
 
 # Project name
-PROJ_NAME := MiraFW
+PROJ_NAME := MiraRecovery
 
 # C++ compiler
 CPPC	:=	gcc++

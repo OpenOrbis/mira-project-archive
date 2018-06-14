@@ -214,11 +214,11 @@ void debugger_writemem_callback(struct allocation_t* ref)
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 	int result = proc_rw_mem(process, (void*)request->address, request->dataLength, request->data, &request->dataLength, 1);
+	if (result < 0)
+		WriteLog(LL_Error, "proc_rw_mem returned %d", result);
+
 	// You need to unlock the process, or the kernel will assert and hang
 	PROC_UNLOCK(process);
-
-	WriteLog(LL_Debug, "proc_rw_mem returned %d", result);
-
 
 cleanup:
 	__dec(ref);
