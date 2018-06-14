@@ -35,7 +35,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(ONI_FRAMEWORK)/depends/include -I$(ONI_FRAMEWORK)/include -I$(BSD_INC)
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(ONI_FRAMEWORK)/depends/include -I$(ONI_FRAMEWORK)/include -I$(BSD_INC)/include
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib -L$(ONI_FRAMEWORK)
