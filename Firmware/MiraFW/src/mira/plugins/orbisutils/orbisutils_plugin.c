@@ -82,6 +82,8 @@ uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin)
 
 void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 	{
 		WriteLog(LL_Error, "invalid ref");
@@ -115,8 +117,8 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 	// This is how we decrypt the EAP Internal partition key for usage with mounting on PC
 	int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
 
-	kmemset(request->key, 0, sizeof(request->key));
-	kmemset(request->encrypted, 0, sizeof(request->encrypted));
+	memset(request->key, 0, sizeof(request->key));
+	memset(request->encrypted, 0, sizeof(request->encrypted));
 
 
 	

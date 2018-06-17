@@ -379,7 +379,8 @@ cleanup:
 
 void filetransfer_read_callback(struct allocation_t* ref)
 {
-	// TODO: implement
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 		return;
 
@@ -407,7 +408,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 
 	WriteLog(LL_Debug, "[+] creating struct");
 	struct stat statbuf;
-	kmemset(&statbuf, 0, sizeof(statbuf));
+	memset(&statbuf, 0, sizeof(statbuf));
 
 	// Get the file size
 	WriteLog(LL_Debug, "[+] calling stat(%d, %p);", readRequest->handle, &statbuf);
@@ -451,7 +452,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	klseek(readRequest->handle, readRequest->offset, 0);
 
 	// Zero the buffer
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	// Write the header
 	message->header.request = 0;
@@ -466,7 +467,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	{
 		kread(readRequest->handle, buffer, bufferSize);
 		kwrite(message->socket, buffer, bufferSize);
-		kmemset(buffer, 0, bufferSize);
+		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
@@ -480,6 +481,8 @@ cleanup:
 
 void filetransfer_readfile_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	struct message_t* message = __get(ref);
 	if (!message)
 		return;
@@ -505,7 +508,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 
 	WriteLog(LL_Debug, "[+] creating struct");
 	struct stat statbuf;
-	kmemset(&statbuf, 0, sizeof(statbuf));
+	memset(&statbuf, 0, sizeof(statbuf));
 
 	// Get the file size
 	WriteLog(LL_Debug, "[+] calling stat(%d, %p);", readRequest->handle, &statbuf);
@@ -533,7 +536,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	WriteLog(LL_Debug, "[+] file size: %llx", readRequest->size);
 
 	// Zero the buffer
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	// Write the header
 	message->header.request = 0;
@@ -548,7 +551,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	{
 		kread(readRequest->handle, buffer, bufferSize);
 		kwrite(message->socket, buffer, bufferSize);
-		kmemset(buffer, 0, bufferSize);
+		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
@@ -563,6 +566,8 @@ cleanup:
 
 void filetransfer_write_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 		return;
 
@@ -603,7 +608,7 @@ void filetransfer_write_callback(struct allocation_t* ref)
 	klseek(writeRequest->handle, writeRequest->offset, 0);
 
 	// Zero the buffer
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	// Write the header
 	message->header.request = 0;
@@ -617,7 +622,7 @@ void filetransfer_write_callback(struct allocation_t* ref)
 	{
 		kread(message->socket, buffer, bufferSize);
 		kwrite(writeRequest->handle, buffer, bufferSize);
-		kmemset(buffer, 0, bufferSize);
+		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
@@ -631,6 +636,8 @@ cleanup:
 
 void filetransfer_writefile_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 		return;
 
@@ -678,7 +685,7 @@ void filetransfer_writefile_callback(struct allocation_t* ref)
 		klseek(writeRequest->handle, dataReceived, 0);
 
 		int32_t currentSize = MIN(0x4000, writeRequest->size - dataReceived);
-		kmemset(buffer, 0, bufferSize);
+		memset(buffer, 0, bufferSize);
 
 		int recvSize = krecv(message->socket, buffer, currentSize, 0);
 		if (recvSize < 0)
@@ -703,6 +710,9 @@ cleanup:
 
 void filetransfer_getdents_callback(struct allocation_t* ref)
 {
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 		return;
 
@@ -745,7 +755,7 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	}
 
 	// Zero out the buffer size
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	// Get all of the directory entries the first time to get the count
 	while (kgetdents(handle, buffer, bufferSize) > 0)
@@ -782,8 +792,8 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	kwrite(message->socket, &dentCount, sizeof(dentCount));
 
 	struct filetransfer_getdents_t writeDent;
-	kmemset(&writeDent, 0, sizeof(writeDent));
-	kmemset(buffer, 0, bufferSize);
+	memset(&writeDent, 0, sizeof(writeDent));
+	memset(buffer, 0, bufferSize);
 
 	dent = 0;
 	while (kgetdents(handle, buffer, bufferSize) > 0)
@@ -797,12 +807,12 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 				break;
 
 			// Zero out the dent
-			kmemset(&writeDent, 0, sizeof(writeDent));
+			memset(&writeDent, 0, sizeof(writeDent));
 
 			// Copy over the name, truncating it if need be
 			int nameLength = dent->d_namlen > 255 ? 255 : dent->d_namlen;
 
-			kmemcpy(writeDent.path, dent->d_name, nameLength);
+			memcpy(writeDent.path, dent->d_name, nameLength);
 
 			writeDent.type = dent->d_type;
 			writeDent.handle = dent->d_fileno;

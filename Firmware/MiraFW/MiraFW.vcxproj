@@ -71,6 +71,7 @@
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
+    <ClCompile Include="src\mira\utils\ini\ini.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\miraframework.h" />
@@ -79,6 +80,7 @@
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
+    <ClInclude Include="src\mira\utils\ini\ini.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

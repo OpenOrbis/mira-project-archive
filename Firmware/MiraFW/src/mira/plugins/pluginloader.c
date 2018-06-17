@@ -6,6 +6,7 @@
 
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/sys_wrappers.h>
+#include <oni/utils/kdlsym.h>
 
 #include <sys/dirent.h>
 #include <sys/fcntl.h>
@@ -37,6 +38,9 @@ int strcmp(const char * s1, const char * s2)
 
 void pluginloader_init(struct pluginloader_t* loader)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
 	if (!loader)
 		return;
 
@@ -72,10 +76,10 @@ void pluginloader_init(struct pluginloader_t* loader)
 		WriteLog(LL_Error, "could not allocate space for plugin path.");
 		return;
 	}
-	kmemset(pluginPath, 0, pluginPathLength + 1);
+	memset(pluginPath, 0, pluginPathLength + 1);
 
 	// Copy over our string
-	kmemcpy(pluginPath, frameworkPluginPath, pluginPathLength);
+	memcpy(pluginPath, frameworkPluginPath, pluginPathLength);
 	
 	loader->pluginDirectory = pluginPath;
 
@@ -87,6 +91,9 @@ void pluginloader_init(struct pluginloader_t* loader)
 
 uint8_t pluginloader_addPluginToList(struct pluginloader_t* loader, struct loaderplugin_t* pluginEntry)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
 	if (!loader || !pluginEntry)
 		return false;
 
@@ -128,10 +135,10 @@ uint8_t pluginloader_addPluginToList(struct pluginloader_t* loader, struct loade
 		WriteLog(LL_Error, "could not allocate new list");
 		return false;
 	}
-	kmemset(newList, 0, newListSize);
+	memset(newList, 0, newListSize);
 
 	// Copy over the old list
-	kmemcpy(newList, oldList, oldListSize);
+	memcpy(newList, oldList, oldListSize);
 
 	// Add our final entry
 	newList[oldPluginCount] = pluginEntry;
@@ -145,6 +152,8 @@ uint8_t pluginloader_addPluginToList(struct pluginloader_t* loader, struct loade
 
 uint32_t pluginloader_getAvailablePluginCount(struct pluginloader_t* loader)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!loader)
 		return 0;
 
@@ -171,7 +180,7 @@ uint32_t pluginloader_getAvailablePluginCount(struct pluginloader_t* loader)
 	}
 
 	// Zero out the buffer size
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	// Get all of the directory entries the first time to get the count
 	while (kgetdents(handle, buffer, bufferSize) > 0)
@@ -196,6 +205,9 @@ uint32_t pluginloader_getAvailablePluginCount(struct pluginloader_t* loader)
 
 struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* loader, char* pluginPath)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
 	if (!loader || !pluginPath)
 		return NULL;
 
@@ -207,7 +219,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 	}
 
 	struct stat statbuf;
-	kmemset(&statbuf, 0, sizeof(statbuf));
+	memset(&statbuf, 0, sizeof(statbuf));
 
 	// Get the file size
 	int res = kfstat(fd, &statbuf);
@@ -234,7 +246,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 		kclose(fd);
 		return NULL;
 	}
-	kmemset(pluginData, 0, pluginSize);
+	memset(pluginData, 0, pluginSize);
 
 	// Read out our plugin data
 	klseek(fd, 0, SEEK_SET);
@@ -258,13 +270,15 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 	if (pathLength > sizeof(entry->path))
 		WriteLog(LL_Warn, "path is too long, not setting");
 	else
-		kmemcpy(entry->path, pluginPath, pathLength);
+		memcpy(entry->path, pluginPath, pathLength);
 
 	return entry;
 }
 
 void pluginloader_loadPlugins(struct pluginloader_t* loader)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	// Verify that the loader is valid
 	if (!loader)
 		return;
@@ -303,7 +317,7 @@ void pluginloader_loadPlugins(struct pluginloader_t* loader)
 	}
 
 	// Zero out the buffer size
-	kmemset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 
 	while (kgetdents(handle, buffer, bufferSize) > 0)
 	{
@@ -367,7 +381,7 @@ void pluginloader_loadPlugins(struct pluginloader_t* loader)
 			WriteLog(LL_Error, "could not allocate new plugin space");
 			continue;
 		}
-		kmemset(newPlugin, 0, pluginSize);
+		memset(newPlugin, 0, pluginSize);
 
 		// Initialize the plugin
 		pluginInitialize(newPlugin, &gLoaderPluginInit);

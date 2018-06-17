@@ -14,6 +14,7 @@
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/cpu.h>
+#include <oni/utils/kernel.h>
 
 uint8_t debugger_isAddressMapped(struct debugger_plugin_t* plugin, void* address)
 {

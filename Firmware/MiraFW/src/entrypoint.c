@@ -97,6 +97,7 @@ void oni_kernelInitialization(void* args)
 	This function handles the kernel (ring-0) mode initialization
 */
 {
+	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 	struct vmspace* (*vmspace_alloc)(vm_offset_t min, vm_offset_t max) = kdlsym(vmspace_alloc);
 	void(*pmap_activate)(struct thread *td) = kdlsym(pmap_activate);
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);

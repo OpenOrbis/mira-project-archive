@@ -7,6 +7,7 @@
 #include <oni/utils/hde/hde64.h>
 #include <sys/proc.h>
 
+#include <oni/utils/sys_wrappers.h>
 
 
 // Credits: flatz
@@ -107,4 +108,21 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 
 		return totalLength;
 	}
+}
+
+uint8_t debugger_continue(struct debugger_plugin_t* plugin)
+{
+	//struct rusage usage;
+	//int procStatus = -1;
+
+	if (!plugin)
+		return false;
+
+	if (!plugin->process)
+		return false;
+
+	// TODO: Get the current status of the proc, and if it is stopped continue it
+	//kwait4(plugin->process->p_pid, &procStatus, 0, &usage);
+
+	return true;
 }

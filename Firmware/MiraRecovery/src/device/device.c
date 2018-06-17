@@ -49,6 +49,7 @@ void recovery_init_device()
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void(*printf)(char *format, ...) = kdlsym(printf);
+	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 
 	// If we already have a device created, don't allow re-registering
 	if (recovery_dev)

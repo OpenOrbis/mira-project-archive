@@ -214,6 +214,8 @@ static void split_data(ini_t *ini) {
 
 
 ini_t* ini_load(const char *filename) {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	ini_t *ini = NULL;
 	int fp = NULL;
 	int n, sz;
@@ -223,7 +225,7 @@ ini_t* ini_load(const char *filename) {
 	if (!ini) {
 		goto fail;
 	}
-	kmemset(ini, 0, sizeof(*ini));
+	memset(ini, 0, sizeof(*ini));
 
 	/* Open file */
 	fp = kopen((char*)filename, O_RDONLY, 0);

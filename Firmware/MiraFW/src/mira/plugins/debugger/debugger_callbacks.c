@@ -9,6 +9,7 @@
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/memory/allocator.h>
+#include <oni/utils/kernel.h>
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
@@ -82,6 +83,10 @@ struct debugger_kill_t
 
 void debugger_readmem_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+
 	struct message_t* message = __get(ref);
 	if (!message)
 		return;
@@ -114,9 +119,6 @@ void debugger_readmem_callback(struct allocation_t* ref)
 		goto error;
 	}
 
-	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
-
 	struct proc* process = pfind(request->process_id);
 	if (process == 0)
 		goto error;
@@ -135,7 +137,7 @@ void debugger_readmem_callback(struct allocation_t* ref)
 	if (1 == 0)
 	{
 	error:
-		kmemset(request, 0, sizeof(*request));
+		memset(request, 0, sizeof(*request));
 		request->process_id = -1;
 		kwrite(message->socket, request, sizeof(*request));
 	}
@@ -146,6 +148,8 @@ cleanup:
 
 void debugger_writemem_callback(struct allocation_t* ref)
 {
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+
 	struct message_t* message = __get(ref);
 	if (!message)
 		return;
@@ -175,8 +179,6 @@ void debugger_writemem_callback(struct allocation_t* ref)
 	if (process == 0)
 		goto cleanup;
 
-	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-
 	int result = proc_rw_mem(process, (void*)request->address, request->dataLength, request->data, &request->dataLength, 1);
 	if (result < 0)
 		WriteLog(LL_Error, "proc_rw_mem returned %d", result);
@@ -190,17 +192,6 @@ cleanup:
 
 void debugger_getprocs_callback(struct allocation_t* ref)
 {
-	if (!ref)
-		return;
-
-	struct message_t* message = __get(ref);
-	if (!message)
-		return;
-
-	// Only handle requests
-	if (message->header.request != 1)
-		goto cleanup;
-
 	int(*_sx_slock)(struct sx *sx, int opts, const char *file, int line) = kdlsym(_sx_slock);
 	void(*_sx_sunlock)(struct sx *sx, const char *file, int line) = kdlsym(_sx_sunlock);
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
@@ -212,6 +203,19 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
 	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
 	void(*_vm_map_unlock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_unlock_read);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
+	if (!ref)
+		return;
+
+	struct message_t* message = __get(ref);
+	if (!message)
+		return;
+
+	// Only handle requests
+	if (message->header.request != 1)
+		goto cleanup;
 
 	uint64_t procCount = 0;
 	struct proc* p = NULL;
@@ -222,7 +226,7 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	{
 		PROC_LOCK(p);
 		// Zero out our process information
-		kmemset(&getproc, 0, sizeof(getproc));
+		memset(&getproc, 0, sizeof(getproc));
 
 		// Get the vm map
 		struct vmspace* vm = vmspace_acquire_ref(p);
@@ -238,8 +242,8 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 		getproc.data_address = (uint64_t)p->p_vmspace->vm_daddr;
 		getproc.data_size = p->p_vmspace->vm_dsize;
 		// Copy over the name and path
-		kmemcpy(getproc.process_name, p->p_comm, sizeof(getproc.process_name));
-		kmemcpy(getproc.path, p->p_elfpath, sizeof(getproc.path));
+		memcpy(getproc.process_name, p->p_comm, sizeof(getproc.process_name));
+		memcpy(getproc.path, p->p_elfpath, sizeof(getproc.path));
 		// Write it back to the PC
 		kwrite(message->socket, &getproc, sizeof(getproc));
 		procCount++;
@@ -252,7 +256,7 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	}
 	sx_sunlock(allproclock);
 	// Send finalizer, because fuck this shit
-	kmemset(&getproc, 0xDD, sizeof(getproc));
+	memset(&getproc, 0xDD, sizeof(getproc));
 	kwrite(message->socket, &getproc, sizeof(getproc));
 
 cleanup:

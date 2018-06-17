@@ -2,6 +2,7 @@
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/logger.h>
 #include <oni/framework.h>
+#include <oni/utils/kdlsym.h>
 
 #include <sys/socket.h>
 #include <sys/proc.h>
@@ -25,6 +26,9 @@ void logserver_init(struct logserver_plugin_t* plugin)
 
 uint8_t logserver_load(struct logserver_plugin_t* plugin)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
+
 	if (!plugin)
 		return false;
 
@@ -37,7 +41,7 @@ uint8_t logserver_load(struct logserver_plugin_t* plugin)
 	}
 
 	// Set up address
-	kmemset(&plugin->address, 0, sizeof(plugin->address));
+	memset(&plugin->address, 0, sizeof(plugin->address));
 	plugin->address.sin_family = AF_INET;
 	plugin->address.sin_addr.s_addr = INADDR_ANY;
 	plugin->address.sin_port = __bswap16(plugin->port);
@@ -66,8 +70,6 @@ uint8_t logserver_load(struct logserver_plugin_t* plugin)
 		return false;
 	}
 
-	utilUSleep(100, "");
-
 	int creationResult = kthread_add(logserver_serverThread, plugin, curthread->td_proc, (struct thread**)&plugin->thread, 0, 0, "logserver");
 	if (creationResult != 0)
 		return 0;
@@ -79,6 +81,8 @@ uint8_t logserver_load(struct logserver_plugin_t* plugin)
 
 uint8_t logserver_unload(struct logserver_plugin_t* plugin)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!plugin)
 		return false;
 
@@ -94,7 +98,7 @@ uint8_t logserver_unload(struct logserver_plugin_t* plugin)
 	}
 
 	// Zero address space
-	kmemset(&plugin->address, 0, sizeof(plugin->address));
+	memset(&plugin->address, 0, sizeof(plugin->address));
 
 	plugin->thread = NULL;
 
@@ -103,6 +107,9 @@ uint8_t logserver_unload(struct logserver_plugin_t* plugin)
 
 void logserver_serverThread(void* data)
 {
+	void(*kthread_exit)(void) = kdlsym(kthread_exit);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!data)
 	{
 		kthread_exit();
@@ -116,7 +123,7 @@ void logserver_serverThread(void* data)
 
 	struct sockaddr_in address;
 	size_t clientAddressSize = sizeof(address);
-	kmemset(&address, 0, sizeof(address));
+	memset(&address, 0, sizeof(address));
 
 	int32_t socket = -1;
 
@@ -151,7 +158,7 @@ void logserver_serverThread(void* data)
 			if (kwrite(socket, buffer, 1) < 0)
 				break;
 
-			kmemset(buffer, 0, sizeof(buffer));
+			memset(buffer, 0, sizeof(buffer));
 		}
 
 		kclose(klog);
