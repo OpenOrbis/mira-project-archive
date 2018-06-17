@@ -138,19 +138,6 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	WriteLog(LL_Info, "installing hooks");
 	miraframework_installHooks(framework);
 
-	//// Install the auto-jailbreak syscall
-	//WriteLog(LL_Info, "installing auto-escape syscall");
-	//struct sysent* syscall = &sv->sv_table[8];
-
-	//critical_enter();
-	//cpu_disable_wp();
-	//memset(syscall, 0, sizeof(*syscall));
-	//syscall->sy_narg = 0; // No arguments
-	//syscall->sy_call = sys_jailbreak;
-
-	//cpu_enable_wp();
-	//critical_exit();
-
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
 	return true;
