@@ -16,6 +16,7 @@
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
+#include <mira/plugins/cheat/cheat_plugin.h>
 
 //
 //	Utilities
@@ -326,6 +327,18 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	debugger_plugin_init(framework->debuggerPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
+	// Cheat plugin
+	WriteLog(LL_Info, "allocating cheating plugin");
+
+	framework->cheatPlugin = (struct cheat_plugin_t*)kmalloc(sizeof(struct cheat_plugin_t));
+	if (!framework->cheatPlugin)
+	{
+		WriteLog(LL_Error, "could not allocate cheat plugin");
+		return false;
+	}
+	cheat_plugin_init(framework->cheatPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
+	
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
 	if (framework->framework.rpcServer)

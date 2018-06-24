@@ -1,7 +1,8 @@
 #include "debugger_plugin.h"
-
+#include <oni/framework.h>
 #include <oni/utils/kdlsym.h>
-
+#include <oni/messaging/message.h>
+#include <oni/messaging/messagemanager.h>
 #include <oni/utils/logger.h>
 
 #include <oni/utils/hde/hde64.h>
@@ -9,6 +10,14 @@
 
 #include <oni/utils/sys_wrappers.h>
 
+enum DebuggerCmds
+{
+	DbgCmd_GetProcesses = 0x97077E04,
+	DbgCmd_ReadMemory = 0xA0C48DE9,
+	DbgCmd_WriteMemory = 0x2B3587A6,
+	DbgCmd_Ptrace = 0x6DAC0B97,
+	DbgCmd_Kill = 0x020C3897,
+};
 
 // Credits: flatz
 int proc_rw_mem(struct proc* p, void* ptr, size_t size, void* data, size_t* n, int write);
@@ -16,11 +25,23 @@ int proc_rw_mem(struct proc* p, void* ptr, size_t size, void* data, size_t* n, i
 
 uint8_t debugger_load(struct debugger_plugin_t * plugin)
 {
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
+	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
+
 	return true;
 }
 
 uint8_t debugger_unload(struct debugger_plugin_t * plugin)
 {
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
+
 	return true;
 }
 
@@ -54,8 +75,6 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-	//int(*_sx_slock)(struct sx *sx, int opts, const char *file, int line) = kdlsym(_sx_slock);
-	//void(*_sx_sunlock)(struct sx *sx, const char *file, int line) = kdlsym(_sx_sunlock);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
 	hde64s hs;
@@ -123,6 +142,8 @@ uint8_t debugger_continue(struct debugger_plugin_t* plugin)
 
 	// TODO: Get the current status of the proc, and if it is stopped continue it
 	//kwait4(plugin->process->p_pid, &procStatus, 0, &usage);
+
+	kkill(plugin->process->p_pid, SIGCONT);
 
 	return true;
 }

@@ -46,7 +46,7 @@ struct initparams_t* gInitParams = NULL;
 struct framework_t* gFramework = NULL;
 
 // Forward declarations
-int init_oni();
+int init_oni(struct initparams_t* userInitParams);
 
 void* mira_entry(void* args)
 /*
@@ -55,8 +55,14 @@ void* mira_entry(void* args)
 	args - pointer to struct initparams_t in userland memory
 */
 {
+	struct initparams_t userParams;
+	userParams.entrypoint = oni_kernelInitialization;
+	userParams.process = NULL;
+	userParams.payloadBase = 0x926200000;
+	userParams.payloadSize = 0x80000;
+
 	// Initialize the Oni Framework
-	int result = init_oni();
+	int result = init_oni(&userParams);
 	if (!result)
 		return NULL;
 
@@ -78,14 +84,14 @@ void* mira_entry(void* args)
 	return NULL;
 }
 
-int init_oni()
+int init_oni(struct initparams_t* userInitParams)
 /*
 	This is the OniFramework entry where platform specific
 	configurations should be set up and the framework initialized
 */
 {
 	// Elevate to kernel
-	SelfElevateAndRun((uint8_t*)0x926200000, 0x80000, oni_kernelInitialization);
+	SelfElevateAndRun(userInitParams);
 
 	return true;
 }
@@ -116,26 +122,26 @@ void oni_kernelInitialization(void* args)
 	}
 	logger_init(gLogger);
 
-	// Verify that our initialization parameters are correct
-	struct initparams_t* loaderInitParams = (struct initparams_t*)args;
-	if (!loaderInitParams)
+	// Verify that our initialization parameters are correct, this is coming from the kernel copy
+	gInitParams= (struct initparams_t*)args;
+	if (!gInitParams)
 	{
 		WriteLog(LL_Error, "invalid loader init params");
 		kthread_exit();
 		return;
 	}
 
-	gInitParams = (struct initparams_t*)kmalloc(sizeof(struct initparams_t));
-	if (!gInitParams) // TODO: Do a better job
-	{
-		WriteLog(LL_Error, "invalid initparams");
-		kthread_exit();
-		return;
-	}
+	//gInitParams = loaderInitParams; //(struct initparams_t*)kmalloc(sizeof(struct initparams_t));
+	//if (!gInitParams) // TODO: Do a better job
+	//{
+	//	WriteLog(LL_Error, "invalid initparams");
+	//	kthread_exit();
+	//	return;
+	//}
 
-	gInitParams->payloadBase = loaderInitParams->payloadBase;
-	gInitParams->payloadSize = loaderInitParams->payloadSize;
-	gInitParams->process = loaderInitParams->process;
+	//gInitParams->payloadBase = loaderInitParams->payloadBase;
+	//gInitParams->payloadSize = loaderInitParams->payloadSize;
+	//gInitParams->process = loaderInitParams->process;
 
 	// Create new vm_space
 	WriteLog(LL_Debug, "Creating new vm space");

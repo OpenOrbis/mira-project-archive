@@ -1,6 +1,7 @@
 #pragma once
 #include <oni/framework.h>
 
+struct cheat_plugin_t;
 struct debugger_plugin_t;
 struct filetransfer_plugin_t;
 struct logserver_plugin_t;
@@ -19,6 +20,7 @@ struct miraframework_t
 	struct logserver_plugin_t* logServerPlugin;
 	struct filetransfer_plugin_t* fileTransferPlugin;
 	struct orbisutils_plugin_t* orbisUtilsPlugin;
+	struct cheat_plugin_t* cheatPlugin;
 
 	struct pluginloader_t* pluginLoader;
 	struct trainermanager_t* trainerManager;

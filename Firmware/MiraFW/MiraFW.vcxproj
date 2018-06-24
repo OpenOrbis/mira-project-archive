@@ -64,6 +64,7 @@
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\miraframework.c" />
+    <ClCompile Include="src\mira\plugins\cheat\cheat_plugin.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
@@ -75,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\miraframework.h" />
+    <ClInclude Include="src\mira\plugins\cheat\cheat_plugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
