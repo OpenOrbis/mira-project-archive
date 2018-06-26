@@ -35,6 +35,7 @@
 //
 #include <sys/sysent.h>					// sysent_t
 #include <sys/proc.h>					// proc
+#include <sys/filedesc.h>				// filedesc
 
 //
 //	Required framework variables
@@ -131,18 +132,6 @@ void oni_kernelInitialization(void* args)
 		return;
 	}
 
-	//gInitParams = loaderInitParams; //(struct initparams_t*)kmalloc(sizeof(struct initparams_t));
-	//if (!gInitParams) // TODO: Do a better job
-	//{
-	//	WriteLog(LL_Error, "invalid initparams");
-	//	kthread_exit();
-	//	return;
-	//}
-
-	//gInitParams->payloadBase = loaderInitParams->payloadBase;
-	//gInitParams->payloadSize = loaderInitParams->payloadSize;
-	//gInitParams->process = loaderInitParams->process;
-
 	// Create new vm_space
 	WriteLog(LL_Debug, "Creating new vm space");
 
@@ -169,6 +158,19 @@ void oni_kernelInitialization(void* args)
 	// create our own cred
 	ksetuid(0);
 
+	curthread->td_ucred->cr_rgid = 0;
+	curthread->td_ucred->cr_svgid = 0;
+
+	curthread->td_ucred->cr_uid = 0;
+	curthread->td_ucred->cr_ruid = 0;
+
+	curthread->td_ucred->cr_groups[0] = 0;
+
+	curthread->td_ucred->cr_prison = *(void**)kdlsym(prison0);
+	struct filedesc* fd = curthread->td_proc->p_fd;
+
+	fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
+
 	// set diag auth ID flags
 	curthread->td_ucred->cr_sceAuthID = 0x3800000000000007ULL;
 
@@ -187,6 +189,9 @@ void oni_kernelInitialization(void* args)
 		kthread_exit();
 	}
 	miraframework_initialize((struct miraframework_t*)gFramework);
+
+	// Set the initparams so we do not lose track of it
+	((struct miraframework_t*)gFramework)->initParams = gInitParams;
 
 	// At this point we don't need kernel context anymore
 	WriteLog(LL_Info, "Mira initialization complete");

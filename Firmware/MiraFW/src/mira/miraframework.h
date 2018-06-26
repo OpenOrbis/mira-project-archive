@@ -10,6 +10,9 @@ struct pluginloader_t;
 struct trainermanager_t;
 struct hook_t;
 struct thread;
+struct initparams_t;
+
+struct overlayfs_t;
 
 struct miraframework_t
 {
@@ -24,8 +27,14 @@ struct miraframework_t
 
 	struct pluginloader_t* pluginLoader;
 	struct trainermanager_t* trainerManager;
-	
+
+	struct overlayfs_t* overlayfs;
+
+	struct initparams_t* initParams;
 };
 
 struct miraframework_t* mira_getFramework();
+struct proc* mira_getProc();
+struct thread* mira_getMainThread();
+
 uint8_t miraframework_initialize(struct miraframework_t* framework);

@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
+    <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
     <ClCompile Include="src\mira\plugins\cheat\cheat_plugin.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
@@ -75,6 +76,8 @@
     <ClCompile Include="src\mira\utils\ini\ini.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\mira\fs\fuse\netfs.h" />
+    <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
     <ClInclude Include="src\mira\plugins\cheat\cheat_plugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
@@ -82,6 +85,7 @@
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
+    <ClInclude Include="src\mira\trainers\trainermanager.h" />
     <ClInclude Include="src\mira\utils\ini\ini.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
