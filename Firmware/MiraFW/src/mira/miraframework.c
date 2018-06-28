@@ -99,10 +99,6 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	if (!framework)
 		return false;
 
-	/*void(*critical_enter)(void) = kdlsym(critical_enter);
-	void(*critical_exit)(void) = kdlsym(critical_exit);*/
-	//struct sysentvec* sv = kdlsym(self_orbis_sysvec);
-
 	// Zero initialize everything
 	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	memset(framework, 0, sizeof(*framework));
@@ -145,14 +141,15 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	WriteLog(LL_Info, "installing hooks");
 	miraframework_installHooks(framework);
 
-	WriteLog(LL_Info, "allocating overlayfs");
+	// Disable overlayfs while it's a broke sack of shit
+	/*WriteLog(LL_Info, "allocating overlayfs");
 	framework->overlayfs = (struct overlayfs_t*)kmalloc(sizeof(struct overlayfs_t));
 	if (!framework->overlayfs)
 	{
 		WriteLog(LL_Error, "could not allocate overlayfs");
 		return false;
 	}
-	overlayfs_init(framework->overlayfs);
+	overlayfs_init(framework->overlayfs);*/
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 

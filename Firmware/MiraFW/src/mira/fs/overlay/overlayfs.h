@@ -12,7 +12,7 @@ struct overlayfs_t
 	// The current redirect path
 	char redirectPath[OVERLAYFS_MAXPATH];
 
-	struct hook_t* dmemStartAppProcessHook;
+	struct hook_t* execNewVmspaceHook;
 	struct hook_t* openHook;
 	struct hook_t* closeHook;
 	struct hook_t* readHook;
