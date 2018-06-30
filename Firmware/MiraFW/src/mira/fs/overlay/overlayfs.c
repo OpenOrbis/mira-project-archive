@@ -92,7 +92,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	// Enable all of the hooks
 	hook_enable(fs->openHook);
 	hook_enable(fs->closeHook);
-	//hook_enable(fs->readHook);
+	hook_enable(fs->readHook);
 	//hook_enable(fs->writeHook);
 
 	return result;

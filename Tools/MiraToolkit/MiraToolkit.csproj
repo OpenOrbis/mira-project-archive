@@ -127,10 +127,12 @@
     <Compile Include="Controls\ucMiraSelector.Designer.cs">
       <DependentUpon>ucMiraSelector.cs</DependentUpon>
     </Compile>
+    <Compile Include="Core\Debugger\MiraDebugger.cs" />
+    <Compile Include="Core\Extensions\MiraDebuggerExtensions.cs" />
     <Compile Include="Core\MiraConsole.cs" />
     <Compile Include="Core\MiraDevice.cs" />
-    <Compile Include="Core\MiraFileTransferExtension.cs" />
-    <Compile Include="Core\MiraOrbisUtilsExtension.cs" />
+    <Compile Include="Core\Extensions\MiraFileTransferExtension.cs" />
+    <Compile Include="Core\Extensions\MiraOrbisUtilsExtension.cs" />
     <Compile Include="Core\StringExtensions.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>

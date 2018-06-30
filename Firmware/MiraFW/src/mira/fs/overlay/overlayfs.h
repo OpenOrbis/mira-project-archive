@@ -7,6 +7,11 @@ struct proc;
 
 #define OVERLAYFS_MAXPATH	4096
 
+struct overlay_map_t
+{
+	int32_t descriptor;
+};
+
 struct overlayfs_t
 {
 	// The current redirect path
