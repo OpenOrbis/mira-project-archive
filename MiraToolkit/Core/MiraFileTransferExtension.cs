@@ -1,31 +1,57 @@
-﻿using System.Collections.Generic;
+﻿using MiraLib;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MiraLib.Extensions
+namespace MiraToolkit.Core
 {
+    /// <summary>
+    /// Extensions for FileTransfer plugin
+    /// </summary>
     public static class MiraFileTransferExtensions
     {
-        /*
-         *    73 #define O_RDONLY        0x0000          /* open for reading only 
-   74 #define O_WRONLY        0x0001          /* open for writing only 
-   75 #define O_RDWR          0x0002          /* open for reading and writing 
-         */
-
+        /// <summary>
+        /// Flags used for file transfer, (Reference FreeBSD)
+        /// </summary>
         public enum FileTransferFlags
         {
+            /// <summary>
+            /// Read Only
+            /// </summary>
             O_RDONLY = 0x0000,
+
+            /// <summary>
+            /// Write Only
+            /// </summary>
             O_WRONLY = 0x0001,
+
+            /// <summary>
+            /// Read and Write
+            /// </summary>
             O_RDWR = 0x0002,
 
+            /// <summary>
+            /// Truncate
+            /// </summary>
             O_TRUNC     =    0x0400,
+
+            /// <summary>
+            /// Create
+            /// </summary>
             O_CREAT      =   0x0200,
+
+            /// <summary>
+            /// Append
+            /// </summary>
             O_APPEND     =   0x0008,
         }
 
+        /// <summary>
+        /// File transfer commands
+        /// </summary>
         enum FileTransferCmds : uint
         {
             FileTransfer_Open = 0x58AFA0D4,
@@ -41,6 +67,9 @@ namespace MiraLib.Extensions
             FileTransfer_COUNT
         };
 
+        /// <summary>
+        /// File transfer directory type
+        /// </summary>
         public enum FileTransferDirentType : int
         {
             Unknown = 0,
@@ -200,7 +229,7 @@ namespace MiraLib.Extensions
                 Size = 0
             });
 
-            using (var s_Writer = new BinaryWriter(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+            using (var s_Writer = new BinaryWriter(p_Connection.GetStream(), Encoding.ASCII, true))
             {
                 s_Writer.Write(s_HeaderData);
                 s_Writer.Write(s_RequestData);
@@ -213,7 +242,7 @@ namespace MiraLib.Extensions
             var s_CurrentSize = 0;
 
             byte[] s_Data;
-            using (var s_Reader = new BinaryReader(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+            using (var s_Reader = new BinaryReader(p_Connection.GetStream(), Encoding.ASCII, true))
             {
                 using (var s_Writer = new BinaryWriter(new MemoryStream()))
                 {
@@ -267,7 +296,7 @@ namespace MiraLib.Extensions
             var s_BlockCount = s_Response.Size / 0x4000;
             var s_Leftover = s_Response.Size % 0x4000;
 
-            using (var s_Reader = new BinaryReader(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+            using (var s_Reader = new BinaryReader(p_Connection.GetStream(), Encoding.ASCII, true))
             {
                 using (var s_Writer = new BinaryWriter(new FileStream(p_LocalPath, FileMode.Create, FileAccess.ReadWrite)))
                 {
@@ -309,7 +338,7 @@ namespace MiraLib.Extensions
 
             using (var s_Reader = new BinaryReader(new MemoryStream(p_Data)))
             {
-                using (var s_Writer = new BinaryWriter(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+                using (var s_Writer = new BinaryWriter(p_Connection.GetStream(), Encoding.ASCII, true))
                 {
                     for (int i = 0; i < s_BlockCount; ++i)
                         s_Writer.Write(s_Reader.ReadBytes(0x4000));
@@ -357,7 +386,7 @@ namespace MiraLib.Extensions
             var s_Leftover = s_Payload.Size % 0x4000;
 
             byte[] s_Data;
-            using (var s_Reader = new BinaryReader(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+            using (var s_Reader = new BinaryReader(p_Connection.GetStream(), Encoding.ASCII, true))
             {
                 using (var s_Writer = new BinaryWriter(new MemoryStream()))
                 {
@@ -430,7 +459,7 @@ namespace MiraLib.Extensions
             // Read the amount of directory entries
             var s_List = new List<FileTransferGetdents>();
             ulong s_DentCount = 0;
-            using (var s_Reader = new BinaryReader(p_Connection.m_Client.GetStream(), Encoding.ASCII, true))
+            using (var s_Reader = new BinaryReader(p_Connection.GetStream(), Encoding.ASCII, true))
                 s_DentCount = s_Reader.ReadUInt64();
 
             Debug.WriteLine($"Dent Count: {s_DentCount}");

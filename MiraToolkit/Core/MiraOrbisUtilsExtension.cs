@@ -1,7 +1,7 @@
-﻿using System.Runtime.InteropServices;
+﻿using MiraLib;
+using System.Runtime.InteropServices;
 
-
-namespace MiraLib
+namespace MiraToolkit.Core
 {
     public static class MiraOrbisUtilsExtension
     {

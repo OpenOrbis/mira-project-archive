@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E064066F-18E2-4718-B790-B1D93EA39F73}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MiraToolkit</RootNamespace>
+    <AssemblyName>MiraToolkit</AssemblyName>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controls\Debugger\ucBreakpoints.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucBreakpoints.Designer.cs">
+      <DependentUpon>ucBreakpoints.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucCallStack.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucCallStack.Designer.cs">
+      <DependentUpon>ucCallStack.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucCommand.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucCommand.Designer.cs">
+      <DependentUpon>ucCommand.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucConsole.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucConsole.Designer.cs">
+      <DependentUpon>ucConsole.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucDisassembly.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucDisassembly.Designer.cs">
+      <DependentUpon>ucDisassembly.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucProcess.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucProcess.Designer.cs">
+      <DependentUpon>ucProcess.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucRegisters.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucRegisters.Designer.cs">
+      <DependentUpon>ucRegisters.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucThreads.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucThreads.Designer.cs">
+      <DependentUpon>ucThreads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucWatch.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\Debugger\ucWatch.Designer.cs">
+      <DependentUpon>ucWatch.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\FileTransfer\ucFileTransfer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\FileTransfer\ucFileTransfer.Designer.cs">
+      <DependentUpon>ucFileTransfer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Generic\frmInputPrompt.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\Generic\frmInputPrompt.Designer.cs">
+      <DependentUpon>frmInputPrompt.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Generic\frmIpAddress.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\Generic\frmIpAddress.Designer.cs">
+      <DependentUpon>frmIpAddress.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ucMiraSelector.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ucMiraSelector.Designer.cs">
+      <DependentUpon>ucMiraSelector.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Core\MiraConsole.cs" />
+    <Compile Include="Core\MiraDevice.cs" />
+    <Compile Include="Core\MiraFileTransferExtension.cs" />
+    <Compile Include="Core\MiraOrbisUtilsExtension.cs" />
+    <Compile Include="Core\StringExtensions.cs" />
+    <Compile Include="frmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmMain.Designer.cs">
+      <DependentUpon>frmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Controls\Debugger\ucBreakpoints.resx">
+      <DependentUpon>ucBreakpoints.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucCallStack.resx">
+      <DependentUpon>ucCallStack.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucConsole.resx">
+      <DependentUpon>ucConsole.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucDisassembly.resx">
+      <DependentUpon>ucDisassembly.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucRegisters.resx">
+      <DependentUpon>ucRegisters.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucThreads.resx">
+      <DependentUpon>ucThreads.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Debugger\ucWatch.resx">
+      <DependentUpon>ucWatch.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\FileTransfer\ucFileTransfer.resx">
+      <DependentUpon>ucFileTransfer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Generic\frmInputPrompt.resx">
+      <DependentUpon>frmInputPrompt.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\Generic\frmIpAddress.resx">
+      <DependentUpon>frmIpAddress.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ucMiraSelector.resx">
+      <DependentUpon>ucMiraSelector.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmMain.resx">
+      <DependentUpon>frmMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tools\MiraLib\MiraLib.csproj">
+      <Project>{7F17F9F8-0220-4814-824A-30BC4E919341}</Project>
+      <Name>MiraLib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

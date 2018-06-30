@@ -351,5 +351,10 @@ namespace MiraLib
                 return (s_Header, s_Payload);
             }
         }
+
+        public NetworkStream GetStream()
+        {
+            return m_Client.GetStream();
+        }
     }
 }
