@@ -12,7 +12,7 @@ namespace MiraToolkit.Core
     public class MiraConsole
     {
         // Parent device
-        private MiraDevice m_Parent;
+        private MiraDevice m_Device;
 
         // File name
         private string m_OutputFileName;
@@ -54,12 +54,15 @@ namespace MiraToolkit.Core
             // Assign the port
             m_Port = p_Port;
 
+            m_Device = p_Device;
+
             // If the output file path is empty, we do not enable logging to file
             if (string.IsNullOrWhiteSpace(p_OutputFilePath))
                 return;
 
             // Assign the output file name
             m_OutputFileName = p_OutputFilePath;
+
         }
 
         public bool Open()
@@ -74,7 +77,7 @@ namespace MiraToolkit.Core
 
             try
             {
-                m_Socket.Connect(m_Parent.Hostname, m_Port);
+                m_Socket.Connect(m_Device.Hostname, m_Port);
             }
             catch (SocketException p_Exception)
             {

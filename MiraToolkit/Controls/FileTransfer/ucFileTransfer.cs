@@ -6,7 +6,7 @@ using static MiraToolkit.Core.MiraFileTransferExtensions;
 
 namespace MiraToolkit.Controls.FileTransfer
 {
-    public partial class ucFileTransfer : UserControl
+    public partial class ucFileTransfer : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         private const string c_LoadingTag = "_loading";
 
@@ -33,6 +33,8 @@ namespace MiraToolkit.Controls.FileTransfer
             };
 
             m_RootNode.Nodes.Add(s_LoadingNode);
+
+            tvDirectories.Nodes.Add(m_RootNode);
         }
 
         private void tvDirectories_BeforeExpand(object p_Sender, TreeViewCancelEventArgs p_Args)

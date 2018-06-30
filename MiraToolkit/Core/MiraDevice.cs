@@ -23,6 +23,32 @@ namespace MiraToolkit.Core
         /// </summary>
         public MiraConnection Connection { get; protected set; }
 
+        public MiraDevice(string p_Hostname, ushort p_Port)
+        {
+            Hostname = p_Hostname;
+            Port = p_Port;
 
+            Connection = new MiraConnection(Hostname, Port);
+
+            m_Consoles = new List<MiraConsole>();
+        }
+
+        public void AddConsole(string p_DevicePath)
+        {
+
+        }
+        
+        public void AddConsole(ushort p_Port, string p_DevicePath = "")
+        {
+            var s_Console = new MiraConsole(this, p_Port)
+            {
+                Path = p_DevicePath
+            };
+
+            if (!s_Console.Open())
+                return;
+
+            m_Consoles.Add(s_Console);
+        }
     }
 }
