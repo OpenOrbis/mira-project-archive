@@ -200,7 +200,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Tools\MiraLib\MiraLib.csproj">
+    <ProjectReference Include="..\MiraLib\MiraLib.csproj">
       <Project>{7F17F9F8-0220-4814-824A-30BC4E919341}</Project>
       <Name>MiraLib</Name>
     </ProjectReference>

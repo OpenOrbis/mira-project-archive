@@ -53,7 +53,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraRecovery", "Firmware\Mi
 		{DB146B77-3C14-4680-85AC-50B83292B1A8} = {DB146B77-3C14-4680-85AC-50B83292B1A8}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraToolkit", "MiraToolkit\MiraToolkit.csproj", "{E064066F-18E2-4718-B790-B1D93EA39F73}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraToolkit", "Tools\MiraToolkit\MiraToolkit.csproj", "{E064066F-18E2-4718-B790-B1D93EA39F73}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
