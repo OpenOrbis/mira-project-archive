@@ -5,7 +5,7 @@ It works differently to the custom firmware experience on Playstation 3, where C
 
 ## WARNING
 
-There are quite a few fake, scam OpenOrbis websites, youtube, twitter etc. Take note, WE DO NOT HAVE A WEBSITE, OR ANY SOCIAL MEDIA. All information will be here on the GitHub repository ONLY! All other outlets about this project are fake, possibly contain viruses, and should be avoided at all costs. Once again, THIS GitHub repository is the only way to get official news, information, and releases about the Mira-Project.
+There are quite a few fake, scam OpenOrbis websites, youtube, twitter etc. Take note, ~~WE DO NOT HAVE A WEBSITE, OR ANY SOCIAL MEDIA. All information will be here on the GitHub repository ONLY!~~ We currently have a [OpenOrbis discord server](https://discord.gg/GQr8ydn) for those who want to help contribute and have no other way of communication. All other outlets about this project are fake, possibly contain viruses, and should be avoided at all costs. Once again, THIS GitHub repository is the only way to get official news, information, and releases about the Mira-Project. (Discord bots will pull from this repository)
 
 ## Firmware
 
