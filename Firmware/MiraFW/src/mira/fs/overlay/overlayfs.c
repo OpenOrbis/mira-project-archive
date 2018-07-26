@@ -83,7 +83,8 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 		WriteLog(LL_Info, "drive not found");
 		hook_disable(fs->openHook);
 		hook_disable(fs->closeHook);
-		//hook_disable(fs->readHook);
+		hook_disable(fs->readHook);
+		//hook_disable(fs->writeHook);
 		return result;
 	}
 
@@ -139,7 +140,7 @@ int overlayfs_onOpenAt(struct thread *td, int fd, char *path, enum uio_seg paths
 	memset(redirPath, 0, sizeof(redirPath));
 	snprintf(redirPath, sizeof(redirPath), "%s%s", fs->redirectPath, path);
 
-	WriteLog(LL_Debug, "checking for (%s)", redirPath);
+	//WriteLog(LL_Debug, "checking for (%s)", redirPath);
 
 	// Check to see if the file exists on USB
 	if (!overlayfs_fileExists(fs, redirPath))
@@ -160,7 +161,7 @@ int overlayfs_onOpenAt(struct thread *td, int fd, char *path, enum uio_seg paths
 	hook_disable(fs->openHook);
 
 	// Call open using the current thread, (not game thread)
-	int result = kern_openat(mira_getMainThread(), fd, redirPath, pathseg, flags, mode); //kopen_t(redirPath, flags, mode, mira_getMainThread());
+	int result = kern_openat(mira_getMainThread(), fd, redirPath, UIO_SYSSPACE, flags, mode); //kopen_t(redirPath, flags, mode, mira_getMainThread());
 
 	WriteLog(LL_Warn, "overlayfs open %s returned %d fd: %d err: %d", redirPath, result, fd, td->td_retval[0]);
 
