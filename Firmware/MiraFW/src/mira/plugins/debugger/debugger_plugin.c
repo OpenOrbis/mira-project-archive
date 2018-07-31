@@ -147,3 +147,17 @@ uint8_t debugger_continue(struct debugger_plugin_t* plugin)
 
 	return true;
 }
+
+uint8_t debugger_pause(struct debugger_plugin_t* plugin)
+{
+	if (!plugin)
+		return false;
+
+	if (!plugin->process)
+		return false;
+
+
+	kkill(plugin->process->p_pid, SIGSTOP);
+
+	return true;
+}

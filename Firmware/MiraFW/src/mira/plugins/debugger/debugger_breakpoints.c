@@ -425,3 +425,34 @@ void debugger_updateBreakpoints(struct debugger_plugin_t* plugin)
 	_mtx_unlock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
 }
 
+uint8_t debugger_clearAllBreakpoints(struct debugger_plugin_t* plugin)
+{
+	if (!plugin)
+		return false;
+
+	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+
+	_mtx_lock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
+
+	for (size_t i = 0; i < ARRAYSIZE(plugin->breakpoints); ++i)
+	{
+		struct breakpoint_t* breakpoint = &plugin->breakpoints[i];
+
+		// Skip NULL breakpoints
+		if (!breakpoint->address)
+			continue;
+
+		// Remove each of the breakpoints
+		if (!debugger_removeBreakpoint(plugin, breakpoint->address))
+			WriteLog(LL_Warn, "could not remove breakpoint for address %p", breakpoint->address);
+	}
+
+	// Zero out any leftover buffer stuff
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	memset(plugin->breakpoints, 0, sizeof(plugin->breakpoints));
+
+	_mtx_unlock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
+
+	return true;
+}

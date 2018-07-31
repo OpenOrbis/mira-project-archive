@@ -5,6 +5,8 @@
 #include <sys/uio.h>
 #include <sys/proc.h>
 #include <sys/imgact.h>
+#include <sys/mount.h>
+#include <sys/sysent.h>
 
 #include <oni/utils/logger.h>
 #include <oni/utils/sys_wrappers.h>
@@ -13,6 +15,99 @@
 #include <oni/init/initparams.h>
 
 #include <mira/miraframework.h>
+
+
+#include <oni/utils/cpu.h>
+
+int overlayfs_sys_open(struct thread* td, struct open_args* uap);
+static void
+build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val,
+	size_t len);
+
+// Taken directly from sbin/mount/getmntopts.c
+static void
+build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val,
+	size_t len)
+{
+	size_t (*strlen)(const char *str) = kdlsym(strlen);
+	char * (*strdup)(const char *string, struct malloc_type* type) = kdlsym(strdup);
+	void* (*realloc)(void *addr, unsigned long size, struct malloc_type *mtp, int flags) = kdlsym(realloc);
+	struct malloc_type* M_MOUNT = kdlsym(M_MOUNT);
+
+	int i;
+
+	if (*iovlen < 0)
+		return;
+
+	i = *iovlen;
+
+	*iov = realloc(*iov, sizeof **iov * (i + 2), M_MOUNT, 0);
+
+	if (*iov == NULL) {
+		*iovlen = -1;
+		return;
+	}
+
+	(*iov)[i].iov_base = strdup(name, M_MOUNT);
+	(*iov)[i].iov_len = strlen(name) + 1;
+	i++;
+	(*iov)[i].iov_base = val;
+
+	if (len == (size_t)-1) {
+		if (val != NULL)
+			len = strlen(val) + 1;
+		else
+			len = 0;
+	}
+
+	(*iov)[i].iov_len = (int)len;
+	*iovlen = ++i;
+}
+
+
+static int mount_fs(struct thread* td, char* device, char* mountpoint, char* fstype, char* mode, unsigned int flags)
+{
+	struct iovec* iov = NULL;
+	int iovlen = 0;
+
+	WriteLog(LL_Debug, "here");
+
+	build_iovec(&iov, &iovlen, "fstype", fstype, -1);
+	build_iovec(&iov, &iovlen, "fspath", mountpoint, -1);
+	build_iovec(&iov, &iovlen, "from", device, -1);
+	build_iovec(&iov, &iovlen, "large", "yes", -1);
+	build_iovec(&iov, &iovlen, "timezone", "static", -1);
+	build_iovec(&iov, &iovlen, "async", "", -1);
+	build_iovec(&iov, &iovlen, "ignoreacl", "", -1);
+
+	if (mode) 
+	{
+		build_iovec(&iov, &iovlen, "dirmask", mode, -1);
+		build_iovec(&iov, &iovlen, "mask", mode, -1);
+	}
+
+	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
+	if (!nmount)
+		return -1;
+
+	int error;
+	struct nmount_args uap;
+
+	// clear errors
+	td->td_retval[0] = 0;
+
+	// call syscall
+	uap.iovp = iov;
+	uap.iovcnt = iovlen;
+	uap.flags = flags;
+
+	error = nmount(td, &uap);
+	if (error)
+		return -error;
+
+	// return socket
+	return td->td_retval[0];
+}
 
 void overlayfs_onProcessCtor(struct overlayfs_t* fs);
 void overlayfs_onProcessDtor(struct overlayfs_t* fs);
@@ -47,23 +142,28 @@ void overlayfs_init(struct overlayfs_t* fs)
 	// Set up all of the hooks
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
 
-	fs->openHook = hook_create(kdlsym(kern_openat), overlayfs_onOpenAt);
-	fs->closeHook = hook_create(kdlsym(kern_close), overlayfs_onClose);
-	fs->readHook = hook_create(kdlsym(kern_readv), overlayfs_onRead);
-	fs->writeHook = NULL;
+	//fs->openHook = hook_create(kdlsym(kern_openat), overlayfs_onOpenAt);
+	//fs->closeHook = hook_create(kdlsym(kern_close), overlayfs_onClose);
+	//fs->readHook = hook_create(kdlsym(kern_readv), overlayfs_onRead);
+	//fs->writeHook = NULL;
 	//fs->writeHook = hook_create(kdlsym(kern_write), overlayfs_onWrite);
 
-	fs->currentProc = NULL;
+	//fs->currentProc = NULL;
 
 	hook_enable(fs->execNewVmspaceHook);
 }
 
+int(*_sys_open)(struct thread* td, struct open_args* uap) = NULL;
+
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
+	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
+	void(*critical_enter)(void) = kdlsym(critical_enter);
+	void(*critical_exit)(void) = kdlsym(critical_exit);
+
 	//
 	//	This is purely for updating the current drive and mount point
 	//
-
 	// Get the framework
 	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
 
@@ -76,6 +176,39 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 	hook_enable(fs->execNewVmspaceHook);
 
+	if (strstr(imgp->execpath, "eboot") == NULL)
+	{
+		WriteLog(LL_Debug, "%s not eboot", imgp->execpath);
+		return result;
+	}
+
+	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
+
+	WriteLog(LL_Debug, "Process Thread td %p", td);
+
+	int mountResult = mount_fs(td, "/dev/da1s1", "/mnt/sandbox/CUSA08034_000/usb0", "nullfs", "511", MNT_FORCE);
+	if (mountResult < 0)
+	{
+		WriteLog(LL_Warn, "could not mount usb0 to /mnt/usb0 (%d)", mountResult);
+		return result;
+	}
+
+	WriteLog(LL_Info, "mounted /_overlayfs (%d)", mountResult);
+
+	WriteLog(LL_Debug, "overwriting sys_open from %p to %p", sv->sv_table[AUE_OPEN].sy_call, overlayfs_sys_open);
+
+	_sys_open = (void*)sv->sv_table[AUE_OPEN].sy_call;
+
+	critical_enter();
+	cpu_disable_wp();
+
+	sv->sv_table[AUE_OPEN].sy_call = (void*)overlayfs_sys_open;
+
+	cpu_enable_wp();
+	critical_exit();
+
+	// TODO: Remove/refactor this code
+	/*
 	// Find/assign the drive path if it hasn't already been found
 	char* redirectPath = overlayfs_findDrivePath(fs);
 	if (redirectPath == NULL)
@@ -95,146 +228,44 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	hook_enable(fs->closeHook);
 	hook_enable(fs->readHook);
 	//hook_enable(fs->writeHook);
-
+	*/
 	return result;
 }
 
-int overlayfs_onOpenAt(struct thread *td, int fd, char *path, enum uio_seg pathseg, int flags, int mode)
+int overlayfs_sys_open(struct thread* td, struct open_args* uap)
 {
 	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
 
-	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
 	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	int(*snprintf)(char *str, size_t size, const char *format, ...) = kdlsym(snprintf);
-	int(*kern_openat)(struct thread *td, int fd, char *path, enum uio_seg pathseg, int flags, int mode) = hook_getFunctionAddress(fs->openHook);
 
-	//
-	//	Check the current process on open in order to update
-	//
-	if (strstr(td->td_proc->p_elfpath, "eboot") != NULL)
+	int(*copyinstr)(const void *uaddr, void *kaddr, size_t len, size_t *done) = kdlsym(copyinstr);
+
+	// We need to copy the path from userland
+	char inputPath[1024];
+	memset(inputPath, 0, sizeof(inputPath));
+
+	size_t lengthCopied = 0;
+	int copyResult = copyinstr(uap->path, inputPath, sizeof(inputPath), &lengthCopied);
+	if (copyResult != 0)
 	{
-		// Set our current proc
-		fs->currentProc = td->td_proc;
+		WriteLog(LL_Error, "could not copyinstr path (%d)", copyResult);
+		return _sys_open(td, uap);
 	}
 
-	// If overlayfs is not enabled, call the original function and return normally
-	if (!overlayfs_isEnabled(fs) || // Check that the internal overlayfs is configured properly
-		!overlayfs_isThreadInProc(fs, td) || // Check that the current accessing thread is in our tracked proc
-		td->td_proc != fs->currentProc) // Check that the currentProc is the thread proc
-	{
-		hook_disable(fs->openHook);
-
-		int result = kern_openat(td, fd, path, pathseg, flags, mode);
-
-		hook_enable(fs->openHook);
-
-		return result;
-	}
-
-	// First we need to get the new redirected path
-	// This is assuming that the redirectPath in fs is /mnt/usb0 with no trailing slash
-	// This is also assuming that path begins with /path so like /eboot.bin or /sce_module/blah.sprx
-	// That way when combined it's /mnt/usb0/sce_module/blah.sprx
-	// And we use the kernel privs in order to make the request, not the userland so it ignores sandbox
-	char redirPath[OVERLAYFS_MAXPATH];
+	// Format the redirected path
+	char redirPath[1024];
 	memset(redirPath, 0, sizeof(redirPath));
-	snprintf(redirPath, sizeof(redirPath), "%s%s", fs->redirectPath, path);
+	
+	snprintf(redirPath, sizeof(redirPath), "%s%s", "/mnt/sandbox/CUSA08034_000/usb0", inputPath);
 
-	//WriteLog(LL_Debug, "checking for (%s)", redirPath);
-
-	// Check to see if the file exists on USB
 	if (!overlayfs_fileExists(fs, redirPath))
-	{
-		//WriteLog(LL_Error, "(%s)", redirPath);
-		hook_disable(fs->openHook);
+		return _sys_open(td, uap);
 
-		int result = kern_openat(td, fd, path, pathseg, flags, mode);
-
-		hook_enable(fs->openHook);
-
-		return result;
-	}
-
-	WriteLog(LL_Debug, "attempting open to %s", redirPath);
-
-	// Disable the hook to allow normal function
-	hook_disable(fs->openHook);
-
-	// Call open using the current thread, (not game thread)
-	int result = kern_openat(mira_getMainThread(), fd, redirPath, UIO_SYSSPACE, flags, mode); //kopen_t(redirPath, flags, mode, mira_getMainThread());
-
-	WriteLog(LL_Warn, "overlayfs open %s returned %d fd: %d err: %d", redirPath, result, fd, td->td_retval[0]);
-
-	// Re-enable the hook
-	hook_enable(fs->openHook);
-	
-	// Return the descriptor or error untouched
-	return result;
-}
-
-int overlayfs_onClose(struct thread* td, int fd)
-{
-	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
-	int(*kern_close)(struct thread* td, int fd) = hook_getFunctionAddress(fs->closeHook);
-
-	// If overlayfs is not enabled, call the original function and return normally
-	if (!overlayfs_isEnabled(fs) || // Check that the internal overlayfs is configured properly
-		!overlayfs_isThreadInProc(fs, td) || // Check that the current accessing thread is in our tracked proc
-		td->td_proc != fs->currentProc) // Check that the currentProc is the thread proc
-	{
-		hook_disable(fs->closeHook);
-
-		int result = kern_close(td, fd);
-
-		hook_enable(fs->closeHook);
-
-		return result;
-	}
-	
-	WriteLog(LL_Debug, "checking to close (%d)", fd);
-
-	hook_disable(fs->closeHook);
-
-	int result = kern_close(mira_getMainThread(), fd);
-
-	hook_enable(fs->closeHook);
-
-	return result;
-}
-
-int overlayfs_onRead(struct thread *td, int fd, struct uio *auio)
-{
-	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
-	int(*kern_readv)(struct thread* td, int fd, struct uio* auio) = hook_getFunctionAddress(fs->readHook);
-
-	// If overlayfs is not enabled, call the original function and return normally
-	if (!overlayfs_isEnabled(fs) || // Check that the internal overlayfs is configured properly
-		!overlayfs_isThreadInProc(fs, td) || // Check that the current accessing thread is in our tracked proc
-		td->td_proc != fs->currentProc) // Check that the currentProc is the thread proc
-	{
-		hook_disable(fs->readHook);
-
-		int result = kern_readv(td, fd, auio);
-
-		hook_enable(fs->readHook);
-
-		return result;
-	}
-
-	WriteLog(LL_Debug, "checking to read (%d)", fd);
-
-	hook_disable(fs->readHook);
-
-	int result = kern_readv(mira_getMainThread(), fd, auio);
-
-	hook_enable(fs->readHook);
-
-	return result;
-}
-
-int overlayfs_onWrite(struct thread* td, struct write_args* uap)
-{
-	return -1;
+	WriteLog(LL_Debug, "attempting to open (%s) for replacement", redirPath);
+	uap->path = redirPath;
+		
+	return  _sys_open(td, uap);
 }
 
 uint8_t overlayfs_isEnabled(struct overlayfs_t* fs)

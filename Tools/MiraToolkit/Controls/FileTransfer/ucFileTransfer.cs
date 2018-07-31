@@ -109,5 +109,25 @@ namespace MiraToolkit.Controls.FileTransfer
                     return "imgFile";
             }
         }
+
+        private void cmuDownload_Click(object p_Sender, System.EventArgs p_Args)
+        {
+            var s_Node = tvDirectories.SelectedNode;
+            if (s_Node == null)
+                return;
+
+
+            var s_Dialog = new SaveFileDialog
+            {
+                FileName = s_Node.Text,
+                Filter = "All Files (*.*)|*.*",
+                Title = "Download File"
+            };
+
+            if (s_Dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            m_Device.Connection.ReadFile(s_Node.FullPath, s_Dialog.FileName);
+        }
     }
 }

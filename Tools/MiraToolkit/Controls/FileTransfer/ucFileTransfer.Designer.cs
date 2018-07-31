@@ -86,51 +86,52 @@
             this.cmuDelete,
             this.cmuCreateNew});
             this.cmuStrip.Name = "cmuStrip";
-            this.cmuStrip.Size = new System.Drawing.Size(175, 154);
+            this.cmuStrip.Size = new System.Drawing.Size(181, 176);
             // 
             // cmuRefresh
             // 
             this.cmuRefresh.Name = "cmuRefresh";
-            this.cmuRefresh.Size = new System.Drawing.Size(174, 22);
+            this.cmuRefresh.Size = new System.Drawing.Size(180, 22);
             this.cmuRefresh.Text = "Refresh";
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(171, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(177, 6);
             // 
             // cmuUpload
             // 
             this.cmuUpload.Name = "cmuUpload";
-            this.cmuUpload.Size = new System.Drawing.Size(174, 22);
+            this.cmuUpload.Size = new System.Drawing.Size(180, 22);
             this.cmuUpload.Text = "Upload";
             // 
             // cmuDownload
             // 
             this.cmuDownload.Name = "cmuDownload";
-            this.cmuDownload.Size = new System.Drawing.Size(174, 22);
+            this.cmuDownload.Size = new System.Drawing.Size(180, 22);
             this.cmuDownload.Text = "Download";
+            this.cmuDownload.Click += new System.EventHandler(this.cmuDownload_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(171, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
             // 
             // cmuDecrypt
             // 
             this.cmuDecrypt.Name = "cmuDecrypt";
-            this.cmuDecrypt.Size = new System.Drawing.Size(174, 22);
+            this.cmuDecrypt.Size = new System.Drawing.Size(180, 22);
             this.cmuDecrypt.Text = "Decrypt Executable";
             // 
             // toolStripMenuItem3
             // 
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(171, 6);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(177, 6);
             // 
             // cmuDelete
             // 
             this.cmuDelete.Name = "cmuDelete";
-            this.cmuDelete.Size = new System.Drawing.Size(174, 22);
+            this.cmuDelete.Size = new System.Drawing.Size(180, 22);
             this.cmuDelete.Text = "Delete";
             // 
             // cmuCreateNew
@@ -138,13 +139,13 @@
             this.cmuCreateNew.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.cmuCreateDirectory});
             this.cmuCreateNew.Name = "cmuCreateNew";
-            this.cmuCreateNew.Size = new System.Drawing.Size(174, 22);
+            this.cmuCreateNew.Size = new System.Drawing.Size(180, 22);
             this.cmuCreateNew.Text = "Create New";
             // 
             // cmuCreateDirectory
             // 
             this.cmuCreateDirectory.Name = "cmuCreateDirectory";
-            this.cmuCreateDirectory.Size = new System.Drawing.Size(180, 22);
+            this.cmuCreateDirectory.Size = new System.Drawing.Size(122, 22);
             this.cmuCreateDirectory.Text = "Directory";
             // 
             // ucFileTransfer

@@ -56,6 +56,15 @@ namespace OniPC.Rpc
             PT_FIRSTMACH = 64
         }
 
+        public enum SystemSignals
+        {
+            SIGHUP = 1,
+            SIGINT = 2,
+            SIGQUIT = 3,
+            SIGILL = 4,
+            // TODO: Complete this
+        }
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 0)]
         public struct ProcInfo
         {

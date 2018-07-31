@@ -43,7 +43,7 @@
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.bin;$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.elf;</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraFW_Orbis.bin;MiraFW_Orbis.elf;</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
@@ -52,7 +52,7 @@
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.bin;$(RemoteRootDir)/$(ProjectName)/MiraFW_Orbis.elf;</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraFW_Orbis.bin;MiraFW_Orbis.elf;</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
     <None Include="src\crt0.s" />
@@ -74,6 +74,7 @@
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
     <ClCompile Include="src\mira\utils\ini\ini.c" />
+    <ClCompile Include="src\mira\utils\injector.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
@@ -87,6 +88,7 @@
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
     <ClInclude Include="src\mira\trainers\trainermanager.h" />
     <ClInclude Include="src\mira\utils\ini\ini.h" />
+    <ClInclude Include="src\mira\utils\injector.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
