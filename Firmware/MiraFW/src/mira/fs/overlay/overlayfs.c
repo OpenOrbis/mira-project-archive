@@ -186,7 +186,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 	WriteLog(LL_Debug, "Process Thread td %p", td);
 
-	int mountResult = mount_fs(td, "/dev/da1s1", "/mnt/sandbox/CUSA08034_000/usb0", "nullfs", "511", MNT_FORCE);
+	int mountResult = mount_fs(td, "/dev/da1s1", "/mnt/sandbox/CUSA08034_000/usb0", "exfatfs", "511", MNT_FORCE);
 	if (mountResult < 0)
 	{
 		WriteLog(LL_Warn, "could not mount usb0 to /mnt/usb0 (%d)", mountResult);
