@@ -65,7 +65,7 @@ namespace MiraToolkit.Controls.FileTransfer
         {
             var s_NodeList = new List<TreeNode>();
 
-            var s_Entries = m_Device.Connection.GetDents(p_Path);
+            var s_Entries = m_Device?.Connection?.GetDents(p_Path);
             foreach (var l_Entry in s_Entries)
             {
                 var l_EntryName = Path.GetFileName(l_Entry.Path);
@@ -127,7 +127,48 @@ namespace MiraToolkit.Controls.FileTransfer
             if (s_Dialog.ShowDialog() != DialogResult.OK)
                 return;
 
-            m_Device.Connection.ReadFile(s_Node.FullPath, s_Dialog.FileName);
+            m_Device?.Connection?.ReadFile(s_Node.FullPath, s_Dialog.FileName);
+        }
+
+        private void cmuDelete_Click(object sender, System.EventArgs e)
+        {
+            var s_Node = tvDirectories.SelectedNode;
+            if (s_Node == null)
+                return;
+
+
+            if (MessageBox.Show($"Are you sure you want to delete {s_Node.Text}?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            m_Device?.Connection?.Delete(s_Node.FullPath);
+        }
+
+        private void cmuDecrypt_Click(object sender, System.EventArgs e)
+        {
+            var s_Node = tvDirectories.SelectedNode;
+            if (s_Node == null)
+                return;
+
+            var s_Dialog = new SaveFileDialog
+            {
+                FileName = s_Node.Text,
+                Filter = "All Files (*.*)|*.*",
+                Title = "Save file as"
+            };
+
+            if (s_Dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            var s_Data = m_Device?.Connection?.DecryptExecutableFile(s_Node.FullPath);
+            if (s_Data == null)
+                return;
+
+            File.WriteAllBytes(s_Dialog.FileName, s_Data);
+        }
+
+        private void cmuUpload_Click(object sender, System.EventArgs e)
+        {
+            // TODO: Implement
         }
     }
 }

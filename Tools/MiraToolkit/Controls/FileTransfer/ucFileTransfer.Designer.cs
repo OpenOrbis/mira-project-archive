@@ -104,6 +104,7 @@
             this.cmuUpload.Name = "cmuUpload";
             this.cmuUpload.Size = new System.Drawing.Size(180, 22);
             this.cmuUpload.Text = "Upload";
+            this.cmuUpload.Click += new System.EventHandler(this.cmuUpload_Click);
             // 
             // cmuDownload
             // 
@@ -122,6 +123,7 @@
             this.cmuDecrypt.Name = "cmuDecrypt";
             this.cmuDecrypt.Size = new System.Drawing.Size(180, 22);
             this.cmuDecrypt.Text = "Decrypt Executable";
+            this.cmuDecrypt.Click += new System.EventHandler(this.cmuDecrypt_Click);
             // 
             // toolStripMenuItem3
             // 
@@ -133,6 +135,7 @@
             this.cmuDelete.Name = "cmuDelete";
             this.cmuDelete.Size = new System.Drawing.Size(180, 22);
             this.cmuDelete.Text = "Delete";
+            this.cmuDelete.Click += new System.EventHandler(this.cmuDelete_Click);
             // 
             // cmuCreateNew
             // 

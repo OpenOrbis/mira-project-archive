@@ -18,6 +18,7 @@
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
 #include <mira/plugins/cheat/cheat_plugin.h>
+#include <mira/plugins/console/consoleplugin.h>
 
 //
 //	Utilities
@@ -290,6 +291,22 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	filetransfer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
+
+	WriteLog(LL_Warn, "allocating console plugin");
+	if (framework->consolePlugin)
+	{
+		kfree(framework->consolePlugin, sizeof(*framework->consolePlugin));
+		framework->consolePlugin = NULL;
+	}
+
+	framework->consolePlugin = (struct consoleplugin_t*)kmalloc(sizeof(struct consoleplugin_t));
+	if (!framework->consolePlugin)
+	{
+		WriteLog(LL_Error, "could not allocate console plugin");
+		return false;
+	}
+	consoleplugin_init(framework->consolePlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->consolePlugin->plugin);
 
 	WriteLog(LL_Info, "allocating logserver");
 	if (framework->logServerPlugin)

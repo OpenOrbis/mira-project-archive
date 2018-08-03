@@ -18,7 +18,20 @@ namespace MiraToolkit
 
             m_Devices = new List<MiraDevice>();
 
+
             Program.DockPanel = dockPanel;
+            Program.StatusChanged += Mira_OnStatusChanged;
+
+            new Controls.Console.ucOutputs(null).Show(Program.DockPanel, DockState.DockBottom);
+        }
+
+        private void Mira_OnStatusChanged(object sender, StatusChangedEventArgs e)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                lblStatus.Text = e.Message;
+                barProgress.Value = e.Percent ?? 0;
+            });
         }
 
         private void mmuConnect_Click(object sender, EventArgs e)
@@ -35,11 +48,13 @@ namespace MiraToolkit
             if (!s_Result)
             {
                 MessageBox.Show($"Could not connect to: {s_Device.Hostname}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Program.SetStatus($"Could not connect to: {s_Device.Hostname}");
                 return;
             }
 
 
             MessageBox.Show($"Connected to: {s_Device.Hostname}");
+            Program.SetStatus($"Connected to: {s_Device.Hostname}");
 
             LoadUIForDevice(s_Device);
             
@@ -52,7 +67,9 @@ namespace MiraToolkit
 
             //p_Device.AddConsole(9998);
 
-            new Controls.FileTransfer.ucFileTransfer(p_Device).Show(Program.DockPanel, DockState.DockRight);
+            //new Controls.FileTransfer.ucFileTransfer(p_Device).Show(Program.DockPanel, DockState.DockRight);
+
+            new Controls.Console.ucOutputs(null);
         }
     }
 }

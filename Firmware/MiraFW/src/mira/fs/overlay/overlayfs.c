@@ -109,20 +109,8 @@ static int mount_fs(struct thread* td, char* device, char* mountpoint, char* fst
 	return td->td_retval[0];
 }
 
-void overlayfs_onProcessCtor(struct overlayfs_t* fs);
-void overlayfs_onProcessDtor(struct overlayfs_t* fs);
 
-struct dmem_start_app_process_args
-{
-	char unknown0[0xB0];
-	int32_t pid;
-};
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv);
-void overlayfs_onDmemStartAppProcess(struct dmem_start_app_process_args* args);
-int overlayfs_onOpenAt(struct thread *td, int fd, char *path, enum uio_seg pathseg, int flags, int mode);
-int overlayfs_onClose(struct thread* td, int fd);
-int overlayfs_onRead(struct thread *td, int fd, struct uio *auio);
-int overlayfs_onWrite(struct thread* td, struct write_args* uap);
 
 #define kdlsym_addr_dmem_start_app_process 0x002468E0
 #define kdlsym_addr_exec_new_vmspace 0x0038A940
@@ -136,20 +124,8 @@ void overlayfs_init(struct overlayfs_t* fs)
 	if (!fs)
 		return;
 
-	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-	memset(fs->redirectPath, 0, sizeof(fs->redirectPath));
-
-	// Set up all of the hooks
+	// Install the kernel process execution
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
-
-	//fs->openHook = hook_create(kdlsym(kern_openat), overlayfs_onOpenAt);
-	//fs->closeHook = hook_create(kdlsym(kern_close), overlayfs_onClose);
-	//fs->readHook = hook_create(kdlsym(kern_readv), overlayfs_onRead);
-	//fs->writeHook = NULL;
-	//fs->writeHook = hook_create(kdlsym(kern_write), overlayfs_onWrite);
-
-	//fs->currentProc = NULL;
-
 	hook_enable(fs->execNewVmspaceHook);
 }
 
@@ -207,28 +183,6 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	cpu_enable_wp();
 	critical_exit();
 
-	// TODO: Remove/refactor this code
-	/*
-	// Find/assign the drive path if it hasn't already been found
-	char* redirectPath = overlayfs_findDrivePath(fs);
-	if (redirectPath == NULL)
-	{
-		WriteLog(LL_Info, "drive not found");
-		hook_disable(fs->openHook);
-		hook_disable(fs->closeHook);
-		hook_disable(fs->readHook);
-		//hook_disable(fs->writeHook);
-		return result;
-	}
-
-	WriteLog(LL_Debug, "drive path found: %s", redirectPath);
-
-	// Enable all of the hooks
-	hook_enable(fs->openHook);
-	hook_enable(fs->closeHook);
-	hook_enable(fs->readHook);
-	//hook_enable(fs->writeHook);
-	*/
 	return result;
 }
 
@@ -242,7 +196,7 @@ int overlayfs_sys_open(struct thread* td, struct open_args* uap)
 	int(*copyinstr)(const void *uaddr, void *kaddr, size_t len, size_t *done) = kdlsym(copyinstr);
 
 	// We need to copy the path from userland
-	char inputPath[1024];
+	char inputPath[OVERLAYFS_MAXPATH];
 	memset(inputPath, 0, sizeof(inputPath));
 
 	size_t lengthCopied = 0;
@@ -254,7 +208,7 @@ int overlayfs_sys_open(struct thread* td, struct open_args* uap)
 	}
 
 	// Format the redirected path
-	char redirPath[1024];
+	char redirPath[OVERLAYFS_MAXPATH];
 	memset(redirPath, 0, sizeof(redirPath));
 	
 	snprintf(redirPath, sizeof(redirPath), "%s%s", "/mnt/sandbox/CUSA08034_000/usb0", inputPath);
@@ -266,56 +220,6 @@ int overlayfs_sys_open(struct thread* td, struct open_args* uap)
 	uap->path = redirPath;
 		
 	return  _sys_open(td, uap);
-}
-
-uint8_t overlayfs_isEnabled(struct overlayfs_t* fs)
-{
-	if (!fs)
-		return false;
-
-	if (fs->redirectPath[0] == '\0')
-		return false;
-
-	if (fs->currentProc == NULL)
-		return false;
-
-	return true;
-}
-
-char* overlayfs_findDrivePath(struct overlayfs_t* fs)
-{
-	// We cannot printf in here, or it crashes.
-	if (!fs)
-		return NULL;
-
-	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-	int(*snprintf)(char *str, size_t size, const char *format, ...) = kdlsym(snprintf);
-
-	const uint32_t cMaxUsbDrives = 10;
-	char fileNameBuffer[64];
-
-	// To keep this robust, we will automatically iterate over all usb drives
-	for (uint32_t i = 0; i < cMaxUsbDrives; ++i)
-	{
-		// Zero out the previous buffer
-		memset(fileNameBuffer, 0, sizeof(fileNameBuffer));
-
-		// sprintf the name
-		snprintf(fileNameBuffer, sizeof(fileNameBuffer), "/mnt/usb%d/_overlayfs", i);
-
-		// If this file does not exist, we skip on to the next usb device
-		if (!overlayfs_fileExists(fs, fileNameBuffer))
-			continue;
-
-		// Zero out the redirect path
-		memset(fs->redirectPath, 0, sizeof(fs->redirectPath));
-		snprintf(fs->redirectPath, sizeof(fs->redirectPath), "/mnt/usb%d", i);
-
-		return fs->redirectPath;
-	}
-
-	memset(fs->redirectPath, 0, sizeof(fs->redirectPath));
-	return NULL;
 }
 
 uint8_t overlayfs_fileExists(struct overlayfs_t* fs, char* path)
@@ -337,33 +241,4 @@ uint8_t overlayfs_fileExists(struct overlayfs_t* fs, char* path)
 	kclose_t(fd, td);
 
 	return true;
-}
-
-uint8_t overlayfs_isThreadInProc(struct overlayfs_t* fs, struct thread* td)
-{
-	if (!fs || !td || !fs->currentProc)
-		return false;
-
-	//void(*_mtx_unlock_sleep)(struct mtx *m, int opts, const char *file, int line) = kdlsym(mtx_unlock_sleep);
-	//void(*_mtx_lock_sleep)(struct mtx *m, uintptr_t tid, int opts, const char *file, int line) = kdlsym(mtx_lock_sleep);
-	uint8_t isInside = false;
-
-	//WriteLog(LL_Debug, "checking if thread is in proc fs: %p thread: %p proc: %p", fs, td, fs->currentProc);
-
-	//PROC_LOCK(fs->currentProc);
-
-	//WriteLog(LL_Debug, "proc locked");
-
-	struct thread* t = NULL;
-	FOREACH_THREAD_IN_PROC(fs->currentProc, t)
-	{
-		if (t != td)
-			continue;
-
-		isInside = true;
-		break;
-	}
-	//PROC_UNLOCK(fs->currentProc);
-
-	return isInside;
 }

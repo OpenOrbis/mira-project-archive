@@ -49,6 +49,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\Console\ucOutputs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\Console\ucOutputs.Designer.cs">
+      <DependentUpon>ucOutputs.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\Debugger\ucBreakpoints.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -142,6 +148,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Controls\Console\ucOutputs.resx">
+      <DependentUpon>ucOutputs.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\Debugger\ucBreakpoints.resx">
       <DependentUpon>ucBreakpoints.cs</DependentUpon>
     </EmbeddedResource>
