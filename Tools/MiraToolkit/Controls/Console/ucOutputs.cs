@@ -42,6 +42,8 @@ namespace MiraToolkit.Controls.Console
             Program.StatusChanged += OnMiraStatuschanged;
 
             tcOutputs.TabPages.Add(m_MiraPage);
+
+            PopulateOutputs();
         }
 
         private void OnMiraStatuschanged(object sender, StatusChangedEventArgs e)

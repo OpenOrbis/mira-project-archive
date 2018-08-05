@@ -2,6 +2,7 @@
 using MiraToolkit.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
@@ -21,8 +22,6 @@ namespace MiraToolkit
 
             Program.DockPanel = dockPanel;
             Program.StatusChanged += Mira_OnStatusChanged;
-
-            new Controls.Console.ucOutputs(null).Show(Program.DockPanel, DockState.DockBottom);
         }
 
         private void Mira_OnStatusChanged(object sender, StatusChangedEventArgs e)
@@ -56,9 +55,11 @@ namespace MiraToolkit
             MessageBox.Show($"Connected to: {s_Device.Hostname}");
             Program.SetStatus($"Connected to: {s_Device.Hostname}");
 
-            LoadUIForDevice(s_Device);
+            
             
             m_Devices.Add(s_Device);
+
+            LoadUIForDevice(s_Device);
         }
 
         private void LoadUIForDevice(MiraDevice p_Device)
@@ -69,7 +70,13 @@ namespace MiraToolkit
 
             //new Controls.FileTransfer.ucFileTransfer(p_Device).Show(Program.DockPanel, DockState.DockRight);
 
-            new Controls.Console.ucOutputs(null);
+            var s_Device = m_Devices.FirstOrDefault();
+            if (s_Device == null)
+                return;
+
+            s_Device.AddConsole("/dev/console");
+
+            new Controls.Console.ucOutputs(s_Device).Show(Program.DockPanel, DockState.DockBottom);
         }
     }
 }

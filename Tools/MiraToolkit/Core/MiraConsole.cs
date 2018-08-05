@@ -106,9 +106,12 @@ namespace MiraToolkit.Core
                 TTY = m_Descriptor
             });
 
-            var (s_Header, s_OpenArgs) = s_Connection.ReceiveHeaderAndObject<ConsoleOpen>();
-            if (s_Header.ErrorType < 0)
+            var s_Header = new RpcMessageHeader(s_Connection.ReceiveObject<ulong>());
+            if (s_Header.ErrorType != 0)
                 return false;
+
+            var s_OpenArgs = s_Connection.ReceiveObject<ConsoleOpen>();
+
 
             m_Port = s_OpenArgs.Port;
             if (m_Port <= 0)

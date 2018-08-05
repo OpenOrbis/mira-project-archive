@@ -105,18 +105,12 @@ struct console_t* consoleCreateConsole(struct consoleplugin_t* plugin, int32_t t
 	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
 	if (!plugin)
-	return NULL;
-
-	if (tty < 0)
-		return NULL;
-
-	if (socket < 0)
 		return NULL;
 
 	// Allocate a new console object
 	struct console_t* console = (struct console_t*)kmalloc(sizeof(struct console_t));
 	if (!console)
-	return NULL;
+		return NULL;
 
 	// Zero out the allocated buffer
 	memset(console, 0, sizeof(*console));
@@ -130,6 +124,9 @@ struct console_t* consoleCreateConsole(struct consoleplugin_t* plugin, int32_t t
 
 	// NULL out thread
 	console->consoleThread = NULL;
+
+	// Currently the state is not set
+	console->isRunning = false;
 
 	return console;
 }
@@ -276,6 +273,9 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	// Send the RPC message back to the client with the port
 	messagemanager_sendSuccessMessage(mira_getFramework()->framework.messageManager, ref);
 
+	// Send to socket if needed
+	kwrite(message->socket, request, sizeof(*request));
+
 cleanup:
 	__dec(ref);
 }
@@ -287,10 +287,22 @@ void consoleplugin_close_callback(struct allocation_t* ref)
 
 void consoleplugin_consoleThread(struct console_t* console)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 
 	if (!console)
 		goto cleanup;
+
+	struct sockaddr_in address;
+	size_t clientAddressSize = sizeof(address);
+	memset(&address, 0, sizeof(address));
+
+	int32_t clientSocket = kaccept(console->socketDescriptor, (struct sockaddr*)&address, &clientAddressSize);
+	if (clientSocket < 0)
+	{
+		WriteLog(LL_Error, "error accepting client (%d).", clientSocket);
+		goto cleanup;
+	}
 
 	console->isRunning = true;
 
@@ -303,7 +315,7 @@ void consoleplugin_consoleThread(struct console_t* console)
 		if (!console->isRunning)
 			break;
 
-		if (kwrite(console->socketDescriptor, &character, sizeof(character)) < 0)
+		if (kwrite(clientSocket, &character, sizeof(character)) < 0)
 			break;
 
 		character = 0;
