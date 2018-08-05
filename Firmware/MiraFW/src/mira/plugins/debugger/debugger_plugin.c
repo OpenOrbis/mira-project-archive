@@ -4,6 +4,7 @@
 #include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/hook.h>
 
 #include <oni/utils/hde/hde64.h>
 #include <sys/proc.h>
@@ -27,22 +28,32 @@ int proc_rw_mem(struct proc* p, void* ptr, size_t size, void* data, size_t* n, i
 
 uint8_t debugger_load(struct debugger_plugin_t * plugin)
 {
+	if (!plugin)
+		return false;
+
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
 	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
 
+	hook_enable(plugin->trapFatalHook);
+
 	return true;
 }
 
 uint8_t debugger_unload(struct debugger_plugin_t * plugin)
 {
+	if (!plugin)
+		return false;
+
 	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
+
+	hook_disable(plugin->trapFatalHook);
 
 	return true;
 }
@@ -74,6 +85,69 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	memset(&plugin->registers, 0, sizeof(plugin->registers));
 	memset(&plugin->floatingRegisters, 0, sizeof(plugin->floatingRegisters));
 	memset(&plugin->debugRegisters, 0, sizeof(plugin->debugRegisters));
+
+	plugin->trapFatalHook = hook_create(kdlsym(trap_fatal), debugger_onTrapFatal);
+}
+
+void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
+{
+	if (!frame)
+		return;
+
+	if (!curthread)
+	{
+		WriteLog(LL_Error, "could not get thread context");
+		return;
+	}
+
+	void* rsp = ((uint8_t*)frame - 0xA8);
+	/*
+		pop rbp;
+		leave;
+		ret;
+	*/
+
+	char* dash = "-----------------------";
+
+	WriteLog(LL_Info, "kernel panic detected");
+	WriteLog(LL_Info, dash);
+	WriteLog(LL_Info, dash);
+	WriteLog(LL_Info, "rdi: %p", frame->tf_rdi);
+	WriteLog(LL_Info, "rsi: %p", frame->tf_rsi);
+	WriteLog(LL_Info, "rdx: %p", frame->tf_rdx);
+	WriteLog(LL_Info, "rcx: %p", frame->tf_rcx);
+	WriteLog(LL_Info, "r8: %p", frame->tf_r8);
+	WriteLog(LL_Info, "r9: %p", frame->tf_r9);
+	WriteLog(LL_Info, "rax: %p", frame->tf_rax);
+	WriteLog(LL_Info, "rbx: %p", frame->tf_rbx);
+	WriteLog(LL_Info, "rbp: %p", frame->tf_rbp);
+	WriteLog(LL_Info, "r10: %p", frame->tf_r10);
+	WriteLog(LL_Info, "r11: %p", frame->tf_r11);
+	WriteLog(LL_Info, "r12: %p", frame->tf_r12);
+	WriteLog(LL_Info, "r13: %p", frame->tf_r13);
+	WriteLog(LL_Info, "r14: %p", frame->tf_r14);
+	WriteLog(LL_Info, "r15: %p", frame->tf_r15);
+	WriteLog(LL_Info, "trapno: %u", frame->tf_trapno);
+	WriteLog(LL_Info, "fs: %u", frame->tf_fs);
+	WriteLog(LL_Info, "gs: %u", frame->tf_gs);
+	WriteLog(LL_Info, "addr: %p", frame->tf_addr);
+	WriteLog(LL_Info, "flags: %u", frame->tf_flags);
+	WriteLog(LL_Info, "es: %u", frame->tf_es);
+	WriteLog(LL_Info, "ds: %u", frame->tf_ds);
+	WriteLog(LL_Info, "err: %p", frame->tf_err);
+	WriteLog(LL_Info, "rip: %p", frame->tf_rip);
+	WriteLog(LL_Info, "cs: %p", frame->tf_cs);
+	WriteLog(LL_Info, "rflags: %p", frame->tf_rflags);
+	WriteLog(LL_Info, "rsp: %p", rsp);
+	WriteLog(LL_Info, "err: %p", frame->tf_err);
+	WriteLog(LL_Info, dash);
+
+	// Intentionally hang the thread
+	for (;;)
+		__asm__("nop");
+
+	// Allow the debugger to be placed here manually and continue exceution
+	__asm__("pop %rbp;leave;ret;");
 }
 
 

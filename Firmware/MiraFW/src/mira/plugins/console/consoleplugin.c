@@ -211,6 +211,8 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	address.sin_port = __bswap16(selectedPort);
 	address.sin_len = sizeof(address);
 
+	WriteLog(LL_Debug, "allocating new socket on port %u", selectedPort);
+
 	console->socketDescriptor = ksocket(AF_INET, SOCK_STREAM, 0);
 	if (console->socketDescriptor < 0)
 	{
@@ -297,6 +299,8 @@ void consoleplugin_consoleThread(struct console_t* console)
 	size_t clientAddressSize = sizeof(address);
 	memset(&address, 0, sizeof(address));
 
+	WriteLog(LL_Debug, "accepting clients on console");
+
 	int32_t clientSocket = kaccept(console->socketDescriptor, (struct sockaddr*)&address, &clientAddressSize);
 	if (clientSocket < 0)
 	{
@@ -306,7 +310,7 @@ void consoleplugin_consoleThread(struct console_t* console)
 
 	console->isRunning = true;
 
-	uint8_t character;
+	char character;
 
 	int32_t bytesRead = 0;
 
@@ -318,7 +322,7 @@ void consoleplugin_consoleThread(struct console_t* console)
 		if (kwrite(clientSocket, &character, sizeof(character)) < 0)
 			break;
 
-		character = 0;
+		character = '\0';
 	}
 
 cleanup:

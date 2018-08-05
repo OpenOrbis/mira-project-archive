@@ -25,6 +25,8 @@ struct overlayfs_t
 {
 	struct hook_t* execNewVmspaceHook;
 
+	int32_t pid;
+
 	void(*onProcessCtor)(struct overlayfs_t* fs, struct proc* proc);
 	void(*onProcessDtor)(struct overlayfs_t* fs, struct proc* proc);
 };

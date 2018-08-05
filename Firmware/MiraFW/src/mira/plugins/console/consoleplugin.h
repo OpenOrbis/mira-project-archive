@@ -6,7 +6,7 @@
 #include <sys/mutex.h>
 
 #define MAX_CONSOLES	8
-#define PORT_START		5000
+#define PORT_START		9500
 
 struct console_t
 {

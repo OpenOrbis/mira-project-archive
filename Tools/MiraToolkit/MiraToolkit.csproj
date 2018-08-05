@@ -130,7 +130,9 @@
     <Compile Include="Core\Extensions\MiraFileTransferExtension.cs" />
     <Compile Include="Core\Extensions\MiraOrbisUtilsExtension.cs" />
     <Compile Include="Core\StringExtensions.cs" />
-    <Compile Include="frmMain.cs" />
+    <Compile Include="frmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>

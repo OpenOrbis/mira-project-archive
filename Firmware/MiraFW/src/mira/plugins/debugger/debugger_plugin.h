@@ -117,6 +117,8 @@ struct debugger_plugin_t
 	// Thread reference inside the process;
 	struct thread_t threads[MAX_THREADS];
 
+	struct hook_t* trapFatalHook;
+
 	// Debugger mutex, if anything is being done with the debugger LOCK THIS
 	struct mtx lock;
 };
@@ -144,6 +146,7 @@ void debugger_updateSegments(struct debugger_plugin_t* plugin);
 // Updates all of the threads, removing or adding as it goes along
 void debugger_updateThreads(struct debugger_plugin_t* plugin);
 
+void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva);
 
 // Returns true on success, false otherwise
 uint8_t debugger_continue(struct debugger_plugin_t* plugin);

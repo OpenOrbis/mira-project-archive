@@ -106,13 +106,17 @@ namespace MiraToolkit.Core
                 TTY = m_Descriptor
             });
 
-            var s_Header = new RpcMessageHeader(s_Connection.ReceiveObject<ulong>());
-            if (s_Header.ErrorType != 0)
-                return false;
+            ConsoleOpen s_OpenArgs;
+            using (var s_Reader = new BinaryReader(s_Connection.GetStream()))
+            {
+                var s_Header = new RpcMessageHeader(s_Reader.ReadUInt64());
+                if (s_Header.ErrorType != 0)
+                    return false;
 
-            var s_OpenArgs = s_Connection.ReceiveObject<ConsoleOpen>();
-
-
+                var s_Data = s_Reader.ReadBytes(Marshal.SizeOf<ConsoleOpen>());
+                s_OpenArgs = s_Connection.DeserializeObject<ConsoleOpen>(s_Data);
+            }
+            
             m_Port = s_OpenArgs.Port;
             if (m_Port <= 0)
                 return false;

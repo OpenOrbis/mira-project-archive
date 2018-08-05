@@ -13,6 +13,7 @@
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/hook.h>
 #include <oni/init/initparams.h>
+#include <oni/utils/sys_wrappers.h>
 
 #include <mira/miraframework.h>
 
@@ -127,6 +128,9 @@ void overlayfs_init(struct overlayfs_t* fs)
 	// Install the kernel process execution
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
 	hook_enable(fs->execNewVmspaceHook);
+
+	// We are currently ignoring all proc's
+	fs->pid = -1;
 }
 
 int(*_sys_open)(struct thread* td, struct open_args* uap) = NULL;
@@ -148,7 +152,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	// Call the original exec_new_vmspace
 	hook_disable(fs->execNewVmspaceHook);
 
-	int result = exec_new_vmspace(imgp, sv);
+	int32_t result = exec_new_vmspace(imgp, sv);
 
 	hook_enable(fs->execNewVmspaceHook);
 
@@ -159,8 +163,20 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	}
 
 	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
+	int32_t pid = td->td_proc->p_pid;
 
-	WriteLog(LL_Debug, "Process Thread td %p", td);
+	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
+	fs->pid = pid;
+
+	int32_t mkdirResult = kmkdir_t("/mnt/sandbox/CUSA08034_000/usb0", 0777, mira_getMainThread());
+	if (mkdirResult < 0)
+	{
+		if (mkdirResult != -EEXIST)
+		{
+			WriteLog(LL_Error, "could not create usb0 folder (%d)", mkdirResult);
+			return result;
+		}
+	}
 
 	int mountResult = mount_fs(td, "/dev/da1s1", "/mnt/sandbox/CUSA08034_000/usb0", "exfatfs", "511", MNT_FORCE);
 	if (mountResult < 0)
@@ -188,6 +204,12 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 int overlayfs_sys_open(struct thread* td, struct open_args* uap)
 {
+	if (!_sys_open)
+	{
+		WriteLog(LL_Error, "HOLY FUCK THIS IS BAD");
+		return -1;
+	}
+
 	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
 
 	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
