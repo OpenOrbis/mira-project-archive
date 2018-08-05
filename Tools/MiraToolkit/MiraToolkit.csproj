@@ -49,9 +49,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controls\Console\ucOutputs.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Controls\Console\ucOutputs.cs" />
     <Compile Include="Controls\Console\ucOutputs.Designer.cs">
       <DependentUpon>ucOutputs.cs</DependentUpon>
     </Compile>
@@ -109,27 +107,19 @@
     <Compile Include="Controls\Debugger\ucWatch.Designer.cs">
       <DependentUpon>ucWatch.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\FileTransfer\ucFileTransfer.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Controls\FileTransfer\ucFileTransfer.cs" />
     <Compile Include="Controls\FileTransfer\ucFileTransfer.Designer.cs">
       <DependentUpon>ucFileTransfer.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\Generic\frmInputPrompt.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Controls\Generic\frmInputPrompt.cs" />
     <Compile Include="Controls\Generic\frmInputPrompt.Designer.cs">
       <DependentUpon>frmInputPrompt.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\Generic\frmIpAddress.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Controls\Generic\frmIpAddress.cs" />
     <Compile Include="Controls\Generic\frmIpAddress.Designer.cs">
       <DependentUpon>frmIpAddress.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\ucMiraSelector.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
+    <Compile Include="Controls\ucMiraSelector.cs" />
     <Compile Include="Controls\ucMiraSelector.Designer.cs">
       <DependentUpon>ucMiraSelector.cs</DependentUpon>
     </Compile>
@@ -140,9 +130,7 @@
     <Compile Include="Core\Extensions\MiraFileTransferExtension.cs" />
     <Compile Include="Core\Extensions\MiraOrbisUtilsExtension.cs" />
     <Compile Include="Core\StringExtensions.cs" />
-    <Compile Include="frmMain.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="frmMain.cs" />
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
