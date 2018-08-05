@@ -110,25 +110,36 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	void(*critical_enter)(void) = kdlsym(critical_enter);
 	void(*critical_exit)(void) = kdlsym(critical_exit);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 
+	struct proc* proc = pfind(plugin->pid);
+	if (!proc)
+		return -1;
+
+	_mtx_lock_flags(&plugin->lock, 0, __FILE__, __LINE__);
+
+	int32_t index = -1;
 	if (hardware)
 	{
 		WriteLog(LL_Info, "hardware breakpoints aren't supported yet.");
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 
 	// Check that this address is mapped
 	if (!debugger_isAddressMapped(plugin, address))
 	{
 		WriteLog(LL_Error, "address %p is not mapped", address);
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 
 	uint8_t* textAddress = debugger_getTextAddress(plugin);
 	if (!textAddress)
 	{
 		WriteLog(LL_Error, "could not get text address");
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 
 	size_t breakpointOffset = (uint8_t*)address - textAddress;
@@ -136,15 +147,17 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 	if (backupLength <= 0)
 	{
 		WriteLog(LL_Debug, "could not get disassembly length %p %d", address, size);
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 
 	// Find a free index
-	int32_t index = debugger_findFreeBreakpointIndex(plugin);
+	index = debugger_findFreeBreakpointIndex(plugin);
 	if (index < 0)
 	{
 		WriteLog(LL_Debug, "no free breakpoints");
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 
 	// Get our breakpoint address
@@ -158,7 +171,8 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 	if (!breakpoint->backup)
 	{
 		WriteLog(LL_Error, "could not allocate backup bytes");
-		return -1;
+		index = -1;
+		goto cleanup;
 	}
 	memset(breakpoint->backup, 0, backupLength);
 
@@ -169,9 +183,7 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 	{
 		size_t bytesRead = 0;
 		// handle userland address
-		PROC_LOCK(plugin->process);
-		int result = proc_rw_mem(plugin->process, address, backupLength, breakpoint->backup, &bytesRead, false);
-		PROC_UNLOCK(plugin->process);
+		int result = proc_rw_mem(proc, address, backupLength, breakpoint->backup, &bytesRead, false);
 
 		// Handle errors
 		if (result < 0)
@@ -179,7 +191,8 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 			kfree(breakpoint->backup, backupLength);
 			breakpoint->backup = NULL;
 			WriteLog(LL_Error, "could not read userland memory %p (%d)", address, result);
-			return -1;
+			index = -1;
+			goto cleanup;
 		}
 	}
 
@@ -205,9 +218,7 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 		uint8_t bp[] = { 0xCC };
 		size_t bytesWritten = 0;
 
-		PROC_LOCK(plugin->process);
-		int result = proc_rw_mem(plugin->process, address, 1, bp, &bytesWritten, true);
-		PROC_UNLOCK(plugin->process);
+		int result = proc_rw_mem(proc, address, 1, bp, &bytesWritten, true);
 
 		if (result < 0)
 		{
@@ -215,10 +226,14 @@ int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, 
 			breakpoint->backup = NULL;
 			memset(breakpoint, 0, sizeof(*breakpoint));
 			WriteLog(LL_Error, "could not write userland breakpoint %p", address);
-			return -1;
+			index = -1;
+			goto cleanup;
 		}
 	}
 
+cleanup:
+	_mtx_unlock_flags(&plugin->lock, 0, __FILE__, __LINE__);
+	PROC_UNLOCK(proc);
 	return index;
 }
 
@@ -231,7 +246,7 @@ uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* addres
 		return false;
 
 	// Ensure we have a valid process
-	if (!plugin->process)
+	if (plugin->pid < 0)
 		return false;
 
 	void(*critical_enter)(void) = kdlsym(critical_enter);
@@ -240,8 +255,16 @@ uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* addres
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+
+	struct proc* proc = pfind(plugin->pid);
+	if (!proc)
+		return false;
+
+	_mtx_lock_flags(&plugin->lock, 0, __FILE__, __LINE__);
 
 	// Iterate all of our breakpoints
+	int32_t result = false;
 	for (size_t i = 0; ARRAYSIZE(plugin->breakpoints); ++i)
 	{
 		struct breakpoint_t* breakpoint = &plugin->breakpoints[i];
@@ -260,7 +283,8 @@ uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* addres
 		{
 			// TODO: Remove the hardware breakpoint
 			WriteLog(LL_Error, "hardware breakpoints not yet supported");
-			return false;
+			result = false;
+			break;
 		}
 		else // handle software breakpoints
 		{
@@ -284,13 +308,11 @@ uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* addres
 					else // Handle userland restore
 					{
 						// Attempt to write the original bytes back
-						PROC_LOCK(plugin->process);
 						//proc_rw_mem(struct proc* p, void* ptr, size_t size, void* data, size_t* n, int write);
 						size_t bytesWritten = 0;
-						int result = proc_rw_mem(plugin->process, breakpoint->address, breakpoint->backupLength, breakpoint->backup, &bytesWritten, true);
+						int result = proc_rw_mem(proc, breakpoint->address, breakpoint->backupLength, breakpoint->backup, &bytesWritten, true);
 						if (!result)
 							WriteLog(LL_Warn, "could not write original bytes back (%d) %p", result, breakpoint->address);
-						PROC_UNLOCK(plugin->process);
 					}
 				}
 			}
@@ -301,19 +323,26 @@ uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* addres
 			memset(breakpoint, 0, sizeof(*breakpoint));
 
 			WriteLog(LL_Info, "breakpoint at %p removed", address);
-			return true;
+			result = true;
+			break;
 		}
 	}
 
-	WriteLog(LL_Info, "couldn't find bp info for address %p", address);
-	return false;
+	_mtx_unlock_flags(&plugin->lock, 0, __FILE__, __LINE__);
+
+	PROC_UNLOCK(proc);
+
+	if (!result)
+		WriteLog(LL_Info, "couldn't find bp info for address %p", address);
+
+	return result;
 }
 void debugger_updateSegments(struct debugger_plugin_t* plugin)
 {
 	if (!plugin)
 		return;
 
-	if (plugin->process)
+	if (plugin->pid < 0)
 		return;
 
 	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
@@ -323,6 +352,12 @@ void debugger_updateSegments(struct debugger_plugin_t* plugin)
 	void(*vmspace_free)(struct vmspace *) = kdlsym(vmspace_free);
 	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+
+	struct proc* proc = pfind(plugin->pid);
+	if (!proc)
+		return;
+
 
 	_mtx_lock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
 
@@ -332,11 +367,9 @@ void debugger_updateSegments(struct debugger_plugin_t* plugin)
 	// Zero out all of our current segments
 	memset(plugin->segments, 0, sizeof(plugin->segments));
 
-	PROC_LOCK(plugin->process);
-
 	// Get the vm map
-	struct vmspace* vm = vmspace_acquire_ref(plugin->process);
-	vm_map_t map = &plugin->process->p_vmspace->vm_map;
+	struct vmspace* vm = vmspace_acquire_ref(proc);
+	vm_map_t map = &proc->p_vmspace->vm_map;
 	vm_map_lock_read(map);
 
 	struct vm_map_entry* entry = NULL;
@@ -353,12 +386,13 @@ void debugger_updateSegments(struct debugger_plugin_t* plugin)
 	vm_map_unlock_read(map);
 	vmspace_free(vm);
 
-	PROC_UNLOCK(plugin->process);
+	PROC_UNLOCK(proc);
 
 	_mtx_unlock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
 
 	WriteLog(LL_Info, "updated segments");
 }
+
 void debugger_updateBreakpoints(struct debugger_plugin_t* plugin)
 {
 	if (!plugin)

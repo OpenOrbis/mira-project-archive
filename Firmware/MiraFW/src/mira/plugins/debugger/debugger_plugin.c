@@ -7,6 +7,7 @@
 
 #include <oni/utils/hde/hde64.h>
 #include <sys/proc.h>
+#include <sys/ptrace.h>
 
 #include <oni/utils/sys_wrappers.h>
 
@@ -17,6 +18,7 @@ enum DebuggerCmds
 	DbgCmd_WriteMemory = 0x2B3587A6,
 	DbgCmd_Ptrace = 0x6DAC0B97,
 	DbgCmd_Kill = 0x020C3897,
+	DbgCmd_GetThreads = 0x0,
 };
 
 // Credits: flatz
@@ -59,6 +61,19 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	// Create the lock
 	void(*mtx_init)(struct mtx *m, const char *name, const char *type, int opts) = kdlsym(mtx_init);
 	mtx_init(&plugin->lock, "miradbg", NULL, 0);
+
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
+	// Zero out the breakpoints list
+	memset(plugin->breakpoints, 0, sizeof(plugin->breakpoints));
+
+	// Zero out the threads list
+	memset(plugin->threads, 0, sizeof(plugin->threads));
+
+	// Zero out the registers list
+	memset(&plugin->registers, 0, sizeof(plugin->registers));
+	memset(&plugin->floatingRegisters, 0, sizeof(plugin->floatingRegisters));
+	memset(&plugin->debugRegisters, 0, sizeof(plugin->debugRegisters));
 }
 
 
@@ -73,9 +88,10 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 	if (length <= 0)
 		return -1;
 
-	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+	//void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 
 	hde64s hs;
 
@@ -102,9 +118,11 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 		uint8_t buffer[64];
 		memset(buffer, 0, sizeof(buffer));
 
-		PROC_LOCK(plugin->process);
-		int result = proc_rw_mem(plugin->process, address, sizeof(buffer), buffer, &bytesWritten, false);
-		PROC_UNLOCK(plugin->process);
+		struct proc* process = pfind(plugin->pid);
+
+		int result = proc_rw_mem(process, address, sizeof(buffer), buffer, &bytesWritten, false);
+		
+		PROC_UNLOCK(process);
 
 		if (!result)
 		{
@@ -131,21 +149,15 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 
 uint8_t debugger_continue(struct debugger_plugin_t* plugin)
 {
-	//struct rusage usage;
-	//int procStatus = -1;
-
 	if (!plugin)
 		return false;
 
-	if (!plugin->process)
+	if (plugin->pid < 0)
 		return false;
 
-	// TODO: Get the current status of the proc, and if it is stopped continue it
-	//kwait4(plugin->process->p_pid, &procStatus, 0, &usage);
+	int32_t ret = kkill(plugin->pid, SIGCONT);
 
-	kkill(plugin->process->p_pid, SIGCONT);
-
-	return true;
+	return ret == 0;
 }
 
 uint8_t debugger_pause(struct debugger_plugin_t* plugin)
@@ -153,11 +165,220 @@ uint8_t debugger_pause(struct debugger_plugin_t* plugin)
 	if (!plugin)
 		return false;
 
-	if (!plugin->process)
+	if (plugin->pid < 0)
+		return false;
+
+	// returns -1 on error
+	int32_t ret = kkill(plugin->pid, SIGSTOP);
+
+	return ret == 0;
+}
+
+uint8_t debugger_attach(struct debugger_plugin_t* plugin, int32_t pid)
+{
+	if (!plugin)
+		return false;
+
+	// Check that a valid pid was passed in
+	if (pid < 0)
+		return false;
+
+	// Deny re-attaching to the same pid
+	if (plugin->pid == pid)
+		return false;
+
+	int32_t ret = kptrace(PT_ATTACH, pid, NULL, 0);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not attach to pid %d (%d).", pid, ret);
+		return false;
+	}
+
+	// Assign our pid
+	plugin->pid = pid;
+	return true;
+}
+
+
+uint8_t debugger_detach(struct debugger_plugin_t* plugin)
+{
+	if (!plugin)
+		return false;
+
+	if (plugin->pid < 0)
 		return false;
 
 
-	kkill(plugin->process->p_pid, SIGSTOP);
+	//void(*proc_reparent)(struct proc* child, struct proc* parent) = kdlsym(proc_reparent);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	//struct proc* proc0 = (struct proc*)0xFFFFFFFFCA5FC600; // TODO: Actually kdlsym proc0
 
-	return true;
+	uint8_t result = false;
+
+	struct proc* proc = pfind(plugin->pid);
+	if (!proc)
+		return false;
+
+	struct ucred* cred = proc->p_ucred;
+	if (!cred)
+		goto cleanup;
+
+	// TODO: Fix
+	// FIXME: Properly detach and reparent
+
+	
+	// Check if this was shellcore
+	if (cred->cr_sceAuthID == 0x3800000000000010)
+	{
+		// Reparent ShellCore to proc0
+		//proc_reparent(proc, proc0);
+		result = true;
+	}	
+	else if (true)
+	{
+		// Check if this is a userland process, if so
+		// reparent to shellcore or syscore?
+		result = true;
+	}
+	else if (false)
+	{
+		// Check if this is a kernel process, uh idk?
+		result = true;
+	}
+	
+	plugin->pid = -1;
+
+cleanup:
+	PROC_UNLOCK(proc);
+	return result;
+}
+
+void debugger_updateThreads(struct debugger_plugin_t* plugin)
+{
+	if (!plugin)
+		return;
+
+	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
+	struct proc* lockedProc = pfind(plugin->pid);
+	if (!lockedProc)
+		return;
+
+	_mtx_lock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
+
+	// Zero out our threads
+	memset(plugin->threads, 0, sizeof(plugin->threads));
+
+	// Hold our current index
+	uint32_t threadIndex = 0;
+
+	struct thread* thread = NULL;
+	FOREACH_THREAD_IN_PROC(lockedProc, thread)
+	{
+		if (threadIndex >= ARRAYSIZE(plugin->threads))
+		{
+			WriteLog(LL_Error, "too many threads, expand maximum thread count");
+			break;
+		}
+
+		struct thread_t* threadObject = &plugin->threads[threadIndex];
+		threadObject->address = thread;
+		threadObject->errorno = thread->td_errno;
+		threadObject->stack = (void*)thread->td_kstack;
+		threadObject->stackSizeInPage = thread->td_kstack_pages;
+		
+		if (sizeof(threadObject->frame) != sizeof(thread->td_frame))
+			WriteLog(LL_Warn, "buffer overrun possible, stack frames are different sizes");
+
+		// Copy over the frame
+		memcpy(&threadObject->frame, thread->td_frame, sizeof(thread->td_frame));
+
+		threadObject->cpuId = thread->td_oncpu;
+
+		struct ucred* credentials = thread->td_ucred;
+		if (credentials)
+		{
+			threadObject->effectiveUserId = (int32_t)credentials->cr_uid;
+			threadObject->realUserId = (int32_t)credentials->cr_ruid;
+			threadObject->savedUserId = (int32_t)credentials->cr_svuid;
+
+			threadObject->realGroupId = (int32_t)credentials->cr_rgid;
+			threadObject->savedGroupId = (int32_t)credentials->cr_svgid;
+
+			threadObject->prison = credentials->cr_prison;
+			threadObject->authId = credentials->cr_sceAuthID;
+		}
+		else
+		{
+			// If there is no cred, set all -1's
+			threadObject->effectiveUserId = -1;
+			threadObject->realUserId = -1;
+			threadObject->savedUserId = -1;
+
+			threadObject->realGroupId = -1;
+			threadObject->savedGroupId = -1;
+
+			threadObject->prison = NULL;
+			threadObject->authId = 0x0BADF00D0BADF00D;
+		}
+
+		threadObject->debuggerFlags = thread->td_dbgflags;
+		threadObject->debuggerChildPid = thread->td_dbg_forked;
+		threadObject->currentSignalMask = 0x0BADF00D0BADF00D; /**(uint32_t*)&thread->td_sigmask;*/
+
+		threadIndex++;
+	}
+
+	PROC_UNLOCK(lockedProc);
+
+	_mtx_unlock_flags(&plugin->lock, MTX_QUIET, __FILE__, __LINE__);
+
+	WriteLog(LL_Info, "updated threads");
+}
+
+void debugger_update(struct debugger_plugin_t* plugin)
+{
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
+	if (!plugin)
+		return;
+
+	// TODO: Check the current state before invoking the update functions
+	// TODO: A process will need to be in the attached + paused state in order for this to work
+
+	debugger_updateSegments(plugin);
+	debugger_updateThreads(plugin);
+	debugger_updateBreakpoints(plugin);
+
+	memset(&plugin->registers, 0, sizeof(plugin->registers));
+	memset(&plugin->debugRegisters, 0, sizeof(plugin->debugRegisters));
+	memset(&plugin->floatingRegisters, 0, sizeof(plugin->floatingRegisters));
+
+	int32_t res = kptrace(PT_GETREGS, plugin->pid, (caddr_t)&plugin->registers, 0);
+	if (res < 0)
+	{
+		WriteLog(LL_Error, "could not get registers (%d).", res);
+		return;
+	}
+
+	res = kptrace(PT_GETFPREGS, plugin->pid, (caddr_t)&plugin->floatingRegisters, 0);
+	if (res < 0)
+	{
+		WriteLog(LL_Error, "could not get floating point registers (%d).", res);
+		return;
+	}
+
+	res = kptrace(PT_GETDBREGS, plugin->pid, (caddr_t)&plugin->debugRegisters, 0);
+	if (res < 0)
+	{
+		WriteLog(LL_Error, "could not get debug registers (%d).", res);
+		return;
+	}
+
+	WriteLog(LL_Debug, "debugger updated!");
 }

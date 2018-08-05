@@ -80,6 +80,10 @@ struct debugger_kill_t
 	int signal;
 };
 
+struct debugger_getthreads_t
+{
+	int pid;
+};
 
 void debugger_readmem_callback(struct allocation_t* ref)
 {

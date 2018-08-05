@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucWatch : UserControl
+    public partial class ucWatch : WeifenLuo.WinFormsUI.Docking.DockContent
     {
         public ucWatch()
         {
