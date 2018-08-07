@@ -75,7 +75,6 @@ void* mira_entry(void* args)
 	// This header doesn't work in > 5.00
 	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
 
-	// TODO: Fix, this call fails and never populates sceSysUtilSendSystemNotificationWithText investigate why
 	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
 
 	if (sceSysUtilSendSystemNotificationWithText)
