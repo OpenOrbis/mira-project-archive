@@ -69,16 +69,18 @@ void* mira_entry(void* args)
 		return NULL;
 
 	// Prompt the user
-	int64_t moduleId = sys_dynlib_load_prx("libSceSysUtil.sprx");
-	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, int userID, char* message) = NULL;
+	int moduleId = -1;
+	sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
 
-	// TODO: Fix, this call fails and never populates sceSysUtilSendSystemNotificationWithText investigate why
+	// This header doesn't work in > 5.00
+	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
+
 	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
 
 	if (sceSysUtilSendSystemNotificationWithText)
 	{
 		char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
-		sceSysUtilSendSystemNotificationWithText(36, 0x10000000, initMessage);
+		sceSysUtilSendSystemNotificationWithText(222, initMessage);
 	}
 
 	sys_dynlib_unload_prx(moduleId);
