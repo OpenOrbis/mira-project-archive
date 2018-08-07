@@ -12,6 +12,7 @@
 //	Mira Core
 //
 #include <mira/miraframework.h>
+#include <mira/utils/escape.h>
 
 //
 //	Console specific patches
@@ -155,28 +156,8 @@ void oni_kernelInitialization(void* args)
 	kdup2(descriptor, 1);
 	kdup2(1, 2);
 
-	// create our own cred
-	ksetuid(0);
-
-	curthread->td_ucred->cr_rgid = 0;
-	curthread->td_ucred->cr_svgid = 0;
-
-	curthread->td_ucred->cr_uid = 0;
-	curthread->td_ucred->cr_ruid = 0;
-
-	curthread->td_ucred->cr_groups[0] = 0;
-
-	curthread->td_ucred->cr_prison = *(void**)kdlsym(prison0);
-	struct filedesc* fd = curthread->td_proc->p_fd;
-
-	fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
-
-	// set diag auth ID flags
-	curthread->td_ucred->cr_sceAuthID = 0x3800000000000007ULL;
-
-	// make system credentials
-	curthread->td_ucred->cr_sceCaps[0] = 0xFFFFFFFFFFFFFFFFULL;
-	curthread->td_ucred->cr_sceCaps[1] = 0xFFFFFFFFFFFFFFFFULL;
+	// Root and escape our thread
+	mira_threadEscape(curthread, NULL);
 
 	// Show over UART that we are running in a new process
 	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");

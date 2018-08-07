@@ -12,16 +12,16 @@ endif
 PROJ_NAME := MiraFW
 
 # C++ compiler
-CPPC	:=	gcc++
+CPPC	:=	clang
 
 # Linker
-LNK		:= gcc # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
+LNK		:= ld # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
 
 # C compiler
-CC		:=	gcc
+CC		:=	clang
 
 # Archiver
-AS		:=	gcc
+AS		:=	llvm-ar
 
 # Objcopy
 OBJCOPY	:=	objcopy
@@ -46,14 +46,15 @@ LIBS	:= -l:OniFramework.a
 # Orbis flags
 ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}"
 
-# C++ Flags
-CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O2 -fno-builtin -nostartfiles -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
+# C++ Flags, -02 Optimizations break shit badly
+CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
 
 # Assembly flags
-SFLAGS	:= -nostartfiles -nodefaultlibs -nostdlib -fPIC
+SFLAGS	:= -nodefaultlibs -nostdlib -fPIC
 
 # Linker flags
-LFLAGS	:= $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x -Wl,--build-id=none
+# -Wl,--build-id=none
+LFLAGS	:= -v -static $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x 
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)

@@ -28,8 +28,9 @@ void* injector_allocateMemory(int32_t pid, uint32_t size)
 
 	// Get the process main thread
 	struct thread *td = process->p_singlethread != NULL ? process->p_singlethread : process->p_threads.tqh_first;
-
-	PROC_UNLOCK(process);
+	
+	_mtx_unlock_flags(&process->p_mtx, 0, __FILE__, __LINE__);
+	//PROC_UNLOCK(process);
 
 	// clear errors
 	td->td_retval[0] = 0;

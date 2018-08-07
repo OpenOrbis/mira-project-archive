@@ -206,6 +206,8 @@ uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 
 void filetransfer_stat_callback(struct allocation_t* ref)
 {
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!ref)
 		return;
 
@@ -224,7 +226,8 @@ void filetransfer_stat_callback(struct allocation_t* ref)
 	}
 
 	struct filetransfer_stat_t* fileStat = (struct filetransfer_stat_t*)message->payload;
-	struct stat stat = { 0 };
+	struct stat stat;
+	memset(&stat, 0, sizeof(stat));
 
 	int result = kstat(fileStat->path, &stat);
 	if (result < 0)

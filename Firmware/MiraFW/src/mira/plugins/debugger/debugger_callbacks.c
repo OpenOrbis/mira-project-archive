@@ -87,7 +87,7 @@ struct debugger_getthreads_t
 
 void debugger_readmem_callback(struct allocation_t* ref)
 {
-	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void* (*_memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 
@@ -141,7 +141,7 @@ void debugger_readmem_callback(struct allocation_t* ref)
 	if (1 == 0)
 	{
 	error:
-		memset(request, 0, sizeof(*request));
+		_memset(request, 0, sizeof(*request));
 		request->process_id = -1;
 		kwrite(message->socket, request, sizeof(*request));
 	}
@@ -223,7 +223,8 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 
 	uint64_t procCount = 0;
 	struct proc* p = NULL;
-	struct debugger_getprocs_t getproc = { 0 };
+	struct debugger_getprocs_t getproc;
+	memset(&getproc, 0, sizeof(getproc));
 
 	sx_slock(allproclock);
 	FOREACH_PROC_IN_SYSTEM(p)
@@ -255,7 +256,7 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 		// Free the vmmap
 		vm_map_unlock_read(map);
 		vmspace_free(vm);
-
+		
 		PROC_UNLOCK(p);
 	}
 	sx_sunlock(allproclock);

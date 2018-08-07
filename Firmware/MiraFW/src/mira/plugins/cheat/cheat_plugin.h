@@ -1,6 +1,8 @@
 #pragma once
 #include <oni/plugins/plugin.h>
-#include <oni/utils/lock.h>
+#include <sys/param.h>
+#include <sys/lock.h>
+#include <sys/mutex.h>
 
 #define CHEAT_MAXTHREADS 8
 

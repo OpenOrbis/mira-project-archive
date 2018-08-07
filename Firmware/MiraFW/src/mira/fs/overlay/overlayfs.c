@@ -156,6 +156,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 	hook_enable(fs->execNewVmspaceHook);
 
+	// We only want to catch eboots
 	if (strstr(imgp->execpath, "eboot") == NULL)
 	{
 		WriteLog(LL_Debug, "%s not eboot", imgp->execpath);
@@ -166,9 +167,17 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	int32_t pid = td->td_proc->p_pid;
 
 	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
+
+	// This may get called for each thread created, so we skip if it's the same pid
+	if (fs->pid == pid)
+		return result;
+
+	// Update the pid
 	fs->pid = pid;
 
+	// Create a new directory to mount this path at
 	int32_t mkdirResult = kmkdir_t("/mnt/sandbox/CUSA08034_000/usb0", 0777, mira_getMainThread());
+	WriteLog(LL_Debug, "mkdir returned %d", mkdirResult);
 	if (mkdirResult < 0)
 	{
 		if (mkdirResult != -EEXIST)
@@ -178,14 +187,14 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 		}
 	}
 
+	// Mount the usb device to the newly created path, exfatfs, force mount
 	int mountResult = mount_fs(td, "/dev/da1s1", "/mnt/sandbox/CUSA08034_000/usb0", "exfatfs", "511", MNT_FORCE);
+	WriteLog(LL_Debug, "nmount returned: %d", mountResult);
 	if (mountResult < 0)
 	{
 		WriteLog(LL_Warn, "could not mount usb0 to /mnt/usb0 (%d)", mountResult);
 		return result;
 	}
-
-	WriteLog(LL_Info, "mounted /_overlayfs (%d)", mountResult);
 
 	WriteLog(LL_Debug, "overwriting sys_open from %p to %p", sv->sv_table[AUE_OPEN].sy_call, overlayfs_sys_open);
 

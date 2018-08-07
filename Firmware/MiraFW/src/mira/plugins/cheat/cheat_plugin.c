@@ -575,7 +575,7 @@ threadData - a cheat_thread_t structure pointer
 		}
 
 		int result = proc_rw_mem(process, (void*)blockStart, blockSize, buffer, &readLength, 0);
-		PROC_UNLOCK(process);
+		_mtx_unlock_flags(&process->p_mtx, 0, __FILE__, __LINE__);
 
 		if (result < 0)
 			WriteLog(LL_Warn, "could not proc_rw_mem %d", result);
@@ -609,7 +609,7 @@ threadData - a cheat_thread_t structure pointer
 	}
 
 	int result = proc_rw_mem(process, leftoverStart, leftover, buffer, &readLength, 0);
-	PROC_UNLOCK(process);
+	_mtx_unlock_flags(&process->p_mtx, 0, __FILE__, __LINE__);
 
 	if (result < 0)
 		WriteLog(LL_Warn, "could not proc_rw_mem2 %d", result);
@@ -740,7 +740,7 @@ void cheatplugin_prepareScan(struct cheat_plugin_t* plugin, int pid, uint8_t* da
 	// Get the vm map
 	struct vmspace* vm = vmspace_acquire_ref(process);
 	vm_map_t map = &process->p_vmspace->vm_map;
-	vm_map_lock_read(map);
+	_vm_map_lock_read(map, __FILE__, __LINE__);
 
 	struct vm_map_entry* entry = map->header.next;
 
@@ -785,11 +785,11 @@ void cheatplugin_prepareScan(struct cheat_plugin_t* plugin, int pid, uint8_t* da
 		}
 	}
 	// Free the vmmap
-	vm_map_unlock_read(map);
+	_vm_map_unlock_read(map, __FILE__, __LINE__);
 	vmspace_free(vm);
 
 	// You need to unlock the process, or the kernel will assert and hang
-	PROC_UNLOCK(process);
+	_mtx_unlock_flags(&process->p_mtx, 0, __FILE__, __LINE__);
 
 	WriteLog(LL_Info, "All cheat threads started.");
 }

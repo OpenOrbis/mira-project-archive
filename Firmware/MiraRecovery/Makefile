@@ -12,16 +12,16 @@ endif
 PROJ_NAME := MiraRecovery
 
 # C++ compiler
-CPPC	:=	gcc++
+CPPC	:=	clang
 
 # Linker
-LNK		:= gcc # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
+LNK		:= clang # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
 
 # C compiler
-CC		:=	gcc
+CC		:=	clang
 
 # Archiver
-AS		:=	gcc
+AS		:=	clang
 
 # Objcopy
 OBJCOPY	:=	objcopy

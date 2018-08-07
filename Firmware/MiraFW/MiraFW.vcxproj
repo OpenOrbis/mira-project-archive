@@ -74,6 +74,7 @@
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
+    <ClCompile Include="src\mira\utils\escape.c" />
     <ClCompile Include="src\mira\utils\ini\ini.c" />
     <ClCompile Include="src\mira\utils\injector.c" />
   </ItemGroup>
@@ -89,6 +90,7 @@
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
     <ClInclude Include="src\mira\trainers\trainermanager.h" />
+    <ClInclude Include="src\mira\utils\escape.h" />
     <ClInclude Include="src\mira\utils\ini\ini.h" />
     <ClInclude Include="src\mira\utils\injector.h" />
   </ItemGroup>
