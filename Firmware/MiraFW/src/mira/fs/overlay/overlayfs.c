@@ -17,16 +17,8 @@
 
 #include <mira/miraframework.h>
 
-#include <sys/filedesc.h>				// filedesc
+#include <sys/filedesc.h>
 #include <oni/utils/cpu.h>
-
-struct alt_filedesc {
-	void *useless1[3];
-	void *fd_rdir;
-	void *fd_jdir;
-};
-
-int overlayfs_sys_open(struct thread* td, struct open_args* uap);
 
 static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
 
@@ -76,8 +68,8 @@ static int mount_nullfs(struct thread* td, char* target, char* source, unsigned 
 	WriteLog(LL_Debug, "NullFS here !");
 
 	build_iovec(&iov, &iovlen, "fstype", "nullfs", (size_t)-1);
-	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Ou je veut le mettre
-	build_iovec(&iov, &iovlen, "target", target, (size_t)-1); // Se que je veut mettre
+	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Where i want to add
+	build_iovec(&iov, &iovlen, "target", target, (size_t)-1); // What i want to add
 
 	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
 	if (!nmount)
@@ -110,8 +102,8 @@ static int mount_unionfs(struct thread* td, char* target, char* source, unsigned
 	WriteLog(LL_Debug, "here");
 
 	build_iovec(&iov, &iovlen, "fstype", "unionfs", (size_t)-1);
-	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Ou je veut le mettre
-	build_iovec(&iov, &iovlen, "from", target, (size_t)-1); // Se que je veut mettre
+	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Where i want to add
+	build_iovec(&iov, &iovlen, "from", target, (size_t)-1); // What i want to add
 	build_iovec(&iov, &iovlen, "ro", "", (size_t)-1);
 
 	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
@@ -139,20 +131,8 @@ static int mount_unionfs(struct thread* td, char* target, char* source, unsigned
 
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv);
 
-// 5.05 Stuff
-#define kdlsym_addr_exec_new_vmspace  0x0038AD10
-#define kdlsym_addr_kern_mkdirat 0x00340BD0
-#define kdlsym_addr_strcmp 0x001D0FD0
+// TODO : Resolve 5.05 / 5.01 function
 
-/*
-// 5.01 Stuff
-#define kdlsym_addr_dmem_start_app_process 0x002468E0
-#define kdlsym_addr_exec_new_vmspace 0x0038A940
-#define kdlsym_addr_kern_open 0x0072AB50
-#define kdlsym_addr_kern_openat 0x0033B640
-#define kdlsym_addr_kern_readv 0x00152A10
-#define kdlsym_addr_kern_close  0x000C0F40
-*/
 
 void overlayfs_init(struct overlayfs_t* fs)
 {
@@ -187,7 +167,6 @@ struct proc *proc_find_by_name(char* name) {
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
 	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
-	int (*kern_mkdirat)(struct thread *td, int fd, char *path, enum uio_seg segflg, int mode) = kdlsym(kern_mkdirat);
 
 	//void(*critical_enter)(void) = kdlsym(critical_enter);
 	//void(*critical_exit)(void) = kdlsym(critical_exit);
@@ -234,12 +213,11 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
 
-	// Ont créer le dossier CUSA00265_MOD
-
-	int32_t mkdirResult = kern_mkdirat(td, AT_FDCWD, "/mnt/CUSA00265_MOD", UIO_SYSSPACE, 0777);
-	if (mkdirResult > 0)
+	// Create folder called CUSA00265_MOD (Minecraft)
+	int32_t mkdirResult = kmkdir_t("/mnt/CUSA00265_MOD", 0777, td);
+	if (mkdirResult < 0)
 	{
-		if (mkdirResult != EEXIST) {
+		if (mkdirResult != -EEXIST) {
 			WriteLog(LL_Error, "could not create folder ! (%d)", mkdirResult);
 			return result;
 		} else {
@@ -248,6 +226,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	}
 
 	// Mount the folder CUSA00265_MOD with /mnt/sandbox/pfsmnt/CUSA00265-app0-patch0-union (Origin) in nullfs
+	// Cause crash (because UnionFS after)
 	int mountResult = mount_nullfs(td, "/mnt/sandbox/pfsmnt/CUSA00265-app0-patch0-union", "/mnt/CUSA00265_MOD", MNT_FORCE);
 	if (mountResult < 0)
 	{
