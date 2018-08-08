@@ -165,7 +165,6 @@ void logserver_serverThread(void* data)
 
 		kshutdown(socket, 2);
 		kclose(socket);
-		socket = -1;
 	}
 
 	WriteLog(LL_Info, "shutting down thread");

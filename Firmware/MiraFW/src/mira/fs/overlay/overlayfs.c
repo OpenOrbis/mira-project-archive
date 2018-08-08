@@ -20,6 +20,8 @@
 #include <sys/filedesc.h>
 #include <oni/utils/cpu.h>
 
+#include <mira/utils/escape.h>
+
 static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
 
 // Taken directly from sbin/mount/getmntopts.c
@@ -167,6 +169,7 @@ struct proc *proc_find_by_name(char* name) {
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
 	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
 	//void(*critical_enter)(void) = kdlsym(critical_enter);
 	//void(*critical_exit)(void) = kdlsym(critical_exit);
@@ -195,21 +198,13 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	}
 
 	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
+
 	int32_t pid = td->td_proc->p_pid;
 
-	struct ucred* cred = td->td_proc->p_ucred;
-	struct filedesc* fd = td->td_proc->p_fd;
+	struct thread_info_t prevInfo;
+	memset(&prevInfo, 0, sizeof(prevInfo));
 
-	// Escalate privileges
-	cred->cr_uid = 0;
-	cred->cr_ruid = 0;
-	cred->cr_rgid = 0;
-	cred->cr_groups[0] = 0;
-
-	// Game Escape sandbox
-	void* old_r_dir = fd->fd_rdir;
-	cred->cr_prison = *(void**)kdlsym(prison0);
-	fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
+	mira_threadEscape(td, &prevInfo);
 
 	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
 
@@ -245,7 +240,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	WriteLog(LL_Info, "UnionFS Re-mount ! (%d)", mountResult);
 
 	// Rewrote the good old dir
-	fd->fd_rdir = old_r_dir;
+	mira_threadRestore(td, &prevInfo);
 
 	return result;
 }

@@ -66,3 +66,25 @@ void mira_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 	td->td_ucred->cr_sceCaps[0] = SCECAPS_MAX;
 	td->td_ucred->cr_sceCaps[1] = SCECAPS_MAX;
 }
+
+void mira_threadRestore(struct thread* td, struct thread_info_t* threadInfo)
+{
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
+	if (!td || !threadInfo)
+		return;
+
+	if (!td->td_ucred)
+		return;
+
+	// Copy the cred back over
+	memcpy(td->td_ucred, &threadInfo->cred, sizeof(*td->td_ucred));
+
+	// Get the file descriptor
+	struct filedesc* fd = td->td_proc->p_fd;
+
+	if (!fd)
+		return;
+
+	memcpy(fd, &threadInfo->desc, sizeof(*fd));
+}

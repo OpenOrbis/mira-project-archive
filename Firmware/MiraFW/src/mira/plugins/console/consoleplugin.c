@@ -326,10 +326,13 @@ void consoleplugin_consoleThread(struct console_t* console)
 	}
 
 cleanup:
-	console->isRunning = false;
-	kshutdown(console->socketDescriptor, 2);
-	kclose(console->socketDescriptor);
-	console->socketDescriptor = -1;
+	if (console)
+	{
+		console->isRunning = false;
+		kshutdown(console->socketDescriptor, 2);
+		kclose(console->socketDescriptor);
+		console->socketDescriptor = -1;
+	}
 
 	kthread_exit();
 }
