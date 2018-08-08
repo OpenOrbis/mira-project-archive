@@ -22,6 +22,8 @@
 #include <mira/utils/escape.h>
 
 
+#include <mira/utils/escape.h>
+
 static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
 
 // Taken directly from sbin/mount/getmntopts.c
@@ -253,7 +255,14 @@ int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap) {
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
 	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
+<<<<<<< HEAD
 	void* (*memset)(void *b, int c, size_t len) = kdlsym(memset);
+=======
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
+	//void(*critical_enter)(void) = kdlsym(critical_enter);
+	//void(*critical_exit)(void) = kdlsym(critical_exit);
+>>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
 
 	//
 	//	This is purely for updating the current drive and mount point
@@ -279,12 +288,20 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	}
 
 	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
-	int32_t pid = td->td_proc->p_pid;
 
+<<<<<<< HEAD
     struct thread_info_t prevInfo;
     memset(&prevInfo, 0, sizeof(prevInfo));
 
     mira_threadEscape(td, &prevInfo);
+=======
+	int32_t pid = td->td_proc->p_pid;
+
+	struct thread_info_t prevInfo;
+	memset(&prevInfo, 0, sizeof(prevInfo));
+
+	mira_threadEscape(td, &prevInfo);
+>>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
 
 	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
 
@@ -319,6 +336,10 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 
 	WriteLog(LL_Info, "UnionFS Re-mount ! (%d)", mountResult);
 
+<<<<<<< HEAD
+=======
+	// Rewrote the good old dir
+>>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
 	mira_threadRestore(td, &prevInfo);
 
 	return result;

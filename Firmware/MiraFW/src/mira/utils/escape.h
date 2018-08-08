@@ -11,3 +11,4 @@ struct thread_info_t
 };
 
 void mira_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo);
+void mira_threadRestore(struct thread* td, struct thread_info_t* threadInfo);
