@@ -72,7 +72,9 @@ void install_prerunPatches_505()
 	gKernelBase[0x237F3B] = 0x01C1;
 
 	// Don't restrict dynlib information.
-	gKernelBase[0x2B2620] = 0x9090909090C3C031;;
+	uint64_t *dynlib = (uint16_t*)&gKernelBase[0x2B2620];
+
+	*dynlib = 0x9090909090C3C031;
 
 	// Allow usage of mangled symbols in dynlib_do_dlsym().
 	gKernelBase[0x2AFB47] = 0x9090;
