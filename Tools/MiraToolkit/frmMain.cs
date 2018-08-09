@@ -74,9 +74,9 @@ namespace MiraToolkit
             if (s_Device == null)
                 return;
 
-            s_Device.AddConsole("/dev/console");
+            //s_Device.AddConsole("/dev/console");
 
-            new Controls.Console.ucOutputs(s_Device).Show(Program.DockPanel, DockState.DockBottom);
+            //new Controls.Console.ucOutputs(s_Device).Show(Program.DockPanel, DockState.DockBottom);
         }
     }
 }

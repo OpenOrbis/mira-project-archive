@@ -66,6 +66,9 @@ namespace MiraToolkit.Controls.FileTransfer
             var s_NodeList = new List<TreeNode>();
 
             var s_Entries = m_Device?.Connection?.GetDents(p_Path);
+            if (s_Entries == null)
+                return null;
+
             foreach (var l_Entry in s_Entries)
             {
                 var l_EntryName = Path.GetFileName(l_Entry.Path);
