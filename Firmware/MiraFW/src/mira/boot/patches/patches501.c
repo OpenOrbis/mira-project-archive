@@ -42,9 +42,6 @@ void install_prerunPatches_501()
 	*copyinpatch = 0x9090;
 	*copyoutpatch = 0x9090;
 	
-	
-        // Allow sys_dynlib_dlsym in all processes. 
-	gKernelBase[0x237E2A] = 0x01C1; 
 
 	// Don't restrict dynlib information. 
 	uint64_t *dynlib = (uint16_t*)&gKernelBase[0x2B2350];
