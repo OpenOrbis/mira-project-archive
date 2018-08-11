@@ -8,6 +8,7 @@
 #include <sys/mount.h>
 #include <sys/sysent.h>
 #include <sys/filedesc.h>
+#include <sys/file.h>
 
 #include <oni/utils/logger.h>
 #include <oni/utils/sys_wrappers.h>
@@ -20,9 +21,15 @@
 
 #include <mira/miraframework.h>
 #include <mira/utils/escape.h>
-
-
 #include <mira/utils/escape.h>
+
+typedef uint32_t seq_t;
+#define	CAP_RIGHTS_VERSION_00	0
+#define	CAP_RIGHTS_VERSION	CAP_RIGHTS_VERSION_00
+
+struct cap_rights {
+	uint64_t	cr_rights[CAP_RIGHTS_VERSION + 2];
+};
 
 static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
 
@@ -64,7 +71,30 @@ static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void 
 	*iovlen = ++i;
 }
 
-static int mount_nullfs(struct thread* td, char* target, char* source, unsigned int flags)
+static int unmount(char* path, int flags) {	
+	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = kdlsym(sys_unmount);
+	if (!sys_unmount)
+		return -1;
+
+	int error;
+	struct unmount_args uap;
+
+	// clear errors
+	td->td_retval[0] = 0;
+
+	// call syscall
+	uap.path = path;
+	uap.flags = flags;
+
+	error = sys_unmount(td, &uap);
+	if (error)
+		return -error;
+
+	// return socket
+	return td->td_retval[0];
+}
+
+static int mount_nullfs(struct thread* td, char* fspath, char* target, char* protection, unsigned int flags)
 {
 	struct iovec* iov = NULL;
 	int iovlen = 0;
@@ -72,8 +102,10 @@ static int mount_nullfs(struct thread* td, char* target, char* source, unsigned 
 	WriteLog(LL_Debug, "NullFS here !");
 
 	build_iovec(&iov, &iovlen, "fstype", "nullfs", (size_t)-1);
-	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Where i want to add
+	build_iovec(&iov, &iovlen, "fspath", fspath, (size_t)-1); // Where i want to add
 	build_iovec(&iov, &iovlen, "target", target, (size_t)-1); // What i want to add
+	build_iovec(&iov, &iovlen, "allow_other", "", (size_t)-1); // What i want to add
+	build_iovec(&iov, &iovlen, protection, "", (size_t)-1);
 
 	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
 	if (!nmount)
@@ -98,7 +130,7 @@ static int mount_nullfs(struct thread* td, char* target, char* source, unsigned 
 	return td->td_retval[0];
 }
 
-static int mount_unionfs(struct thread* td, char* target, char* source, unsigned int flags)
+static int mount_unionfs(struct thread* td, char* fspath, char* from, unsigned int flags)
 {
 	struct iovec* iov = NULL;
 	int iovlen = 0;
@@ -106,8 +138,9 @@ static int mount_unionfs(struct thread* td, char* target, char* source, unsigned
 	WriteLog(LL_Debug, "here");
 
 	build_iovec(&iov, &iovlen, "fstype", "unionfs", (size_t)-1);
-	build_iovec(&iov, &iovlen, "fspath", source, (size_t)-1); // Where i want to add
-	build_iovec(&iov, &iovlen, "target", target, (size_t)-1); // What i want to add
+	build_iovec(&iov, &iovlen, "fspath", fspath, (size_t)-1); // Where i want to add
+	build_iovec(&iov, &iovlen, "from", from, (size_t)-1); // What i want to add
+	build_iovec(&iov, &iovlen, "allow_other", "", (size_t)-1);
 	build_iovec(&iov, &iovlen, "ro", "", (size_t)-1);
 
 	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
@@ -135,7 +168,10 @@ static int mount_unionfs(struct thread* td, char* target, char* source, unsigned
 
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv);
 int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap);
+int overlayfs_mkdirHook(struct thread* td, struct mkdir_args* uap);
+
 int(*_nmount)(struct thread* td, struct nmount_args* uap) = NULL;	
+int (*_mkdir)(struct thread* td, struct mkdir_args* uap) = NULL;
 
 // TODO : Resolve 5.05 / 5.01 function
 
@@ -145,32 +181,36 @@ void overlayfs_init(struct overlayfs_t* fs)
 		return;
 
 	struct sysent* sysents = kdlsym(kern_sysents); 
-	void(*critical_enter)(void) = kdlsym(critical_enter);	
-	void(*critical_exit)(void) = kdlsym(critical_exit);
+	//void(*critical_enter)(void) = kdlsym(critical_enter);	
+	//void(*critical_exit)(void) = kdlsym(critical_exit);
 
 	// Install the kernel process execution
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
 	
 	// Hook the syscall nmount for reverse
 	_nmount = (void*)sysents[378].sy_call;
+	_mkdir = (void*)sysents[136].sy_call;
 
+	/*
 	critical_enter();	
 	cpu_disable_wp();
 
 	sysents[378].sy_call = (sy_call_t*)overlayfs_nmountHook; // AUE_NMOUNT
+	sysents[136].sy_call = (sy_call_t*)overlayfs_mkdirHook; // AUE_MKDIR
 
 	cpu_enable_wp();	
 	critical_exit();
 
 	WriteLog(LL_Debug, "AUE_NMOUNT: Hook installed (Original: %p) !\n", _nmount);
+	WriteLog(LL_Debug, "AUE_MKDIR: Hook installed (Original: %p) !\n", _mkdir);
+	*/
 
-	//hook_enable(fs->execNewVmspaceHook);
+	hook_enable(fs->execNewVmspaceHook);
 
 	// We are currently ignoring all proc's
 	fs->pid = -1;
 }
 
-/*
 struct proc *proc_find_by_name(char* name) {
 	struct proc *p;
 
@@ -185,7 +225,20 @@ struct proc *proc_find_by_name(char* name) {
 
 	return NULL;
 }
-*/
+
+int overlayfs_mkdirHook(struct thread* td, struct mkdir_args* uap) {
+	int (*copyinstr)(const void *uaddr, void *kaddr, size_t len, size_t *done) = kdlsym(copyinstr);
+
+	struct proc* p = td->td_proc;
+
+	char path[300];
+	size_t path_len;
+	copyinstr(uap->path, path, sizeof(path), &path_len);
+
+	WriteLog(LL_Debug, "[MKDIR] PID: %d MODE: %d PATH: %s\n", p->p_pid, uap->mode, path);
+
+	return _mkdir(td, uap);
+}
 
 int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap) {
 	int (*copyin)(const void *uaddr, void *kaddr, size_t len) = kdlsym(copyin);
@@ -252,21 +305,29 @@ int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap) {
 	return _nmount(td, uap);
 }
 
+int overlayfs_createDirectory(struct thread* td, char* path, int mode) {
+	// Create needed folder for mount
+	int result = kmkdir_t(path, mode, td);
+	if (result < 0)
+	{
+		if (result != -EEXIST) {
+			WriteLog(LL_Error, "could not create %s ! (%d)", path, result);
+			return result;
+		} else {
+			WriteLog(LL_Debug, "Folder %s already exist, try anyway ...\n", path);
+		}
+	}
+
+	return result;
+}
+
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
 	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
-<<<<<<< HEAD
 	void* (*memset)(void *b, int c, size_t len) = kdlsym(memset);
-=======
-	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-
-	//void(*critical_enter)(void) = kdlsym(critical_enter);
-	//void(*critical_exit)(void) = kdlsym(critical_exit);
->>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
-
-	//
-	//	This is purely for updating the current drive and mount point
-	//
+	int (*sprintf)(char * restrict str, const char * restrict format, ...) = kdlsym(sprintf);
+	//int	(*fget_unlocked)(struct filedesc *fdp, int fd, cap_rights_t *needrightsp, struct file **fpp, seq_t *seqp) = kdlsym(fget_unlocked);
+	
 	// Get the framework
 	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
 
@@ -274,73 +335,124 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	
 	// Call the original exec_new_vmspace
 	hook_disable(fs->execNewVmspaceHook);
-
 	int32_t result = exec_new_vmspace(imgp, sv);
-
 	hook_enable(fs->execNewVmspaceHook);
 
 	WriteLog(LL_Debug, "ExecNewVmspace called !\n");
 
+	// Check if eboot is present
 	if (strstr(imgp->execpath, "eboot") == NULL)
 	{
 		WriteLog(LL_Debug, "%s not eboot", imgp->execpath);
 		return result;
 	}
 
+	// Get process information
 	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
-
-<<<<<<< HEAD
-    struct thread_info_t prevInfo;
-    memset(&prevInfo, 0, sizeof(prevInfo));
-
-    mira_threadEscape(td, &prevInfo);
-=======
 	int32_t pid = td->td_proc->p_pid;
+	char* appid = td->td_proc + 0x390;
 
 	struct thread_info_t prevInfo;
 	memset(&prevInfo, 0, sizeof(prevInfo));
 
 	mira_threadEscape(td, &prevInfo);
->>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
 
-	WriteLog(LL_Debug, "Process Thread td %p pid %d", td, pid);
+	WriteLog(LL_Debug, "Process Thread td %p pid %d appid: %s", td, pid, appid);
 
-	// Create folder called CUSA00265_MOD (Minecraft)
-	int32_t mkdirResult = kmkdir_t("/mnt/CUSA00025_MOD", 0777, td);
-	if (mkdirResult < 0)
-	{
-		if (mkdirResult != -EEXIST) {
-			WriteLog(LL_Error, "could not create folder ! (%d)", mkdirResult);
-			return result;
-		} else {
-			WriteLog(LL_Debug, "Folder already exist, try anyway ...\n");
-		}
+	int32_t mountResult, mkdirResult = -1;
+
+	// Get SceShellCore process for handle data
+	struct proc* shellcore = proc_find_by_name("SceShellCore");
+	struct thread* shellcore_td = shellcore->p_threads.tqh_first;
+
+	// Parse path with app data
+	char app0[255];
+	char sandbox_mod[255];
+	char pfsmnt_mod[255];
+	char pfsmnt_app[255];
+	char pfsmnt_patch[255];
+	char pfsmnt_union[255];
+	char data_mod[255];
+
+	sprintf(app0, "/mnt/sandbox/%s_000/app0", appid);
+	sprintf(pfsmnt_mod, "/mnt/sandbox/pfsmnt/%s-mod0", appid);
+	sprintf(pfsmnt_app, "/mnt/sandbox/pfsmnt/%s-app0", appid);
+	sprintf(pfsmnt_patch, "/mnt/sandbox/pfsmnt/%s-patch0", appid);
+	sprintf(pfsmnt_union, "/mnt/sandbox/pfsmnt/%s-app0-patch0-union", appid);
+	sprintf(data_mod, "/user/data/%s", appid);
+
+	// Unmount new created folder
+	mountResult = unmount(app0, 0);
+	if (mountResult < 0) {
+		WriteLog(LL_Warn, "could not unmount %s (%d)", app0, mountResult);
 	}
 
-	// Mount the folder CUSA00265_MOD with /mnt/sandbox/pfsmnt/CUSA00265-app0-patch0-union (Origin) in nullfs
-	// Cause crash (because UnionFS after)
-	int mountResult = mount_nullfs(td, "/mnt/sandbox/pfsmnt/CUSA00025-app0", "/mnt/CUSA00025_MOD", MNT_FORCE);
+	mountResult = unmount(pfsmnt_union, 0);
+	if (mountResult < 0) {
+		WriteLog(LL_Warn, "could not unmount %s (%d)", app0, mountResult);
+	}
+
+	// Create folder if not exist
+	overlayfs_createDirectory(shellcore_td, pfsmnt_mod, 0777);
+
+	// Mounting needed
+	mountResult = mount_nullfs(shellcore_td, pfsmnt_mod, data_mod, "rw", 0);
 	if (mountResult < 0)
 	{
-		WriteLog(LL_Warn, "could not mount with NullFS ! (%d)", mountResult);
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", data_mod, pfsmnt_mod, mountResult);
+		goto end;
+	}
+
+	mountResult = mount_nullfs(shellcore_td, app0, pfsmnt_app, "ro", MNT_RDONLY);
+	if (mountResult < 0)
+	{
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, mountResult);
+		goto end;
+	}
+
+	mountResult = mount_unionfs(shellcore_td, app0, pfsmnt_mod, MNT_RDONLY);
+	if (mountResult < 0)
+	{
+		WriteLog(LL_Warn, "could not mount with UnionFS1 ! (%d)", mountResult);
+		goto end;
+	}
+
+	mountResult = mount_nullfs(shellcore_td, pfsmnt_union, app0, "ro", MNT_RDONLY);
+	if (mountResult < 0)
+	{
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, mountResult);
+		goto end;
+	}
+
+
+	// Doesn't work if you nullfs a unionfs
+	// Doesn't work if you want make multi union in same directory
+
+	/* Doesn't work for now (fget_err return random error ?!)
+	struct file *fp;
+
+	int fd = kopen_t("/mnt/sandbox/CUSA07184_MOD", O_RDONLY | O_DIRECTORY, 0, td);
+	if (fd < 0) {
+		WriteLog(LL_Error, "Error with open ! (%d)", fd);
 		return result;
 	}
 
-	// Cause crash when you try to go in /mnt/sandbox/pfsmnt/CUSA00265-app0-patch0-union with the ftp :P
-	mountResult = mount_unionfs(td, "/user/data/CUSA00025", "/mnt/CUSA00025_MOD", 0);
-	if (mountResult < 0)
-	{
-		WriteLog(LL_Warn, "could not mount with UnionFS ! (%d)", mountResult);
-		return result;
+	cap_rights_t right;
+	memset(&right, 0, sizeof(cap_rights_t));
+
+	int fget_err = fget_unlocked(td->td_proc->p_fd, fd, &right, &fp, NULL); // Sa crash ici :/
+	if (fget_err != 0) {
+		WriteLog(LL_Error, "Error with fget_unlocked ! (/!\\ Try anyway) (%i)", fget_err);
 	}
+	*/
 
-	WriteLog(LL_Info, "UnionFS Re-mount ! (%d)", mountResult);
+	//struct filedesc* fd_ptr = td->td_proc->p_fd;
+	//fd_ptr->fd_rdir = fd_ptr->fd_jdir = fp->f_vnode;
 
-<<<<<<< HEAD
-=======
-	// Rewrote the good old dir
->>>>>>> c0f2d6c3886b8bb95db919e0e577fbe75b2394ac
+	// fp->f_vnode
+	WriteLog(LL_Info, "Custom folder created and set ! (%d)", mountResult);
+
+	end:
 	mira_threadRestore(td, &prevInfo);
-
 	return result;
 }
