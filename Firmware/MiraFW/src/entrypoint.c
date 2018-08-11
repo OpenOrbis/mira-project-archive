@@ -12,7 +12,6 @@
 //	Mira Core
 //
 #include <mira/miraframework.h>
-#include <mira/utils/escape.h>
 
 //
 //	Console specific patches
@@ -30,6 +29,7 @@
 #include <oni/utils/types.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/dynlib.h>
+#include <oni/utils/escape.h>
 
 //
 //	Free-BSD Specifics
@@ -159,7 +159,7 @@ void oni_kernelInitialization(void* args)
 	kdup2(1, 2);
 
 	// Root and escape our thread
-	mira_threadEscape(curthread, NULL);
+	oni_threadEscape(curthread, NULL);
 
 	// Show over UART that we are running in a new process
 	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");

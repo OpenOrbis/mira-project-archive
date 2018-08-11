@@ -13,6 +13,7 @@ struct thread;
 struct initparams_t;
 struct consoleplugin_t;
 struct overlayfs_t;
+struct henplugin_t;
 
 struct miraframework_t
 {
@@ -26,6 +27,7 @@ struct miraframework_t
 	struct cheat_plugin_t* cheatPlugin;
 
 	struct consoleplugin_t* consolePlugin;
+	struct henplugin_t* henPlugin;
 
 	struct pluginloader_t* pluginLoader;
 	struct trainermanager_t* trainerManager;
