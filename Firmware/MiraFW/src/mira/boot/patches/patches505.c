@@ -67,10 +67,6 @@ void install_prerunPatches_505()
 	kmem[3] = 0x90;
 	kmem[4] = 0x90;
 
-	
-        // Allow sys_dynlib_dlsym in all processes.
-	gKernelBase[0x237F3B] = 0x01C1;
-
 	// Don't restrict dynlib information.
 	uint64_t *dynlib = (uint16_t*)&gKernelBase[0x2B2620];
 
