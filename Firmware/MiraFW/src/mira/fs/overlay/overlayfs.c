@@ -18,18 +18,9 @@
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/cpu.h>
+#include <oni/utils/escape.h>
 
 #include <mira/miraframework.h>
-#include <mira/utils/escape.h>
-#include <mira/utils/escape.h>
-
-typedef uint32_t seq_t;
-#define	CAP_RIGHTS_VERSION_00	0
-#define	CAP_RIGHTS_VERSION	CAP_RIGHTS_VERSION_00
-
-struct cap_rights {
-	uint64_t	cr_rights[CAP_RIGHTS_VERSION + 2];
-};
 
 static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
 
@@ -71,8 +62,10 @@ static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void 
 	*iovlen = ++i;
 }
 
-static int unmount(char* path, int flags) {	
-	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = kdlsym(sys_unmount);
+// Unmount syscall
+int kunmount_t(char* path, int flags, struct thread* td) {	
+	struct sysent* sysents = kdlsym(kern_sysents);
+	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = (void*)sysents[AUE_UNMOUNT].sy_call;
 	if (!sys_unmount)
 		return -1;
 
@@ -92,6 +85,30 @@ static int unmount(char* path, int flags) {
 
 	// return socket
 	return td->td_retval[0];
+}
+
+// Chmod syscall
+int kchmod_t(char* path, int mode, struct thread* td) {
+	struct sysent* sysents = kdlsym(kern_sysents);
+	int(*sys_chmod)(struct thread*, struct chmod_args*) = (void*)sysents[AUE_CHMOD].sy_call;
+	if (!sys_chmod)
+		return (int)-1337;
+
+	int error;
+	struct chmod_args uap;
+
+	// clear errors
+	td->td_retval[0] = 0;
+
+	// call syscall
+	uap.path = path;
+	uap.mode = mode;
+	error = sys_chmod(td, &uap);
+	if (error)
+		return (int)-error;
+
+	// return
+	return (int)td->td_retval[0];
 }
 
 static int mount_nullfs(struct thread* td, char* fspath, char* target, char* protection, unsigned int flags)
@@ -167,11 +184,9 @@ static int mount_unionfs(struct thread* td, char* fspath, char* from, unsigned i
 }
 
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv);
-int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap);
-int overlayfs_mkdirHook(struct thread* td, struct mkdir_args* uap);
+int overlayfs_unmountHook(struct thread* td, struct unmount_args* uap);
 
-int(*_nmount)(struct thread* td, struct nmount_args* uap) = NULL;	
-int (*_mkdir)(struct thread* td, struct mkdir_args* uap) = NULL;
+int (*_unmount)(struct thread* td, struct unmount_args* uap) = NULL;
 
 // TODO : Resolve 5.05 / 5.01 function
 
@@ -181,29 +196,24 @@ void overlayfs_init(struct overlayfs_t* fs)
 		return;
 
 	struct sysent* sysents = kdlsym(kern_sysents); 
-	//void(*critical_enter)(void) = kdlsym(critical_enter);	
-	//void(*critical_exit)(void) = kdlsym(critical_exit);
+	void(*critical_enter)(void) = kdlsym(critical_enter);	
+	void(*critical_exit)(void) = kdlsym(critical_exit);
 
 	// Install the kernel process execution
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
 	
 	// Hook the syscall nmount for reverse
-	_nmount = (void*)sysents[378].sy_call;
-	_mkdir = (void*)sysents[136].sy_call;
+	_unmount = (void*)sysents[22].sy_call;
 
-	/*
 	critical_enter();	
 	cpu_disable_wp();
 
-	sysents[378].sy_call = (sy_call_t*)overlayfs_nmountHook; // AUE_NMOUNT
-	sysents[136].sy_call = (sy_call_t*)overlayfs_mkdirHook; // AUE_MKDIR
+	sysents[22].sy_call = (sy_call_t*)overlayfs_unmountHook;
 
 	cpu_enable_wp();	
 	critical_exit();
 
-	WriteLog(LL_Debug, "AUE_NMOUNT: Hook installed (Original: %p) !\n", _nmount);
-	WriteLog(LL_Debug, "AUE_MKDIR: Hook installed (Original: %p) !\n", _mkdir);
-	*/
+	WriteLog(LL_Debug, "AUE_UNMOUNT: Hook installed (Original: %p) !\n", _unmount);
 
 	hook_enable(fs->execNewVmspaceHook);
 
@@ -211,6 +221,7 @@ void overlayfs_init(struct overlayfs_t* fs)
 	fs->pid = -1;
 }
 
+/*
 struct proc *proc_find_by_name(char* name) {
 	struct proc *p;
 
@@ -225,9 +236,15 @@ struct proc *proc_find_by_name(char* name) {
 
 	return NULL;
 }
+*/
 
-int overlayfs_mkdirHook(struct thread* td, struct mkdir_args* uap) {
+int overlayfs_unmountHook(struct thread* td, struct unmount_args* uap) {
 	int (*copyinstr)(const void *uaddr, void *kaddr, size_t len, size_t *done) = kdlsym(copyinstr);
+	char* (*strstr)(const char *haystack, const char *needle) = kdlsym(strstr);
+	int (*strcmp)(const char *str1, const char* str2) = kdlsym(strcmp);
+	void* (*memcpy)(void *restrict dst, const void *restrict src, size_t n) = kdlsym(memcpy);
+	void* (*memset)(void *b, int c, size_t len) = kdlsym(memset);
+	int (*snprintf)(char * restrict str, size_t size, const char * restrict format, ...) = kdlsym(snprintf);
 
 	struct proc* p = td->td_proc;
 
@@ -235,74 +252,51 @@ int overlayfs_mkdirHook(struct thread* td, struct mkdir_args* uap) {
 	size_t path_len;
 	copyinstr(uap->path, path, sizeof(path), &path_len);
 
-	WriteLog(LL_Debug, "[MKDIR] PID: %d MODE: %d PATH: %s\n", p->p_pid, uap->mode, path);
 
-	return _mkdir(td, uap);
-}
+	if (strcmp("SceShellCore", p->p_comm) == 0) {
+		//WriteLog(LL_Debug, "[Unmount] Unmounting %s ...\n", path);
+		char* pos1 = strstr(path, "/mnt/sandbox/");
+		char* pos2 = strstr(path, "/mnt/sandbox/pfsmnt/");
 
-int overlayfs_nmountHook(struct thread* td, struct nmount_args* uap) {
-	int (*copyin)(const void *uaddr, void *kaddr, size_t len) = kdlsym(copyin);
-	struct proc* p = td->td_proc;
+		if (pos1 != NULL || pos2 != NULL) {
 
-	WriteLog(LL_Debug, "--- NEW NMOUNT ---\n");
-	WriteLog(LL_Debug, "Thread: %p PID: %d\n", td, p->p_pid);
-	WriteLog(LL_Debug, "Process name: %s\n", p->p_comm);
-	WriteLog(LL_Debug, "Mount flags (Without M_ROOTFS): %08llX\n", uap->flags);
+			uap->flags = MNT_FORCE;
 
-	if (uap->flags & MNT_RDONLY) {
-		WriteLog(LL_Debug, "Mount flags: MNT_RDONLY\n");
+			char appid[10];
+			memset(appid, 0, sizeof(appid));
+
+			if (pos2 != NULL) { 
+				memcpy(appid, (char*)(pos2 + 20), 9);
+			} else {
+				memcpy(appid, (char*)(pos1 + 13), 9);
+			}
+
+			char pfsmnt_mod[300];
+			snprintf(pfsmnt_mod, 300, "/mnt/sandbox/pfsmnt/%s-mod0", appid);
+
+			int ret = -1;
+
+			struct thread_info_t prevInfo;
+			memset(&prevInfo, 0, sizeof(prevInfo));
+
+			oni_threadEscape(td, &prevInfo);
+
+			uap->path = pfsmnt_mod;
+			ret = _unmount(td, uap);
+			WriteLog(LL_Debug, "[Unmount][%s] Unmount mod0: %s => %d\n", appid, uap->path, ret);
+
+			ret = krmdir_t(pfsmnt_mod, td);
+			WriteLog(LL_Debug, "[Unmount][%s] Delete mod0: %s => %d\n", appid, pfsmnt_mod, ret);
+
+			oni_threadRestore(td, &prevInfo);
+
+			uap->path = path;
+			goto end;
+		}
 	}
 
-	if (uap->flags & MNT_NOEXEC) {
-		WriteLog(LL_Debug, "Mount flags: MNT_NOEXEC\n");
-	}
-
-	if (uap->flags & MNT_UNION) {
-		WriteLog(LL_Debug, "Mount flags: MNT_UNION\n");
-	}
-
-	if (uap->flags & MNT_ASYNC) {
-		WriteLog(LL_Debug, "Mount flags: MNT_ASYNC\n");
-	}
-
-	if (uap->flags & MNT_NOATIME) {
-		WriteLog(LL_Debug, "Mount flags: MNT_NOATIME\n");
-	}
-
-	if (uap->flags & MNT_NOSYMFOLLOW) {
-		WriteLog(LL_Debug, "Mount flags: MNT_NOSYMFOLLOW\n");
-	}
-
-	if (uap->flags & MNT_UPDATE) {
-		WriteLog(LL_Debug, "Mount flags: MNT_UPDATE\n");
-	}
-
-	if (uap->flags & MNT_FORCE) {
-		WriteLog(LL_Debug, "Mount flags: MNT_FORCE\n");
-	}
-
-	if (uap->flags & MNT_SNAPSHOT) {
-		WriteLog(LL_Debug, "Mount flags: MNT_SNAPSHOT\n");
-	}
-
-
-	struct iovec* iov = (struct iovec*)kmalloc(uap->iovcnt * sizeof(struct iovec));
-	copyin(uap->iovp, iov, uap->iovcnt * sizeof(struct iovec));
-
-	for (int i = 0; i < uap->iovcnt; i++) {
-		char* data = kmalloc(iov[i].iov_len);
-		copyin(iov[i].iov_base, data, iov[i].iov_len);
-
-		WriteLog(LL_Debug, "IOV[%i]: %s\n", i, data);
-
-		kfree(data, iov[i].iov_len);
-	}
-
-	kfree(iov, uap->iovcnt * sizeof(struct iovec));
-
-	WriteLog(LL_Debug, "--- END NMOUNT ---\n");
-
-	return _nmount(td, uap);
+	end:
+	return _unmount(td, uap);
 }
 
 int overlayfs_createDirectory(struct thread* td, char* path, int mode) {
@@ -325,7 +319,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 {
 	char* (*strstr)(const char*, const char*) = kdlsym(strstr);
 	void* (*memset)(void *b, int c, size_t len) = kdlsym(memset);
-	int (*sprintf)(char * restrict str, const char * restrict format, ...) = kdlsym(sprintf);
+	int (*snprintf)(char * restrict str, size_t size, const char * restrict format, ...) = kdlsym(snprintf);
 	//int	(*fget_unlocked)(struct filedesc *fdp, int fd, cap_rights_t *needrightsp, struct file **fpp, seq_t *seqp) = kdlsym(fget_unlocked);
 	
 	// Get the framework
@@ -335,7 +329,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	
 	// Call the original exec_new_vmspace
 	hook_disable(fs->execNewVmspaceHook);
-	int32_t result = exec_new_vmspace(imgp, sv);
+	int32_t ret = exec_new_vmspace(imgp, sv);
 	hook_enable(fs->execNewVmspaceHook);
 
 	WriteLog(LL_Debug, "ExecNewVmspace called !\n");
@@ -344,115 +338,108 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	if (strstr(imgp->execpath, "eboot") == NULL)
 	{
 		WriteLog(LL_Debug, "%s not eboot", imgp->execpath);
-		return result;
+		return ret;
 	}
 
 	// Get process information
 	struct thread* td = imgp->proc->p_singlethread ? imgp->proc->p_singlethread : imgp->proc->p_threads.tqh_first;
 	int32_t pid = td->td_proc->p_pid;
-	char* appid = td->td_proc + 0x390;
+
+	uint64_t appid_add = 0x390;
+	uint64_t proc_addr = (uint64_t)curthread->td_proc;	
+	uint64_t r = proc_addr + appid_add;
+
+	char* appid = (char*)r;
+
+	WriteLog(LL_Info, "Proc addr: %p\n", curthread->td_proc);
+	WriteLog(LL_Info, "AppID (%p): %s\n", appid, appid);
 
 	struct thread_info_t prevInfo;
 	memset(&prevInfo, 0, sizeof(prevInfo));
 
-	mira_threadEscape(td, &prevInfo);
+	oni_threadEscape(td, &prevInfo);
 
 	WriteLog(LL_Debug, "Process Thread td %p pid %d appid: %s", td, pid, appid);
 
-	int32_t mountResult, mkdirResult = -1;
-
-	// Get SceShellCore process for handle data
-	struct proc* shellcore = proc_find_by_name("SceShellCore");
-	struct thread* shellcore_td = shellcore->p_threads.tqh_first;
+	int32_t result = -1;
 
 	// Parse path with app data
-	char app0[255];
-	char sandbox_mod[255];
-	char pfsmnt_mod[255];
-	char pfsmnt_app[255];
-	char pfsmnt_patch[255];
-	char pfsmnt_union[255];
-	char data_mod[255];
+	char app0[300];
+	char pfsmnt_mod[300];
+	char pfsmnt_app[300];
+	char pfsmnt_union[300];
+	char data_mod[300];
 
-	sprintf(app0, "/mnt/sandbox/%s_000/app0", appid);
-	sprintf(pfsmnt_mod, "/mnt/sandbox/pfsmnt/%s-mod0", appid);
-	sprintf(pfsmnt_app, "/mnt/sandbox/pfsmnt/%s-app0", appid);
-	sprintf(pfsmnt_patch, "/mnt/sandbox/pfsmnt/%s-patch0", appid);
-	sprintf(pfsmnt_union, "/mnt/sandbox/pfsmnt/%s-app0-patch0-union", appid);
-	sprintf(data_mod, "/user/data/%s", appid);
 
-	// Unmount new created folder
-	mountResult = unmount(app0, 0);
-	if (mountResult < 0) {
-		WriteLog(LL_Warn, "could not unmount %s (%d)", app0, mountResult);
+	snprintf(app0, 300, "/mnt/sandbox/%s_000/app0", appid);
+	snprintf(pfsmnt_mod, 300, "/mnt/sandbox/pfsmnt/%s-mod0", appid);
+	snprintf(pfsmnt_app, 300, "/mnt/sandbox/pfsmnt/%s-app0", appid);
+	snprintf(pfsmnt_union, 300, "/mnt/sandbox/pfsmnt/%s-app0-patch0-union", appid);
+	snprintf(data_mod, 300, "/user/data/%s", appid);
+
+	result = kchmod_t(data_mod, 0777, td);
+	if (result < 0) {
+		if (result == -30 || result == -1) {
+			WriteLog(LL_Warn, "Mod folder exist but in RO !\n");
+		} else {
+			WriteLog(LL_Error, "Mod folder doesn't exist (%s). Abording ... (err: %i)\n", data_mod, result);
+			goto end;
+		}
 	}
 
-	mountResult = unmount(pfsmnt_union, 0);
-	if (mountResult < 0) {
-		WriteLog(LL_Warn, "could not unmount %s (%d)", app0, mountResult);
-	}
+	WriteLog(LL_Info, "Mod folder exist: %s\n", data_mod);
 
-	// Create folder if not exist
-	overlayfs_createDirectory(shellcore_td, pfsmnt_mod, 0777);
+	// Create folder 
+	overlayfs_createDirectory(td, pfsmnt_mod, 0777);
 
 	// Mounting needed
-	mountResult = mount_nullfs(shellcore_td, pfsmnt_mod, data_mod, "rw", 0);
-	if (mountResult < 0)
+	result = mount_nullfs(td, pfsmnt_mod, data_mod, "rw", 0);
+	if (result < 0)
 	{
-		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", data_mod, pfsmnt_mod, mountResult);
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", data_mod, pfsmnt_mod, result);
 		goto end;
 	}
 
-	mountResult = mount_nullfs(shellcore_td, app0, pfsmnt_app, "ro", MNT_RDONLY);
-	if (mountResult < 0)
+	result = mount_nullfs(td, app0, pfsmnt_app, "ro", MNT_RDONLY);
+	if (result < 0)
 	{
-		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, mountResult);
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, result);
 		goto end;
 	}
 
-	mountResult = mount_unionfs(shellcore_td, app0, pfsmnt_mod, MNT_RDONLY);
-	if (mountResult < 0)
+	// Crash here
+	/*
+	result = mount_unionfs(td, app0, pfsmnt_patch, MNT_RDONLY);
+	if (result < 0)
 	{
-		WriteLog(LL_Warn, "could not mount with UnionFS1 ! (%d)", mountResult);
+		WriteLog(LL_Warn, "could not mount with UnionFS1 ! (%d)", result);
+		goto end;
+	}
+	*/
+
+	result = mount_unionfs(td, app0, pfsmnt_mod, MNT_RDONLY);
+	if (result < 0)
+	{
+		WriteLog(LL_Warn, "could not mount with UnionFS2 ! (%d)", result);
 		goto end;
 	}
 
-	mountResult = mount_nullfs(shellcore_td, pfsmnt_union, app0, "ro", MNT_RDONLY);
-	if (mountResult < 0)
+	result = mount_nullfs(td, pfsmnt_union, app0, "ro", MNT_RDONLY);
+	if (result < 0)
 	{
-		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, mountResult);
+		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, result);
 		goto end;
 	}
+
+	WriteLog(LL_Info, "All mounted with success !");
 
 
 	// Doesn't work if you nullfs a unionfs
 	// Doesn't work if you want make multi union in same directory
 
-	/* Doesn't work for now (fget_err return random error ?!)
-	struct file *fp;
-
-	int fd = kopen_t("/mnt/sandbox/CUSA07184_MOD", O_RDONLY | O_DIRECTORY, 0, td);
-	if (fd < 0) {
-		WriteLog(LL_Error, "Error with open ! (%d)", fd);
-		return result;
-	}
-
-	cap_rights_t right;
-	memset(&right, 0, sizeof(cap_rights_t));
-
-	int fget_err = fget_unlocked(td->td_proc->p_fd, fd, &right, &fp, NULL); // Sa crash ici :/
-	if (fget_err != 0) {
-		WriteLog(LL_Error, "Error with fget_unlocked ! (/!\\ Try anyway) (%i)", fget_err);
-	}
-	*/
-
-	//struct filedesc* fd_ptr = td->td_proc->p_fd;
-	//fd_ptr->fd_rdir = fd_ptr->fd_jdir = fp->f_vnode;
-
-	// fp->f_vnode
-	WriteLog(LL_Info, "Custom folder created and set ! (%d)", mountResult);
+	WriteLog(LL_Info, "OverlayFS done.");
 
 	end:
-	mira_threadRestore(td, &prevInfo);
-	return result;
+	oni_threadRestore(td, &prevInfo);
+	return ret;
 }
