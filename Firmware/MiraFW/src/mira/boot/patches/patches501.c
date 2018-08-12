@@ -43,15 +43,17 @@ void install_prerunPatches_501()
 	*copyoutpatch = 0x9090;
 	
 
-	// Don't restrict dynlib information. 
-	uint64_t *dynlib = (uint16_t*)&gKernelBase[0x2B2350];
+// Don't restrict dynlib information. 
+    uint64_t dynlib = (uint64_t)&gKernelBase[0x2B2350];
+    *dynlib = 0x9090909090C3C031;
 
-	*dynlib = 0x9090909090C3C031;
-
-	// Allow usage of mangled symbols in dynlib_do_dlsym(). 
-	gKernelBase[0x2AF877] = 0x9090; 
-	gKernelBase[0x2AF877 + 2] = 0x9090; 
-	gKernelBase[0x2AF877 + 4] = 0x9090; 
+    // Allow usage of mangled symbols in dynlib_do_dlsym(). 
+    uint64_t ffff = (uint64_t)&gKernelBase[0x2AF877];
+    *ffff = 0x9090;
+    uint64_t ffffa = (uint64_t)&gKernelBase[0x2AF877 + 2];
+    *ffffa = 0x9090;
+    uint64_t ffffb = (uint64_t)&gKernelBase[0x2AF877 + 4];
+    *ffffb = 0x9090;
 
 	// Enable MAP_SELF
 	kmem = (uint8_t*)&gKernelBase[0x117b0];
