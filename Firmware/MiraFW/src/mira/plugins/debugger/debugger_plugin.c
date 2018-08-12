@@ -17,7 +17,7 @@
 #include <vm/pmap.h>
 #include <vm/vm_map.h>
 
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 
 #include <oni/init/initparams.h>
 #include <oni/framework.h>

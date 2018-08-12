@@ -31,7 +31,7 @@
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/memory/install.h>
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
 #include <oni/utils/kdlsym.h>
