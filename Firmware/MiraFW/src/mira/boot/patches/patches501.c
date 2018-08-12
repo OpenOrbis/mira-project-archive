@@ -48,11 +48,11 @@ void install_prerunPatches_501()
     *dynlib = 0x9090909090C3C031;
 
     // Allow usage of mangled symbols in dynlib_do_dlsym(). 
-    uint64_t ffff = (uint64_t)&gKernelBase[0x2AF877];
+    uint16_t ffff = (uint16_t)&gKernelBase[0x2AF877];
     *ffff = 0x9090;
-    uint64_t ffffa = (uint64_t)&gKernelBase[0x2AF877 + 2];
+    uint16_t ffffa = (uint16_t)&gKernelBase[0x2AF877 + 2];
     *ffffa = 0x9090;
-    uint64_t ffffb = (uint64_t)&gKernelBase[0x2AF877 + 4];
+    uint16_t ffffb = (uint16_t)&gKernelBase[0x2AF877 + 4];
     *ffffb = 0x9090;
 
 	// Enable MAP_SELF
