@@ -73,10 +73,10 @@ ALL_OBJ_C := $(ALL_OBJ_CPP:.c=.o)
 ALL_OBJ := $(ALL_OBJ_C:.s=.o)
 
 # Target elf name
-TARGET = $(PROJ_NAME)_Orbis.elf
+TARGET = "$(PROJ_NAME)_Orbis_${ONI_PLATFORM}.elf"
 
 # Target payload name (data + text only, no elf)
-PAYLOAD = $(PROJ_NAME)_Orbis.bin
+PAYLOAD = "$(PROJ_NAME)_Orbis_${ONI_PLATFORM}.bin"
 
 $(TARGET): $(ALL_OBJ)
 	@echo "Building for Firmware $(ONI_PLATFORM)..."
