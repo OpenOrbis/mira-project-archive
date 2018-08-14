@@ -129,50 +129,60 @@ void logserver_serverThread(void* data)
 
 	char buffer[2];
 
-	WriteLog(LL_Info, "Accepting klog clients");
-	while ((socket = kaccept(plugin->socket, (struct sockaddr*)&address, &clientAddressSize)) >= 0)
+	WriteLog(LL_Info, "Opening klog");
+	int32_t klog = kopen("/dev/klog", O_RDONLY, 0);
+	if (klog < 0)
 	{
-		if (!plugin->isRunning)
-			break;
+		WriteLog(LL_Error, "could not open klog for reading (%d).", klog);
+		goto shutdown;
+	}
 
-		WriteLog(LL_Info, "New logclient connected");
-
-		if (socket == -1)
-			continue;
-
-		WriteLog(LL_Info, "Opening klog");
-		int32_t klog = kopen("/dev/klog", O_RDONLY, 0);
-		if (klog < 0)
+	while (plugin->isRunning)
+	{
+		WriteLog(LL_Info, "Accepting klog clients");
+		socket = kaccept(plugin->socket, (struct sockaddr*)&address, &clientAddressSize);
+		if (socket < 0)
 		{
-			WriteLog(LL_Error, "could not open klog for reading (%d).", klog);
+			if (socket == -EINTR)
+				continue;
+
+			WriteLog(LL_Error, "could not accept client (%d)", socket);
+			plugin->isRunning = false;
 			break;
 		}
 
+		WriteLog(LL_Info, "New logclient connected");
+
 		int32_t bytesRead = 0;
-		
+
 		while ((bytesRead = kread(klog, buffer, 1)) > 0)
 		{
 			if (!plugin->isRunning)
 				break;
 
-			if (kwrite(socket, buffer, 1) < 0)
+			if (kwrite(socket, buffer, 1) <= 0)
 				break;
 
 			memset(buffer, 0, sizeof(buffer));
 		}
 
-		kclose(klog);
-
 		kshutdown(socket, 2);
 		kclose(socket);
 	}
 
+shutdown:
 	WriteLog(LL_Info, "shutting down thread");
 	plugin->isRunning = false;
 
-	kshutdown(plugin->socket, 2);
-	kclose(plugin->socket);
-	plugin->socket = -1;
+	if (klog >= 0)
+		kclose(klog);
+
+	if (plugin->socket >= 0)
+	{
+		kshutdown(plugin->socket, 2);
+		kclose(plugin->socket);
+		plugin->socket = -1;
+	}
 
 	kthread_exit();
 }
