@@ -57,6 +57,9 @@ You will need VS2017, with Linux plugin and WSL (Ubuntu on Windows) or a physica
 
 ![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
 
+## Thanks to the Open Orbis team
+* !
+
 ## Special Thanks and Friends
 
 We want to give a special shout out to these people in no particular order.
