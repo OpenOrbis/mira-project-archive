@@ -142,16 +142,15 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	WriteLog(LL_Info, "installing hooks");
 	miraframework_installHooks(framework);
 
-	// Disable overlayfs while it's a broke sack of shit
 	WriteLog(LL_Info, "allocating overlayfs");
 	framework->overlayfs = NULL;
-	/*framework->overlayfs = (struct overlayfs_t*)kmalloc(sizeof(struct overlayfs_t));
+	framework->overlayfs = (struct overlayfs_t*)kmalloc(sizeof(struct overlayfs_t));
 	if (!framework->overlayfs)
 	{
 		WriteLog(LL_Error, "could not allocate overlayfs");
 		return false;
 	}
-	overlayfs_init(framework->overlayfs);*/
+	overlayfs_init(framework->overlayfs);
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
