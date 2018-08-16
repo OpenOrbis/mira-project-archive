@@ -64,8 +64,10 @@ static void build_iovec(struct iovec **iov, int *iovlen, const char *name, void 
 }
 
 // Unmount syscall
-int kunmount_t(char* path, int flags, struct thread* td) {	
-	struct sysent* sysents = kdlsym(kern_sysents);
+int kunmount_t(char* path, int flags, struct thread* td) 
+{	
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
 	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = (void*)sysents[22].sy_call;
 	if (!sys_unmount)
 		return -1;
@@ -171,8 +173,8 @@ void overlayfs_init(struct overlayfs_t* fs)
 {
 	if (!fs)
 		return;
-
-	struct sysent* sysents = kdlsym(kern_sysents); 
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
 	void(*critical_enter)(void) = kdlsym(critical_enter);	
 	void(*critical_exit)(void) = kdlsym(critical_exit);
 
@@ -214,7 +216,8 @@ int overlayfs_createDirectory(struct thread* td, char* path, int mode) {
 	return result;
 }
 
-int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap) {
+int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap) 
+{
 	int (*copyinstr)(const void *uaddr, void *kaddr, size_t len, size_t *done) = kdlsym(copyinstr);
 	int (*strcmp)(const char *str1, const char* str2) = kdlsym(strcmp);
 	char* (*strstr)(const char *haystack, const char *needle) = kdlsym(strstr);
