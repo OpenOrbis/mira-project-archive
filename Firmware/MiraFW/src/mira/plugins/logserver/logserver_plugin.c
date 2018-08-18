@@ -136,6 +136,23 @@ void logserver_serverThread(void* data)
 		WriteLog(LL_Error, "could not open klog for reading (%d).", klog);
 		goto shutdown;
 	}
+	struct timeval timeout;
+	timeout.tv_sec = 3;
+	timeout.tv_usec = 0;
+
+	int32_t result = ksetsockopt(plugin->socket, SOL_SOCKET, SO_RCVTIMEO, (caddr_t)&timeout, sizeof(timeout));
+	if (result < 0)
+	{
+		WriteLog(LL_Error, "could not set recv timeout (%d).", result);
+		goto shutdown;
+	}
+
+	result = ksetsockopt(plugin->socket, SOL_SOCKET, SO_SNDTIMEO, (caddr_t)&timeout, sizeof(timeout));
+	if (result < 0)
+	{
+		WriteLog(LL_Error, "could not set send timeout (%d).", result);
+		goto shutdown;
+	}
 
 	while (plugin->isRunning)
 	{
@@ -143,9 +160,6 @@ void logserver_serverThread(void* data)
 		socket = kaccept(plugin->socket, (struct sockaddr*)&address, &clientAddressSize);
 		if (socket < 0)
 		{
-			if (socket == -EINTR)
-				continue;
-
 			WriteLog(LL_Error, "could not accept client (%d)", socket);
 			plugin->isRunning = false;
 			break;

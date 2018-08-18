@@ -306,7 +306,11 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	struct overlayfs_t* fs = mira_getFramework()->overlayfs;
 
 	int	(*exec_new_vmspace)(struct image_params *, struct sysentvec *) = hook_getFunctionAddress(fs->execNewVmspaceHook);
-	
+	// Call the original exec_new_vmspace
+	hook_disable(fs->execNewVmspaceHook);
+	int32_t ret = exec_new_vmspace(imgp, sv);
+	hook_enable(fs->execNewVmspaceHook);
+
 	// Check if eboot is present
 	if (strstr(imgp->execpath, "eboot") == NULL)
 	{
@@ -432,16 +436,10 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	WriteLog(LL_Info, "All mounted with success !");
 	WriteLog(LL_Info, "OverlayFS done.");
 
-	end_root:
+end_root:
 	oni_threadRestore(td, &prevInfo);
 
-
-	end:
-	// Call the original exec_new_vmspace
-	hook_disable(fs->execNewVmspaceHook);
-	int32_t ret = exec_new_vmspace(imgp, sv);
-	hook_enable(fs->execNewVmspaceHook);
-
+end:
 	WriteLog(LL_Debug, "ExecNewVmspace called !");
 
 	return ret;

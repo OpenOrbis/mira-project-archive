@@ -56,7 +56,6 @@ uint8_t miraframework_installHooks(struct miraframework_t* framework);
 // Handle the kernel panics due to suspending
 static void mira_onSuspend(struct miraframework_t* framework);
 static void mira_onResume(struct miraframework_t* framework);
-static void mira_onShutdown(struct miraframework_t* framework);
 
 // Handle execution of new processes for trainers
 //static void mira_onExec(struct miraframework_t* framework);
@@ -142,15 +141,17 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	WriteLog(LL_Info, "installing hooks");
 	miraframework_installHooks(framework);
 
-	WriteLog(LL_Info, "allocating overlayfs");
 	framework->overlayfs = NULL;
+
+	/*WriteLog(LL_Info, "allocating overlayfs");
+	
 	framework->overlayfs = (struct overlayfs_t*)kmalloc(sizeof(struct overlayfs_t));
 	if (!framework->overlayfs)
 	{
 		WriteLog(LL_Error, "could not allocate overlayfs");
 		return false;
-	}
-	overlayfs_init(framework->overlayfs);
+	}*/
+	//overlayfs_init(framework->overlayfs);
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
@@ -178,7 +179,7 @@ uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 	const int32_t prio = 1337;
 	EVENTHANDLER_REGISTER(system_suspend_phase3, mira_onSuspend, framework, EVENTHANDLER_PRI_LAST + prio);
 	EVENTHANDLER_REGISTER(system_resume_phase4, mira_onResume, framework, EVENTHANDLER_PRI_LAST + prio);
-	EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_LAST + prio);
+	//EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_LAST + prio);
 
 	// Register our process event handlers
 	//EVENTHANDLER_REGISTER(process_ctor, mira_onProcessCtor, framework, EVENTHANDLER_PRI_LAST + prio);
@@ -243,23 +244,6 @@ static void mira_onResume(struct miraframework_t* framework)
 		WriteLog(LL_Error, "could not initialize plugins");
 
 	WriteLog(LL_Info, "enabling hooks");
-}
-
-static void mira_onShutdown(struct miraframework_t* framework)
-{
-	if (!framework)
-		return;
-
-	// Shut down everything, we packin' our bags bois
-	WriteLog(LL_Warn, "ON SHUTDOWN %p", framework);
-
-	WriteLog(LL_Info, "stopping RPC server.");
-	if (!rpcserver_shutdown(framework->framework.rpcServer))
-		WriteLog(LL_Error, "there was an error stopping the rpc server.");
-
-	// Stop the klog server
-	WriteLog(LL_Info, "Shutting down plugin manager");
-	pluginmanager_shutdown(framework->framework.pluginManager);
 }
 
 uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
