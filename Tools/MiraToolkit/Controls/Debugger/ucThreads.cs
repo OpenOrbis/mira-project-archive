@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucThreads : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucThreads : UserControl
     {
         public ucThreads()
         {

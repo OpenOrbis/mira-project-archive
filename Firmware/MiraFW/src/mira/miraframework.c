@@ -44,7 +44,7 @@
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 
-uint8_t __noinline mira_installDefaultPlugins();
+extern uint8_t __noinline mira_installDefaultPlugins();
 uint8_t miraframework_installHandlers(struct miraframework_t* framework);
 uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char* iniPath);
 uint8_t miraframework_installHooks(struct miraframework_t* framework);
@@ -56,7 +56,6 @@ uint8_t miraframework_installHooks(struct miraframework_t* framework);
 // Handle the kernel panics due to suspending
 static void mira_onSuspend(struct miraframework_t* framework);
 static void mira_onResume(struct miraframework_t* framework);
-
 // Handle execution of new processes for trainers
 //static void mira_onExec(struct miraframework_t* framework);
 
@@ -177,8 +176,8 @@ uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 
 	// Register our event handlers
 	const int32_t prio = 1337;
-	EVENTHANDLER_REGISTER(system_suspend_phase3, mira_onSuspend, framework, EVENTHANDLER_PRI_LAST + prio);
-	EVENTHANDLER_REGISTER(system_resume_phase4, mira_onResume, framework, EVENTHANDLER_PRI_LAST + prio);
+	EVENTHANDLER_REGISTER(power_suspend, mira_onSuspend, framework, EVENTHANDLER_PRI_LAST + prio);
+	EVENTHANDLER_REGISTER(power_resume, mira_onResume, framework, EVENTHANDLER_PRI_LAST + prio);
 	//EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_LAST + prio);
 
 	// Register our process event handlers
@@ -284,8 +283,9 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	filetransfer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
-
-	WriteLog(LL_Warn, "allocating console plugin");
+	framework->consolePlugin = NULL;
+	framework->logServerPlugin = NULL;
+	/*WriteLog(LL_Warn, "allocating console plugin");
 	if (framework->consolePlugin)
 	{
 		kfree(framework->consolePlugin, sizeof(*framework->consolePlugin));
@@ -317,7 +317,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	logserver_init(framework->logServerPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->logServerPlugin->plugin);
-
+*/
 	// Initialize the plugin loader to read from file
 	WriteLog(LL_Info, "allocating pluginloader");
 	if (framework->pluginLoader)
@@ -367,6 +367,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
+	framework->framework.rpcServer = NULL;
 	if (framework->framework.rpcServer)
 	{
 		kfree(framework->framework.rpcServer, sizeof(*framework->framework.rpcServer));

@@ -34,7 +34,8 @@
             this.mmuMenu = new System.Windows.Forms.MenuStrip();
             this.mmuFile = new System.Windows.Forms.ToolStripMenuItem();
             this.mmuConnect = new System.Windows.Forms.ToolStripMenuItem();
-            this.dockPanel = new WeifenLuo.WinFormsUI.Docking.DockPanel();
+            this.mmuTools = new System.Windows.Forms.ToolStripMenuItem();
+            this.mmuSendPayload = new System.Windows.Forms.ToolStripMenuItem();
             this.sStrip.SuspendLayout();
             this.mmuMenu.SuspendLayout();
             this.SuspendLayout();
@@ -64,7 +65,8 @@
             // mmuMenu
             // 
             this.mmuMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mmuFile});
+            this.mmuFile,
+            this.mmuTools});
             this.mmuMenu.Location = new System.Drawing.Point(0, 0);
             this.mmuMenu.Name = "mmuMenu";
             this.mmuMenu.Size = new System.Drawing.Size(800, 24);
@@ -82,24 +84,30 @@
             // mmuConnect
             // 
             this.mmuConnect.Name = "mmuConnect";
-            this.mmuConnect.Size = new System.Drawing.Size(119, 22);
+            this.mmuConnect.Size = new System.Drawing.Size(180, 22);
             this.mmuConnect.Text = "Connect";
             this.mmuConnect.Click += new System.EventHandler(this.mmuConnect_Click);
             // 
-            // dockPanel
+            // mmuTools
             // 
-            this.dockPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dockPanel.Location = new System.Drawing.Point(0, 24);
-            this.dockPanel.Name = "dockPanel";
-            this.dockPanel.Size = new System.Drawing.Size(800, 404);
-            this.dockPanel.TabIndex = 6;
+            this.mmuTools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mmuSendPayload});
+            this.mmuTools.Name = "mmuTools";
+            this.mmuTools.Size = new System.Drawing.Size(47, 20);
+            this.mmuTools.Text = "Tools";
+            // 
+            // mmuSendPayload
+            // 
+            this.mmuSendPayload.Name = "mmuSendPayload";
+            this.mmuSendPayload.Size = new System.Drawing.Size(180, 22);
+            this.mmuSendPayload.Text = "Send Payload";
+            this.mmuSendPayload.Click += new System.EventHandler(this.mmuSendPayload_Click);
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.dockPanel);
             this.Controls.Add(this.sStrip);
             this.Controls.Add(this.mmuMenu);
             this.MainMenuStrip = this.mmuMenu;
@@ -122,7 +130,8 @@
         private System.Windows.Forms.MenuStrip mmuMenu;
         private System.Windows.Forms.ToolStripMenuItem mmuFile;
         private System.Windows.Forms.ToolStripMenuItem mmuConnect;
-        private WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel;
+        private System.Windows.Forms.ToolStripMenuItem mmuTools;
+        private System.Windows.Forms.ToolStripMenuItem mmuSendPayload;
     }
 }
 

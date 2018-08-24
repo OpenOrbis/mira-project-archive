@@ -3,7 +3,7 @@ using MiraToolkit.Core.Debugger;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucCallStack : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucCallStack : UserControl
     {
         private MiraDebugger m_Debugger;
         public ucCallStack(MiraDebugger p_Debugger)

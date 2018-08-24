@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucRegisters : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucRegisters : UserControl
     {
         public ucRegisters()
         {

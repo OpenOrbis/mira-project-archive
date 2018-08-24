@@ -6,7 +6,7 @@ using static MiraToolkit.Core.MiraFileTransferExtensions;
 
 namespace MiraToolkit.Controls.FileTransfer
 {
-    public partial class ucFileTransfer : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucFileTransfer : UserControl
     {
         private const string c_LoadingTag = "_loading";
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using WeifenLuo.WinFormsUI.Docking;
 
 namespace MiraToolkit
 {
@@ -13,7 +12,6 @@ namespace MiraToolkit
 
     static class Program
     {
-        public static DockPanel DockPanel;
         public static event StatusChangedEventHandler StatusChanged;
         public delegate void StatusChangedEventHandler(object sender, StatusChangedEventArgs e);
 

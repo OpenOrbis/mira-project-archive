@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucProcess : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucProcess : UserControl
     {
         public ucProcess()
         {

@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucDisassembly : WeifenLuo.WinFormsUI.Docking.DockContent
+    public partial class ucDisassembly : UserControl
     {
         private const ulong c_BadAddr = 0xFFFFFFFFFFFFFFFF;
         private const string c_UnknownInstruction = "??";

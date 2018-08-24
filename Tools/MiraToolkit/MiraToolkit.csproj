@@ -44,12 +44,11 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="WeifenLuo.WinFormsUI.Docking, Version=3.0.4.0, Culture=neutral, PublicKeyToken=5cded1a1a0a7b481, processorArchitecture=MSIL">
-      <HintPath>..\packages\DockPanelSuite.3.0.4\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Controls\Console\ucOutputs.cs" />
+    <Compile Include="Controls\Console\ucOutputs.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\Console\ucOutputs.Designer.cs">
       <DependentUpon>ucOutputs.cs</DependentUpon>
     </Compile>
@@ -107,19 +106,27 @@
     <Compile Include="Controls\Debugger\ucWatch.Designer.cs">
       <DependentUpon>ucWatch.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\FileTransfer\ucFileTransfer.cs" />
+    <Compile Include="Controls\FileTransfer\ucFileTransfer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\FileTransfer\ucFileTransfer.Designer.cs">
       <DependentUpon>ucFileTransfer.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\Generic\frmInputPrompt.cs" />
+    <Compile Include="Controls\Generic\frmInputPrompt.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Controls\Generic\frmInputPrompt.Designer.cs">
       <DependentUpon>frmInputPrompt.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\Generic\frmIpAddress.cs" />
+    <Compile Include="Controls\Generic\frmIpAddress.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Controls\Generic\frmIpAddress.Designer.cs">
       <DependentUpon>frmIpAddress.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\ucMiraSelector.cs" />
+    <Compile Include="Controls\ucMiraSelector.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Controls\ucMiraSelector.Designer.cs">
       <DependentUpon>ucMiraSelector.cs</DependentUpon>
     </Compile>
@@ -186,7 +193,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

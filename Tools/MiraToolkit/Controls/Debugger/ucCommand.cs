@@ -3,8 +3,8 @@ using MiraToolkit.Core.Debugger;
 
 namespace MiraToolkit.Controls.Debugger
 {
-    public partial class ucCommand : WeifenLuo.WinFormsUI.Docking.DockContent
-    {
+    public partial class ucCommand : UserControl
+    { 
         private MiraDebugger m_Debugger;
 
         public ucCommand(MiraDebugger p_Debugger)

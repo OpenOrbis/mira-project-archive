@@ -2,9 +2,10 @@
 using MiraToolkit.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Windows.Forms;
-using WeifenLuo.WinFormsUI.Docking;
 
 namespace MiraToolkit
 {
@@ -19,8 +20,7 @@ namespace MiraToolkit
 
             m_Devices = new List<MiraDevice>();
 
-
-            Program.DockPanel = dockPanel;
+           
             Program.StatusChanged += Mira_OnStatusChanged;
         }
 
@@ -68,7 +68,7 @@ namespace MiraToolkit
 
             //p_Device.AddConsole(9998);
 
-            new Controls.FileTransfer.ucFileTransfer(p_Device).Show(Program.DockPanel, DockState.DockRight);
+            new Controls.FileTransfer.ucFileTransfer(p_Device).Show();
 
             var s_Device = m_Devices.FirstOrDefault();
             if (s_Device == null)
@@ -77,6 +77,24 @@ namespace MiraToolkit
             //s_Device.AddConsole("/dev/console");
 
             //new Controls.Console.ucOutputs(s_Device).Show(Program.DockPanel, DockState.DockBottom);
+        }
+
+        private void mmuSendPayload_Click(object sender, EventArgs e)
+        {
+            var s_Dialog = new OpenFileDialog
+            {
+                Title = "Send payload",
+                FileName = "payload.bin",
+                Filter = "Binary Files (*.bin)|*.bin|All Files (*.*)|*.*"
+            };
+
+            if (s_Dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            var s_Data = File.ReadAllBytes(s_Dialog.FileName);
+
+            using (var s_Client = new TcpClient("192.168.1.2", 9020))
+                s_Client.GetStream().Write(s_Data, 0, s_Data.Length);
         }
     }
 }

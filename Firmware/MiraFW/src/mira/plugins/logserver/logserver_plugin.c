@@ -154,6 +154,15 @@ void logserver_serverThread(void* data)
 		goto shutdown;
 	}
 
+	// SO_LINGER
+	timeout.tv_sec = 0;
+	result = ksetsockopt(plugin->socket, SOL_SOCKET, SO_LINGER, (caddr_t)&timeout, sizeof(timeout));
+	if (result < 0)
+	{
+		WriteLog(LL_Error, "could not set send timeout (%d).", result);
+		goto shutdown;
+	}
+
 	while (plugin->isRunning)
 	{
 		WriteLog(LL_Info, "Accepting klog clients");
