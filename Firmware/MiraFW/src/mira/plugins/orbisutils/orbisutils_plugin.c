@@ -16,14 +16,6 @@
 //
 #include <mira/miraframework.h>
 
-#if ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_505
-#define kdlsym_addr_icc_nvs_read 0x00395830
-#define kdlsym_addr_sceSblGetEAPInternalPartitionKey 0x006256E0
-#elif ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_501
-#define kdlsym_addr_icc_nvs_read							 0x00395460
-#define kdlsym_addr_sceSblGetEAPInternalPartitionKey		 0x00625300
-#endif
-
 struct utility_dumphddkeys_t
 {
 	uint8_t encrypted[0x60];
@@ -120,16 +112,16 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 	memset(request->key, 0, sizeof(request->key));
 	memset(request->encrypted, 0, sizeof(request->encrypted));
 
+	int result = -1000;
 
-	
 #if ONI_PLATFORM>=ONI_PLATFORM_ORBIS_BSD_500
 	// icc functions, 5.00+ does not have bank_id
 	int(*icc_nvs_read)(uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
+	result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
 #else
-#error Need < 5.00 icc_nvs_read
+	int(*icc_nvs_read)(uint64_t bank_id, uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
+	result = icc_nvs_read(0, 4, 0x200, 0x60, request->encrypted);
 #endif
-
-	int result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
 
 	if (result < 0)
 		WriteLog(LL_Debug, "icc_nvs_sread returned %d", result);
@@ -184,7 +176,7 @@ void orbisutils_toggleASLR(struct allocation_t* ref)
 	cpu_disable_wp();
 
 #if ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_501
-	*(uint8_t*)(gKernelBase + 0x00389555) = payload->aslrEnabled ? 0x74 : 0xEB;
+	* (uint8_t*)(gKernelBase + 0x00389555) = payload->aslrEnabled ? 0x74 : 0xEB;
 #elif ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_505
 	* (uint8_t*)(gKernelBase + 0x00389925) = payload->aslrEnabled ? 0x74 : 0xEB;
 #endif
