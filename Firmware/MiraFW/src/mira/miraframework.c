@@ -153,7 +153,7 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	}*/
 	//overlayfs_init(framework->overlayfs);
 
-	WriteLog(LL_Debug, "allocating hen plugin");
+	/*WriteLog(LL_Debug, "allocating hen plugin");
 	framework->henPlugin = (struct henplugin_t*)kmalloc(sizeof(struct henplugin_t));
 	if (!framework->henPlugin)
 	{
@@ -162,7 +162,7 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	}
 	henplugin_init(framework->henPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
-
+*/
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
 	return true;

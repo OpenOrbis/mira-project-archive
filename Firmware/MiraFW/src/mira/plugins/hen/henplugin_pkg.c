@@ -87,18 +87,16 @@ static inline void pfs_gen_crypto_key(uint8_t* ekpfs, uint8_t seed[PFS_SEED_SIZE
 	int(*fpu_kern_leave)(struct thread *td, void *ctx) = kdlsym(fpu_kern_leave);
 
 	struct thread* td = curthread;
+
+	// Allocate and set the fake key id
 	struct fake_key_d d;
-
 	memset(&d, 0, sizeof(d));
-	{
-		d.index = index;
-		memcpy(d.seed, seed, PFS_SEED_SIZE);
-	}
+	d.index = index;
+	memcpy(d.seed, seed, PFS_SEED_SIZE);
 
+	// Calculate the hmac
 	fpu_kern_enter(td, fpu_ctx, 0);
-	{
-		Sha256Hmac(key, (uint8_t *)&d, sizeof(d), ekpfs, EKPFS_SIZE);
-	}
+	Sha256Hmac(key, (uint8_t *)&d, sizeof(d), ekpfs, EKPFS_SIZE);
 	fpu_kern_leave(td, fpu_ctx);
 }
 
@@ -120,15 +118,15 @@ static inline int npdrm_decrypt_debug_rif(unsigned int type, uint8_t* data)
 	int(*AesCbcCfb128Decrypt)(uint8_t* out, const uint8_t* in, size_t data_size, const uint8_t* key, int key_size, uint8_t* iv) = kdlsym(AesCbcCfb128Decrypt);
 
 	struct thread* td = curthread;
-	int ret;
+	int ret = 0;
 
 	fpu_kern_enter(td, fpu_ctx, 0);
-	{
-		// decrypt fake rif manually using a key from publishing tools 
-		ret = AesCbcCfb128Decrypt(data + RIF_DIGEST_SIZE, data + RIF_DIGEST_SIZE, RIF_DATA_SIZE, rif_debug_key, sizeof(rif_debug_key) * 8, data);
-		if (ret)
-			ret = SCE_SBL_ERROR_NPDRM_ENOTSUP;
-	}
+
+	// decrypt fake rif manually using a key from publishing tools 
+	ret = AesCbcCfb128Decrypt(data + RIF_DIGEST_SIZE, data + RIF_DIGEST_SIZE, RIF_DATA_SIZE, rif_debug_key, sizeof(rif_debug_key) * 8, data);
+	if (ret)
+		ret = SCE_SBL_ERROR_NPDRM_ENOTSUP;
+
 	fpu_kern_leave(td, fpu_ctx);
 
 	return ret;
@@ -174,15 +172,16 @@ int hen_sceSblDriverSendMsg(struct sbl_msg* msg, size_t size)
 
 	int(*sceSblDriverSendMsg)(struct sbl_msg* msg, size_t size) = hook_getFunctionAddress(plugin->sceSblDriverSendMsgHook);
 
+	int ret = 0;
+
 	if (msg->hdr.cmd == 8)
 	{
 		//WriteLog(LL_Debug, "here");
 
-		union ccp_op* op;
-		unsigned int cmd_mask;
-		size_t key_len;
-		size_t i;
-		int ret;
+		union ccp_op* op = NULL;
+		unsigned int cmd_mask = 0;
+		size_t key_len = 0;
+		size_t i = 0;
 
 		if (msg->hdr.cmd != SBL_MSG_CCP)
 			goto done;
@@ -214,10 +213,8 @@ int hen_sceSblDriverSendMsg(struct sbl_msg* msg, size_t size)
 	}
 	else
 	{
-		//WriteLog(LL_Debug, "here");
-
 		hook_disable(plugin->sceSblDriverSendMsgHook);
-		int ret = sceSblDriverSendMsg(msg, size);
+		ret = sceSblDriverSendMsg(msg, size);
 		hook_enable(plugin->sceSblDriverSendMsgHook);
 
 		return ret;
@@ -367,7 +364,7 @@ int hen_sceSblKeymgrSmCallfunc(union keymgr_payload* payload)
 	// npdrm_decrypt_isolated_rif = 0x303
 	if (payload->cmd == 0x303)
 	{
-		WriteLog(LL_Debug, "here");
+		WriteLog(LL_Debug, "npdrm_decrypt_isolated_rif called");
 		//int(*sceSblKeymgrSmCallfunc)(union keymgr_payload* payload) = kdlsym(sceSblKeymgrSmCallfunc);
 
 		// it's SM request, thus we have the GPU address here, so we need to convert it to the CPU address
@@ -393,7 +390,7 @@ int hen_sceSblKeymgrSmCallfunc(union keymgr_payload* payload)
 	}
 	else if (payload->cmd == 0x307) // npdrm_decrypt_rif_new = 0x307
 	{
-		WriteLog(LL_Debug, "here");
+		WriteLog(LL_Debug, "npdrm_decrypt_rif_new called");
 		void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 		void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 

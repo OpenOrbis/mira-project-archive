@@ -122,6 +122,8 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	plugin->sceSblPfsSetKeysHook = hook_create(kdlsym(sceSblPfsSetKeys), hen_sceSblPfsSetKeys);
 	plugin->sceSblDriverSendMsgHook = hook_create(kdlsym(sceSblDriverSendMsg), hen_sceSblDriverSendMsg);
 	
+	WriteLog(LL_Debug, "here");
+
 	// Save our instance of the hen plugin
 	henPlugin = plugin;
 
@@ -133,6 +135,8 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	hook_enable(plugin->sceSblPfsSetKeysHook);
 	hook_enable(plugin->sceSblDriverSendMsgHook);
 
+	WriteLog(LL_Debug, "here");
+
 	void(*vmspace_free)(struct vmspace *) = kdlsym(vmspace_free);
 	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
 	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
@@ -141,6 +145,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 
 	uint8_t xor__eax_eax[5] = { 0x31, 0xC0, 0x90, 0x90, 0x90 };
+	WriteLog(LL_Debug, "here");
 
 	struct proc* shellCoreProc = proc_find_by_name("SceShellCore");
 	if (!shellCoreProc)
@@ -148,6 +153,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 		WriteLog(LL_Error, "could not find shellcore");
 		return false;
 	}
+	WriteLog(LL_Debug, "here");
 
 	PROC_LOCK(shellCoreProc);
 	
@@ -155,11 +161,13 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	struct vmspace* vm = vmspace_acquire_ref(shellCoreProc);
 	vm_map_t map = &shellCoreProc->p_vmspace->vm_map;
 	vm_map_lock_read(map);
+	WriteLog(LL_Debug, "here");
 
 	struct vm_map_entry* entry = map->header.next;
 
 	// Copy over all of the address information
 	vm_offset_t entryStart = entry->start;
+	WriteLog(LL_Debug, "here");
 
 	// Free the vmmap
 	vm_map_unlock_read(map);
@@ -169,6 +177,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	int ret = proc_rw_mem(shellCoreProc, (void*)(entryStart + 0xEA7B67), 4, (void*)"free", &bytesWritten, true);
 	if (ret < 0)
 		WriteLog(LL_Error, "could not write fake->free (%d).", ret);
+	WriteLog(LL_Debug, "here");
 
 	uint32_t offsets[] =
 	{
@@ -181,6 +190,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 		0x799447,
 		0x946D87
 	};
+	WriteLog(LL_Debug, "here");
 
 	for (uint32_t i = 0; i < 8; ++i)
 	{
@@ -189,8 +199,10 @@ uint8_t hen_load(struct henplugin_t* plugin)
 		if (ret < 0)
 			WriteLog(LL_Error, "could not write %d (%d).", i, ret);
 	}
+	WriteLog(LL_Debug, "here");
 
 	PROC_UNLOCK(shellCoreProc);
+	WriteLog(LL_Debug, "here");
 
 	return true;
 }
