@@ -72,6 +72,7 @@
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
+    <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
@@ -87,6 +88,7 @@
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
+    <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />

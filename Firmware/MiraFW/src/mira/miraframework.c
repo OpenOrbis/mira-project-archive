@@ -19,6 +19,7 @@
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
 #include <mira/plugins/cheat/cheat_plugin.h>
 #include <mira/plugins/console/consoleplugin.h>
+#include <mira/plugins/hen/henplugin.h>
 
 //
 //	Utilities
@@ -151,6 +152,16 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 		return false;
 	}*/
 	//overlayfs_init(framework->overlayfs);
+
+	WriteLog(LL_Debug, "allocating hen plugin");
+	framework->henPlugin = (struct henplugin_t*)kmalloc(sizeof(struct henplugin_t));
+	if (!framework->henPlugin)
+	{
+		WriteLog(LL_Error, "could not allocate hen plugin");
+		return false;
+	}
+	henplugin_init(framework->henPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 

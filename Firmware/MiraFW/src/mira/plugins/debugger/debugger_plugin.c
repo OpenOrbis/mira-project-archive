@@ -107,11 +107,13 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 		ret;
 	*/
 
+	
 	char* dash = "-----------------------";
 
 	WriteLog(LL_Info, "kernel panic detected");
 	WriteLog(LL_Info, dash);
-	WriteLog(LL_Info, dash);
+	WriteLog(LL_Info, "thread: %p proc: %p pid: %d", curthread, curthread->td_proc, curthread->td_proc->p_pid);
+	WriteLog(LL_Info, "eva: %o", eva);
 	WriteLog(LL_Info, "rdi: %p", frame->tf_rdi);
 	WriteLog(LL_Info, "rsi: %p", frame->tf_rsi);
 	WriteLog(LL_Info, "rdx: %p", frame->tf_rdx);
@@ -141,6 +143,11 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	WriteLog(LL_Info, "rsp: %p", rsp);
 	WriteLog(LL_Info, "err: %p", frame->tf_err);
 	WriteLog(LL_Info, dash);
+
+	// TODO: Remove these 2 lines
+	kkill(curthread->td_proc->p_pid, SIGKILL);
+	return;
+	// TODO: END TODO
 
 	// Intentionally hang the thread
 	for (;;)

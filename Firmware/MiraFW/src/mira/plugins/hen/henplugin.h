@@ -19,6 +19,10 @@ struct henplugin_t
 	struct hook_t* sceSblAuthMgrVerifyHeaderHook;
 	struct hook_t* sceSblAuthMgrSmLoadSelfBlockHook;
 	struct hook_t* sceSblAuthMgrSmLoadSelfSegmentHook;
+
+	struct hook_t* sceSblKeymgrSmCallfuncHook;
+	struct hook_t* sceSblDriverSendMsgHook;
+	struct hook_t* sceSblPfsSetKeysHook;
 };
 #define ELF_ET_EXEC          0x2
 #define ELF_ET_SCE_EXEC      0xFE00
@@ -111,8 +115,19 @@ uint8_t hen_unload(struct henplugin_t * plugin);
 //
 // Hooked functions
 //
+// FSELF
 int hen_sceSblAuthMgrIsLoadable2(struct self_context* ctx, struct self_auth_info* oldAuthInfo, int pathId, struct self_auth_info* newAuthInfo);
 int hen_sceSblAuthMgrVerifyHeader(struct self_context* ctx);
+
+// FPKG
+union keymgr_payload;
+struct pfs_header;
+struct sbl_msg;
+struct ekc;
+
+int hen_sceSblKeymgrSmCallfunc(union keymgr_payload* payload);
+int hen_sceSblPfsSetKeys(uint32_t* ekh, uint32_t* skh, uint8_t* eekpfs, struct ekc* eekc, unsigned int pubkey_ver, unsigned int key_ver, struct pfs_header* hdr, size_t hdr_size, unsigned int type, unsigned int finalized, unsigned int is_disc);
+int hen_sceSblDriverSendMsg(struct sbl_msg* msg, size_t size);
 
 //
 // Utility functions
@@ -122,4 +137,7 @@ int hen_buildFakeSelfAuthInfo(struct self_context* ctx, struct self_auth_info* p
 int hen_sceSblAuthMgrGetFakeSelfAuthInfo(struct self_context* ctx, struct self_auth_info* authInfo);
 int hen_sceSblAuthMgrGetElfHeader(struct self_context* ctx, Elf64_Ehdr** ehdr);
 
+
 uint8_t hen_isFakeSelf(struct self_context* ctx);
+
+extern struct henplugin_t* hen_getHenPlugin();

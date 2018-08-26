@@ -6,6 +6,18 @@
 
 #include <mira/miraframework.h>
 
+#include <oni/utils/kernel.h>
+
+#include <vm/vm.h>
+#include <vm/pmap.h>
+#include <vm/vm_map.h>
+
+#include <sys/proc.h>
+
+#include <sys/ptrace.h>
+
+#include <oni/utils/sys_wrappers.h>
+
 static const uint8_t s_auth_info_for_exec[] = {
 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00, 0x80, 0x03, 0x00, 0x20,
 	0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -40,6 +52,56 @@ void henplugin_init(struct henplugin_t* plugin)
 
 	plugin->plugin.plugin_load = (uint8_t(*)(void*)) hen_load;
 	plugin->plugin.plugin_unload = (uint8_t(*)(void*)) hen_unload;
+
+	plugin->sceSblAuthMgrVerifyHeaderHook = NULL;
+	plugin->sceSblAuthMgrIsLoadable2Hook = NULL;
+	plugin->sceSblKeymgrSmCallfuncHook = NULL;
+	plugin->sceSblPfsSetKeysHook = NULL;
+	plugin->sceSblDriverSendMsgHook = NULL;
+}
+
+static struct henplugin_t* henPlugin = NULL;
+struct henplugin_t* hen_getHenPlugin()
+{
+	return henPlugin;
+}
+
+struct proc* proc_find_by_name(const char* name) {
+	int(*_sx_slock)(struct sx *sx, int opts, const char *file, int line) = kdlsym(_sx_slock);
+	void(*_sx_sunlock)(struct sx *sx, const char *file, int line) = kdlsym(_sx_sunlock);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+
+	struct sx* allproclock = (struct sx*)kdlsym(allproc_lock);
+	struct proclist* allproc = (struct proclist*)*(uint64_t*)kdlsym(allproc);
+
+	int(*strcmp)(const char *str1, const char* str2) = kdlsym(strcmp);
+
+	struct proc* p;
+
+	if (!name)
+		return NULL;
+
+	_sx_slock(allproclock, 0, __FILE__, __LINE__);
+
+	FOREACH_PROC_IN_SYSTEM(p) {
+		PROC_LOCK(p);
+
+
+		if (strcmp(p->p_comm, name) == 0) {
+			PROC_UNLOCK(p);
+			goto done;
+		}
+
+		PROC_UNLOCK(p);
+	}
+
+	p = NULL;
+
+done:
+	_sx_sunlock(allproclock, __FILE__, __LINE__);
+
+	return p;
 }
 
 uint8_t hen_load(struct henplugin_t* plugin)
@@ -56,6 +118,79 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	//
 	// fpkg hooks
 	//
+	plugin->sceSblKeymgrSmCallfuncHook = hook_create(kdlsym(sceSblKeymgrSmCallfunc), hen_sceSblKeymgrSmCallfunc);
+	plugin->sceSblPfsSetKeysHook = hook_create(kdlsym(sceSblPfsSetKeys), hen_sceSblPfsSetKeys);
+	plugin->sceSblDriverSendMsgHook = hook_create(kdlsym(sceSblDriverSendMsg), hen_sceSblDriverSendMsg);
+	
+	// Save our instance of the hen plugin
+	henPlugin = plugin;
+
+	// Enable all the hooks and hope for the best
+	hook_enable(plugin->sceSblAuthMgrVerifyHeaderHook);
+	hook_enable(plugin->sceSblAuthMgrIsLoadable2Hook);
+
+	hook_enable(plugin->sceSblKeymgrSmCallfuncHook);
+	hook_enable(plugin->sceSblPfsSetKeysHook);
+	hook_enable(plugin->sceSblDriverSendMsgHook);
+
+	void(*vmspace_free)(struct vmspace *) = kdlsym(vmspace_free);
+	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
+	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
+	void(*_vm_map_unlock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_unlock_read);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+
+	uint8_t xor__eax_eax[5] = { 0x31, 0xC0, 0x90, 0x90, 0x90 };
+
+	struct proc* shellCoreProc = proc_find_by_name("SceShellCore");
+	if (!shellCoreProc)
+	{
+		WriteLog(LL_Error, "could not find shellcore");
+		return false;
+	}
+
+	PROC_LOCK(shellCoreProc);
+	
+	// Get the vm map
+	struct vmspace* vm = vmspace_acquire_ref(shellCoreProc);
+	vm_map_t map = &shellCoreProc->p_vmspace->vm_map;
+	vm_map_lock_read(map);
+
+	struct vm_map_entry* entry = map->header.next;
+
+	// Copy over all of the address information
+	vm_offset_t entryStart = entry->start;
+
+	// Free the vmmap
+	vm_map_unlock_read(map);
+	vmspace_free(vm);
+
+	size_t bytesWritten = 4;
+	int ret = proc_rw_mem(shellCoreProc, (void*)(entryStart + 0xEA7B67), 4, (void*)"free", &bytesWritten, true);
+	if (ret < 0)
+		WriteLog(LL_Error, "could not write fake->free (%d).", ret);
+
+	uint32_t offsets[] =
+	{
+		0x16D05B,
+		0x79941B,
+		0x7E5623,
+		0x946D5B,
+		0x16D087,
+		0x23747B,
+		0x799447,
+		0x946D87
+	};
+
+	for (uint32_t i = 0; i < 8; ++i)
+	{
+		bytesWritten = sizeof(xor__eax_eax);
+		ret = proc_rw_mem(shellCoreProc, (void*)(entryStart + offsets[i]), sizeof(xor__eax_eax), (void*)xor__eax_eax, &bytesWritten, true);
+		if (ret < 0)
+			WriteLog(LL_Error, "could not write %d (%d).", i, ret);
+	}
+
+	PROC_UNLOCK(shellCoreProc);
 
 	return true;
 }
