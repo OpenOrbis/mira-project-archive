@@ -257,14 +257,14 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		kfree(framework->orbisUtilsPlugin, sizeof(*framework->orbisUtilsPlugin));
 		framework->orbisUtilsPlugin = NULL;
 	}
-	struct orbisutils_plugin_t* orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
-	if (!orbisUtilsPlugin)
+	framework->orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
+	if (!framework->orbisUtilsPlugin)
 	{
 		WriteLog(LL_Error, "error allocating orbis utils plugin");
 		return false;
 	}
-	orbisutils_init(orbisUtilsPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &orbisUtilsPlugin->plugin);
+	orbisutils_init(framework->orbisUtilsPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->orbisUtilsPlugin->plugin);
 
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
@@ -283,9 +283,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	filetransfer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
-	framework->consolePlugin = NULL;
-	framework->logServerPlugin = NULL;
-	/*WriteLog(LL_Warn, "allocating console plugin");
+	WriteLog(LL_Warn, "allocating console plugin");
 	if (framework->consolePlugin)
 	{
 		kfree(framework->consolePlugin, sizeof(*framework->consolePlugin));
@@ -317,7 +315,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	logserver_init(framework->logServerPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->logServerPlugin->plugin);
-*/
+
 	// Initialize the plugin loader to read from file
 	WriteLog(LL_Info, "allocating pluginloader");
 	if (framework->pluginLoader)
