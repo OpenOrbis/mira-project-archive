@@ -5,6 +5,7 @@
 #include <oni/messaging/messagemanager.h>
 #include <oni/utils/logger.h>
 #include <oni/utils/hook.h>
+#include <oni/utils/kernel.h>
 
 #include <oni/utils/hde/hde64.h>
 #include <sys/proc.h>
@@ -283,23 +284,32 @@ uint8_t debugger_attach(struct debugger_plugin_t* plugin, int32_t pid)
 
 uint8_t debugger_detach(struct debugger_plugin_t* plugin)
 {
+	void(*proc_reparent)(struct proc* child, struct proc* parent) = kdlsym(proc_reparent);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	struct proc* proc0 = (struct proc*)kdlsym(proc0);
+	//struct proc* sysCoreProc = NULL;
+
 	if (!plugin)
 		return false;
 
 	if (plugin->pid < 0)
 		return false;
 
-
-	//void(*proc_reparent)(struct proc* child, struct proc* parent) = kdlsym(proc_reparent);
-	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
-	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-	//struct proc* proc0 = (struct proc*)0xFFFFFFFFCA5FC600; // TODO: Actually kdlsym proc0
-
-	uint8_t result = false;
-
+	
 	struct proc* proc = pfind(plugin->pid);
-	if (!proc)
-		return false;
+	if (proc)
+	{
+		struct ucred* cred = proc->p_ucred;
+		
+		// If we have a proc, then we have to check what kind of process it was
+		switch (cred->cr_sceAuthID)
+		{
+			// SceShellCore
+		case 0x3800000000000010:
+			break;
+		}
+	}
 
 	struct ucred* cred = proc->p_ucred;
 	if (!cred)
@@ -307,13 +317,17 @@ uint8_t debugger_detach(struct debugger_plugin_t* plugin)
 
 	// TODO: Fix
 	// FIXME: Properly detach and reparent
+	int result = kptrace(PT_DETACH, plugin->pid, NULL, 0);
+	if (result < 0)
+		WriteLog(LL_Warn, "could not ptrace detach (%d).", result);
+
 
 	
 	// Check if this was shellcore
 	if (cred->cr_sceAuthID == 0x3800000000000010)
 	{
 		// Reparent ShellCore to proc0
-		//proc_reparent(proc, proc0);
+		proc_reparent(proc, proc0);
 		result = true;
 	}	
 	else if (true)
@@ -429,6 +443,12 @@ void debugger_update(struct debugger_plugin_t* plugin)
 	if (!plugin)
 		return;
 
+	//struct proc* process = pfind(plugin->pid);
+	//if (process == NULL)
+	//{
+	//	debugger_detach(plugin);
+	//}
+	//PROC_UNLOCK(process);
 	// TODO: Check the current state before invoking the update functions
 	// TODO: A process will need to be in the attached + paused state in order for this to work
 

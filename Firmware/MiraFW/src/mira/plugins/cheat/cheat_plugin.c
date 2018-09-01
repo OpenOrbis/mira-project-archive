@@ -21,6 +21,7 @@
 
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/memory/allocator.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/kernel.h>
@@ -56,9 +57,9 @@ int32_t cheatplugin_findFreeThread(struct cheat_plugin_t* plugin);
 void cheatplugin_prepareScan(struct cheat_plugin_t* plugin, int pid, uint8_t* data, uint32_t dataLen);
 uint64_t cheatplugin_getResultsCount(struct cheat_result_t* headResult);
 
-void cheatplugin_onStartScan(struct allocation_t* msg);
-void cheatplugin_onGetResults(struct allocation_t* msg);
-void cheatplugin_onStatus(struct allocation_t* msg);
+void cheatplugin_onStartScan(struct ref_t* msg);
+void cheatplugin_onGetResults(struct ref_t* msg);
+void cheatplugin_onStatus(struct ref_t* msg);
 
 void cheat_plugin_init(struct cheat_plugin_t* plugin)
 {
@@ -104,7 +105,7 @@ uint8_t cheatplugin_unload(struct cheat_plugin_t* plugin)
 	return true;
 }
 
-void cheatplugin_onGetResults(struct allocation_t* msg)
+void cheatplugin_onGetResults(struct ref_t* msg)
 {
 	if (!cheatPlugin)
 		return;
@@ -112,7 +113,7 @@ void cheatplugin_onGetResults(struct allocation_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = __get(msg);
+	struct message_t* message = ref_getIncrement(msg);
 	if (!message)
 		return;
 
@@ -121,16 +122,18 @@ void cheatplugin_onGetResults(struct allocation_t* msg)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, ENOMEM);
+		messagemanager_sendResponse(msg, -ENOMEM);
 		WriteLog(LL_Error, "invalid payload");
 		goto cleanup;
 	}
 
+	// TODO: Finish implementation
+
 cleanup:
-	__dec(msg);
+	ref_release(msg);
 }
 
-void cheatplugin_onStatus(struct allocation_t* msg)
+void cheatplugin_onStatus(struct ref_t* msg)
 {
 	if (!cheatPlugin)
 		return;
@@ -138,7 +141,7 @@ void cheatplugin_onStatus(struct allocation_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = __get(msg);
+	struct message_t* message = ref_getIncrement(msg);
 	if (!message)
 		return;
 
@@ -147,16 +150,18 @@ void cheatplugin_onStatus(struct allocation_t* msg)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, ENOMEM);
+		messagemanager_sendResponse(msg, -ENOMEM);
 		WriteLog(LL_Error, "invalid payload");
 		goto cleanup;
 	}
 
+	// TODO: Finish implementation
+
 cleanup:
-	__dec(msg);
+	ref_release(msg);
 }
 
-void cheatplugin_onStartScan(struct allocation_t* msg)
+void cheatplugin_onStartScan(struct ref_t* msg)
 {
 	if (!cheatPlugin)
 		return;
@@ -164,7 +169,7 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = __get(msg);
+	struct message_t* message = ref_getIncrement(msg);
 	if (!message)
 		return;
 
@@ -173,7 +178,7 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, ENOMEM);
+		messagemanager_sendResponse(msg, -ENOMEM);
 		WriteLog(LL_Error, "invalid payload");
 		goto cleanup;
 	}
@@ -181,7 +186,7 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 	struct cheatplugin_startscan_t* payload = (struct cheatplugin_startscan_t*)message->payload;
 	if (payload->processId < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, EEXIST);
+		messagemanager_sendResponse(msg, -EEXIST);
 		WriteLog(LL_Error, "invalid process id");
 		goto cleanup;
 	}
@@ -195,7 +200,7 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 	case 8:
 		break;
 	default:
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, EIO);
+		messagemanager_sendResponse(msg, -EIO);
 		WriteLog(LL_Error, "incompatible alignment, must be 1, 2, 4, or 8");
 		goto cleanup;
 	}
@@ -203,7 +208,7 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 	// Verify the max data length
 	if (payload->dataLength > CHEAT_MAXDATASIZE)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, msg, ERANGE);
+		messagemanager_sendResponse(msg, -ERANGE);
 		WriteLog(LL_Error, "incompatible data length (provided: %d, max: %d)", payload->dataLength, CHEAT_MAXDATASIZE);
 		goto cleanup;
 	}
@@ -212,10 +217,10 @@ void cheatplugin_onStartScan(struct allocation_t* msg)
 	cheatplugin_prepareScan(cheatPlugin, payload->processId, payload->data, payload->dataLength);
 
 	// Send a successful response back
-	messagemanager_sendSuccessMessage(gFramework->messageManager, msg);
+	messagemanager_sendResponse(msg, 0);
 
 cleanup:
-	__dec(msg);
+	ref_release(msg);
 }
 
 int32_t cheatplugin_findFreeThread(struct cheat_plugin_t* plugin)

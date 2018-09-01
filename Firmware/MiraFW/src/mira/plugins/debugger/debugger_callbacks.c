@@ -8,7 +8,7 @@
 #include <oni/utils/logger.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/sys_wrappers.h>
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/kernel.h>
 
 #include <vm/vm.h>
@@ -85,13 +85,13 @@ struct debugger_getthreads_t
 	int pid;
 };
 
-void debugger_readmem_callback(struct allocation_t* ref)
+void debugger_readmem_callback(struct ref_t* reference)
 {
 	void* (*_memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -147,14 +147,14 @@ void debugger_readmem_callback(struct allocation_t* ref)
 	}
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void debugger_writemem_callback(struct allocation_t* ref)
+void debugger_writemem_callback(struct ref_t* reference)
 {
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -191,10 +191,10 @@ void debugger_writemem_callback(struct allocation_t* ref)
 	PROC_UNLOCK(process);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void debugger_getprocs_callback(struct allocation_t* ref)
+void debugger_getprocs_callback(struct ref_t* reference)
 {
 	int(*_sx_slock)(struct sx *sx, int opts, const char *file, int line) = kdlsym(_sx_slock);
 	void(*_sx_sunlock)(struct sx *sx, const char *file, int line) = kdlsym(_sx_sunlock);
@@ -210,10 +210,10 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -265,15 +265,15 @@ void debugger_getprocs_callback(struct allocation_t* ref)
 	kwrite(message->socket, &getproc, sizeof(getproc));
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void debugger_ptrace_callback(struct allocation_t* ref)
+void debugger_ptrace_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -283,7 +283,7 @@ void debugger_ptrace_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -308,15 +308,15 @@ void debugger_ptrace_callback(struct allocation_t* ref)
 	kwrite(message->socket, ptraceRequest, sizeof(*ptraceRequest));
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void debugger_kill_callback(struct allocation_t* ref)
+void debugger_kill_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -326,18 +326,16 @@ void debugger_kill_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
 	struct debugger_kill_t* killRequest = (struct debugger_kill_t*)message->payload;
 
 	int result = kkill(killRequest->pid, killRequest->signal);
-	if (result < 0)
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, result);
-	else
-		messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+
+	messagemanager_sendResponse(reference, result);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }

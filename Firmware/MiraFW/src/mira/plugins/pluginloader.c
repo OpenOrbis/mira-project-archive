@@ -4,9 +4,10 @@
 #include <oni/plugins/plugin.h>
 #include <oni/plugins/pluginmanager.h>
 
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/kdlsym.h>
+#include <oni/utils/memory/allocator.h>
 
 #include <sys/dirent.h>
 #include <sys/fcntl.h>

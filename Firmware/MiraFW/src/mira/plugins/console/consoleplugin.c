@@ -1,5 +1,5 @@
 #include "consoleplugin.h"
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 
 #include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
@@ -7,6 +7,7 @@
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/memory/allocator.h>
 
 #include <mira/miraframework.h>
 
@@ -28,8 +29,8 @@ struct console_open_t
 	uint16_t port;
 };
 
-void consoleplugin_open_callback(struct allocation_t* ref);
-void consoleplugin_close_callback(struct allocation_t* ref);
+void consoleplugin_open_callback(struct ref_t* reference);
+void consoleplugin_close_callback(struct ref_t* reference);
 void consoleplugin_consoleThread(struct console_t* console);
 
 void consoleplugin_init(struct consoleplugin_t* plugin)
@@ -153,7 +154,7 @@ void consoleDestroyConsole(struct console_t* console)
 	kfree(console, sizeof(*console));
 }
 
-void consoleplugin_open_callback(struct allocation_t* ref)
+void consoleplugin_open_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
@@ -161,7 +162,7 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -175,7 +176,7 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	if (request->fd < 0)
 	{
 		request->port = -1;
-		messagemanager_sendErrorMessage(mira_getFramework()->framework.messageManager, ref, EADDRNOTAVAIL);
+		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
 		WriteLog(LL_Error, "invalid file descriptor");
 		goto cleanup;
 	}
@@ -187,7 +188,7 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	{
 		WriteLog(LL_Error, "no free index");
 		request->port = -1;
-		messagemanager_sendErrorMessage(mira_getFramework()->framework.messageManager, ref, EADDRNOTAVAIL);
+		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
 		goto cleanup;
 	}
 	
@@ -199,7 +200,7 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	{
 		WriteLog(LL_Error, "could not allocate console");
 		request->port = -1;
-		messagemanager_sendErrorMessage(mira_getFramework()->framework.messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -219,7 +220,7 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 		
 		WriteLog(LL_Error, "could not allocate listen socket");
 		request->port = -1;
-		messagemanager_sendErrorMessage(mira_getFramework()->framework.messageManager, ref, console->socketDescriptor);
+		messagemanager_sendResponse(reference, console->socketDescriptor);
 
 		kfree(console, sizeof(*console));
 		goto cleanup;
@@ -272,17 +273,21 @@ void consoleplugin_open_callback(struct allocation_t* ref)
 	// Set the port
 	request->port = selectedPort;
 
+	// TODO: Investigate this implementation seems wrong
+
 	// Send the RPC message back to the client with the port
-	messagemanager_sendSuccessMessage(mira_getFramework()->framework.messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
+
+	// TODO: Double send here?
 
 	// Send to socket if needed
 	kwrite(message->socket, request, sizeof(*request));
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void consoleplugin_close_callback(struct allocation_t* ref)
+void consoleplugin_close_callback(struct ref_t* reference)
 {
 	// TODO: Implement
 }

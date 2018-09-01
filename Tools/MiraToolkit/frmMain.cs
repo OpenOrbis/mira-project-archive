@@ -68,7 +68,9 @@ namespace MiraToolkit
 
             //p_Device.AddConsole(9998);
 
-            new Controls.FileTransfer.ucFileTransfer(p_Device).Show();
+            var s_Fuck = new Controls.FileTransfer.ucFileTransfer(p_Device);
+
+            this.Controls.Add(s_Fuck);
 
             var s_Device = m_Devices.FirstOrDefault();
             if (s_Device == null)

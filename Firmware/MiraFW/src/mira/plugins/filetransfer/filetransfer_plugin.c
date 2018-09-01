@@ -6,8 +6,9 @@
 #include <oni/utils/sys_wrappers.h>
 #include <sys/dirent.h>
 #include <sys/stat.h>
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/memory/allocator.h>
 
 #ifndef MIN
 #define MIN ( x, y ) ( (x) < (y) ? : (x) : (y) )
@@ -142,18 +143,18 @@ struct filetransfer_stat_t
 	uint64_t size;
 };
 
-void filetransfer_open_callback(struct allocation_t* ref);
-void filetransfer_close_callback(struct allocation_t* ref);
-void filetransfer_read_callback(struct allocation_t* ref);
-void filetransfer_readfile_callback(struct allocation_t* ref);
-void filetransfer_write_callback(struct allocation_t* ref);
-void filetransfer_writefile_callback(struct allocation_t* ref);
-void filetransfer_getdents_callback(struct allocation_t* ref);
-void filetransfer_delete_callback(struct allocation_t* ref);
-void filetransfer_stat_callback(struct allocation_t* ref);
-void filetransfer_mkdir_callback(struct allocation_t* ref);
-void filetransfer_rmdir_callback(struct allocation_t* ref);
-void filetransfer_unlink_callback(struct allocation_t* ref);
+void filetransfer_open_callback(struct ref_t* reference);
+void filetransfer_close_callback(struct ref_t* reference);
+void filetransfer_read_callback(struct ref_t* reference);
+void filetransfer_readfile_callback(struct ref_t* reference);
+void filetransfer_write_callback(struct ref_t* reference);
+void filetransfer_writefile_callback(struct ref_t* reference);
+void filetransfer_getdents_callback(struct ref_t* reference);
+void filetransfer_delete_callback(struct ref_t* reference);
+void filetransfer_stat_callback(struct ref_t* reference);
+void filetransfer_mkdir_callback(struct ref_t* reference);
+void filetransfer_rmdir_callback(struct ref_t* reference);
+void filetransfer_unlink_callback(struct ref_t* reference);
 
 extern struct logger_t* gLogger;
 
@@ -204,14 +205,14 @@ uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 	return true;
 }
 
-void filetransfer_stat_callback(struct allocation_t* ref)
+void filetransfer_stat_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -221,7 +222,7 @@ void filetransfer_stat_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -232,13 +233,13 @@ void filetransfer_stat_callback(struct allocation_t* ref)
 	int result = kstat(fileStat->path, &stat);
 	if (result < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, result);
+		messagemanager_sendResponse(reference, result);
 		WriteLog(LL_Error, "kstat %s returned %d", fileStat->path, result);
 		goto cleanup;
 	}
 
 	// Send success message
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
 
 	// Fill out the struct
 	fileStat->gid = stat.st_gid;
@@ -250,15 +251,15 @@ void filetransfer_stat_callback(struct allocation_t* ref)
 	kwrite(message->socket, fileStat, sizeof(*fileStat));
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_open_callback(struct allocation_t* ref)
+void filetransfer_open_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -268,7 +269,7 @@ void filetransfer_open_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -279,27 +280,27 @@ void filetransfer_open_callback(struct allocation_t* ref)
 	openRequest->handle = kopen(openRequest->path, openRequest->flags, openRequest->mode);
 	if (openRequest->handle < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, openRequest->handle);
+		messagemanager_sendResponse(reference, openRequest->handle);
 		WriteLog(LL_Error, "[-] could not open file %s %d.", openRequest->path, openRequest->handle);
 		goto cleanup;
 	}
 
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	 messagemanager_sendResponse(reference, 0);
 
 	// Send to socket if needed
 	if (message->socket > 0)
 		kwrite(message->socket, openRequest, sizeof(*openRequest));
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_rmdir_callback(struct allocation_t* ref)
+void filetransfer_rmdir_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -308,7 +309,7 @@ void filetransfer_rmdir_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -318,20 +319,20 @@ void filetransfer_rmdir_callback(struct allocation_t* ref)
 
 	int result = krmdir(rmdirRequest->path);
 	if (result == -1)
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOENT);
+		messagemanager_sendResponse(reference, -ENOENT);
 	else
-		messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+		messagemanager_sendResponse(reference, 0);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_mkdir_callback(struct allocation_t* ref)
+void filetransfer_mkdir_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -340,7 +341,7 @@ void filetransfer_mkdir_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -350,17 +351,17 @@ void filetransfer_mkdir_callback(struct allocation_t* ref)
 
 	int result = kmkdir(mkdirRequest->path, mkdirRequest->mode);
 	if (result == -1)
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, EACCES);
+		messagemanager_sendResponse(reference, -EACCES);
 	else
-		messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+		 messagemanager_sendResponse(reference, 0);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_close_callback(struct allocation_t* ref)
+void filetransfer_close_callback(struct ref_t* reference)
 {
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -377,17 +378,17 @@ void filetransfer_close_callback(struct allocation_t* ref)
 	kclose(closeRequest->handle);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_read_callback(struct allocation_t* ref)
+void filetransfer_read_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -396,7 +397,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+  messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -405,7 +406,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	// Verify that the handle is valid
 	if (readRequest->handle < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOENT);
+		messagemanager_sendResponse(reference, -ENOENT);
 		goto cleanup;
 	}
 
@@ -418,7 +419,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	int res = kfstat(readRequest->handle, &statbuf);
 	if (res < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, res);
+		messagemanager_sendResponse(reference, res);
 		WriteLog(LL_Error, "[-] could not get %d handle stat: %d", readRequest->handle, res);
 		goto cleanup;
 	}
@@ -426,7 +427,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	// Verify that the offset is within bounds
 	if (readRequest->offset > statbuf.st_size)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, EIO);
+		messagemanager_sendResponse(reference, -EIO);
 		WriteLog(LL_Error, "offset > fileSize");
 		goto cleanup;
 	}
@@ -434,7 +435,7 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	// Check to see if the offset + size is greater than the length
 	if (readRequest->offset + readRequest->size > statbuf.st_size)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, EIO);
+		messagemanager_sendResponse(reference, -EIO);
 		WriteLog(LL_Error, "offset + size > fileSize");
 		goto cleanup;
 
@@ -444,12 +445,12 @@ void filetransfer_read_callback(struct allocation_t* ref)
 	uint8_t* buffer = (uint8_t*)kmalloc(bufferSize);
 	if (!buffer)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+  messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
 	// Send success message sayuing we got all of our information
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	 messagemanager_sendResponse(reference, 0);
 
 	// Seek to the position in file
 	klseek(readRequest->handle, readRequest->offset, 0);
@@ -479,14 +480,14 @@ void filetransfer_read_callback(struct allocation_t* ref)
 
 	kfree(buffer, bufferSize);
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_readfile_callback(struct allocation_t* ref)
+void filetransfer_readfile_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -497,7 +498,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	if (message->socket < 0)
 	{
 		WriteLog(LL_Error, "[-] socket not set");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -505,7 +506,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	if (!readRequest)
 	{
 		WriteLog(LL_Error, "[-] invalid payload");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -518,7 +519,7 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	int res = kfstat(readRequest->handle, &statbuf);
 	if (res < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, res);
+		messagemanager_sendResponse(reference, res);
 		WriteLog(LL_Error, "[-] could not get %d handle stat: %d", readRequest->handle, res);
 		goto cleanup;
 	}
@@ -527,12 +528,12 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	uint8_t* buffer = (uint8_t*)kmalloc(bufferSize);
 	if (!buffer)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
 	// Send success
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
 
 	// Set the size
 	readRequest->size = statbuf.st_size;
@@ -564,17 +565,17 @@ void filetransfer_readfile_callback(struct allocation_t* ref)
 	kfree(buffer, bufferSize);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_write_callback(struct allocation_t* ref)
+void filetransfer_write_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -583,7 +584,7 @@ void filetransfer_write_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -592,7 +593,7 @@ void filetransfer_write_callback(struct allocation_t* ref)
 	// Verify that the handle is valid
 	if (writeRequest->handle < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOENT);
+		messagemanager_sendResponse(reference, -ENOENT);
 		goto cleanup;
 	}
 
@@ -600,12 +601,12 @@ void filetransfer_write_callback(struct allocation_t* ref)
 	uint8_t* buffer = (uint8_t*)kmalloc(bufferSize);
 	if (!buffer)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
 	// Send success message sayuing we got all of our information
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
 
 	// Seek to the position in file
 	klseek(writeRequest->handle, writeRequest->offset, 0);
@@ -633,18 +634,19 @@ void filetransfer_write_callback(struct allocation_t* ref)
 	kwrite(writeRequest->handle, buffer, leftover);
 
 	kfree(buffer, bufferSize);
+
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_writefile_callback(struct allocation_t* ref)
+void filetransfer_writefile_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -653,7 +655,7 @@ void filetransfer_writefile_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -663,7 +665,7 @@ void filetransfer_writefile_callback(struct allocation_t* ref)
 	if (writeRequest->handle < 0)
 	{
 		WriteLog(LL_Error, "invalid handle");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOENT);
+		messagemanager_sendResponse(reference, -ENOENT);
 		goto cleanup;
 	}
 
@@ -672,7 +674,7 @@ void filetransfer_writefile_callback(struct allocation_t* ref)
 	if (!buffer)
 	{
 		WriteLog(LL_Error, "could not allocate temporary buffer");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -705,21 +707,21 @@ void filetransfer_writefile_callback(struct allocation_t* ref)
 	kfree(buffer, bufferSize);
 	buffer = NULL;
 
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_getdents_callback(struct allocation_t* ref)
+void filetransfer_getdents_callback(struct ref_t* reference)
 {
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -728,7 +730,7 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		WriteLog(LL_Error, "[-] invalid payload");
 		goto cleanup;
 	}
@@ -740,7 +742,7 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	int handle = kopen(payload->path, 0x0000 | 0x00020000, 0);
 	if (handle < 0)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, handle);
+		messagemanager_sendResponse(reference, handle);
 		WriteLog(LL_Error, "[-] could not open path %s", payload->path);
 		goto cleanup;
 	}
@@ -752,7 +754,7 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	char* buffer = kmalloc(bufferSize);
 	if (!buffer)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		WriteLog(LL_Error, "could not allocate memory");
 		goto cleanup;
 	}
@@ -783,13 +785,13 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	if (handle < 0)
 	{
 		kfree(buffer, bufferSize);
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, handle);
+		messagemanager_sendResponse(reference, handle);
 		WriteLog(LL_Error, "[-] could not open path %s", payload->path);
 		goto cleanup;
 	}
 
 	// Return success code
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
 
 	// Send the dent count
 	kwrite(message->socket, &dentCount, sizeof(dentCount));
@@ -831,15 +833,15 @@ void filetransfer_getdents_callback(struct allocation_t* ref)
 	kclose(handle);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void filetransfer_delete_callback(struct allocation_t* ref)
+void filetransfer_delete_callback(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 		return;
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 		return;
 
@@ -848,7 +850,7 @@ void filetransfer_delete_callback(struct allocation_t* ref)
 
 	if (!message->payload)
 	{
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+  messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -857,8 +859,8 @@ void filetransfer_delete_callback(struct allocation_t* ref)
 	message->header.request = 0;
 	message->header.error_type = kunlink(deleteRequest->path);
 
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	 messagemanager_sendResponse(reference, 0);
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }

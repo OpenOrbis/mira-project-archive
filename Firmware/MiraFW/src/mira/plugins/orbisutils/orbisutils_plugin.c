@@ -7,7 +7,7 @@
 #include <oni/messaging/messagemanager.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/cpu.h>
 
@@ -30,8 +30,8 @@ struct orbisutils_toggleaslr_t
 uint8_t orbisutils_load(struct orbisutils_plugin_t* plugin);
 uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin);
 
-void orbisutils_dumpHddKeys_callback(struct allocation_t* message);
-void orbisutils_toggleASLR(struct allocation_t* message);
+void orbisutils_dumpHddKeys_callback(struct ref_t* message);
+void orbisutils_toggleASLR(struct ref_t* message);
 
 enum UtilityCmds
 {
@@ -72,17 +72,17 @@ uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin)
 	return true;
 }
 
-void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
+void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	if (!ref)
+	if (!reference)
 	{
 		WriteLog(LL_Error, "invalid ref");
 		return;
 	}
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 	{
 		WriteLog(LL_Error, "invalid message");
@@ -98,11 +98,11 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 	if (!message->payload)
 	{
 		WriteLog(LL_Error, "no payload");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+  messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	messagemanager_sendSuccessMessage(gFramework->messageManager, ref);
+	 messagemanager_sendResponse(reference, 0);
 
 	struct utility_dumphddkeys_t* request = (struct utility_dumphddkeys_t*)message->payload;
 
@@ -132,20 +132,21 @@ void orbisutils_dumpHddKeys_callback(struct allocation_t* ref)
 	//kmemcpy(request->key, gKernelBase + 0x02790C90, 0x20);
 
 	message->header.request = false;
-	messagemanager_sendMessage(gFramework->messageManager, ref);
+	messagemanager_sendResponse(reference, 0);
+
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }
 
-void orbisutils_toggleASLR(struct allocation_t* ref)
+void orbisutils_toggleASLR(struct ref_t* reference)
 {
-	if (!ref)
+	if (!reference)
 	{
 		WriteLog(LL_Error, "invalid ref");
 		return;
 	}
 
-	struct message_t* message = __get(ref);
+	struct message_t* message = ref_getIncrement(reference);
 	if (!message)
 	{
 		WriteLog(LL_Error, "invalid message");
@@ -161,7 +162,7 @@ void orbisutils_toggleASLR(struct allocation_t* ref)
 	if (!message->payload)
 	{
 		WriteLog(LL_Error, "no payload");
-		messagemanager_sendErrorMessage(gFramework->messageManager, ref, ENOMEM);
+  messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -185,5 +186,5 @@ void orbisutils_toggleASLR(struct allocation_t* ref)
 	critical_exit();
 
 cleanup:
-	__dec(ref);
+	ref_release(reference);
 }

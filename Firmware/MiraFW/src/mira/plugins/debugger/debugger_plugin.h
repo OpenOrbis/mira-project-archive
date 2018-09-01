@@ -12,7 +12,7 @@
 #define MAX_SEGMENTS	1024
 #define MAX_THREADS		1024
 
-struct allocation_t;
+struct ref_t;
 
 struct segment_t
 {
@@ -191,15 +191,15 @@ int32_t debugger_getDisassemblyMinLength(struct debugger_plugin_t* plugin, void*
 //
 // RPC callbacks
 //
-void debugger_getprocs_callback(struct allocation_t* ref);
-void debugger_readmem_callback(struct allocation_t* ref);
-void debugger_writemem_callback(struct allocation_t* ref);
-void debugger_ptrace_callback(struct allocation_t* ref);
-void debugger_kill_callback(struct allocation_t* ref);
+void debugger_getprocs_callback(struct ref_t* reference);
+void debugger_readmem_callback(struct ref_t* reference);
+void debugger_writemem_callback(struct ref_t* reference);
+void debugger_ptrace_callback(struct ref_t* reference);
+void debugger_kill_callback(struct ref_t* reference);
 
 // Segments
-void debugger_getthreads_callback(struct allocation_t* ref);
-void debugger_getsegments_callback(struct allocation_t* ref);
+void debugger_getthreads_callback(struct ref_t* reference);
+void debugger_getsegments_callback(struct ref_t* reference);
 
 // Threads
-void debugger_update_callback(struct allocation_t* ref);
+void debugger_update_callback(struct ref_t* reference);

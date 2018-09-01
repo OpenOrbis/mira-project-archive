@@ -65,6 +65,8 @@
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
+    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
+    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_utils.c" />
     <ClCompile Include="src\mira\plugins\cheat\cheat_plugin.c" />
     <ClCompile Include="src\mira\plugins\console\consoleplugin.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
@@ -83,6 +85,7 @@
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
+    <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
     <ClInclude Include="src\mira\plugins\cheat\cheat_plugin.h" />
     <ClInclude Include="src\mira\plugins\console\consoleplugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />

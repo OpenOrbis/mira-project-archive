@@ -11,10 +11,11 @@
 
 #include <oni/utils/logger.h>
 #include <oni/utils/sys_wrappers.h>
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/cpu.h>
 #include <oni/utils/kernel.h>
+#include <oni/utils/memory/allocator.h>
 
 uint8_t debugger_isAddressMapped(struct debugger_plugin_t* plugin, void* address)
 {

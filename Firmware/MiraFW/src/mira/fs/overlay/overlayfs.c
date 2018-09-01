@@ -17,7 +17,7 @@
 #include <oni/utils/hook.h>
 #include <oni/init/initparams.h>
 #include <oni/utils/sys_wrappers.h>
-#include <oni/utils/memory/allocator.h>
+#include <oni/utils/ref.h>
 #include <oni/utils/cpu.h>
 #include <oni/utils/escape.h>
 
@@ -231,7 +231,10 @@ int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap)
 	size_t path_len;
 	copyinstr(uap->path, path, sizeof(path), &path_len);
 
-	if (strcmp("SceShellCore", p->p_comm) == 0) {
+	if (strcmp("SceShellCore", p->p_comm) != 0)
+		return 0;
+
+	{
 		char* pos1 = strstr(path, "/mnt/sandbox/");
 		char* pos2 = strstr(path, "/mnt/sandbox/pfsmnt/");
 
