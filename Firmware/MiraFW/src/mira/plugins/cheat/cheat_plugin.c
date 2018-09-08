@@ -113,23 +113,14 @@ void cheatplugin_onGetResults(struct ref_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = ref_getIncrement(msg);
+	struct message_header_t* message = ref_getDataAndAcquire(msg);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
-		goto cleanup;
-
-	if (!message->payload)
-	{
-		messagemanager_sendResponse(msg, -ENOMEM);
-		WriteLog(LL_Error, "invalid payload");
-		goto cleanup;
-	}
 
 	// TODO: Finish implementation
 
-cleanup:
+//cleanup:
 	ref_release(msg);
 }
 
@@ -141,19 +132,12 @@ void cheatplugin_onStatus(struct ref_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = ref_getIncrement(msg);
+	struct message_header_t* message = ref_getDataAndAcquire(msg);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
+	if (message->request != true)
 		goto cleanup;
-
-	if (!message->payload)
-	{
-		messagemanager_sendResponse(msg, -ENOMEM);
-		WriteLog(LL_Error, "invalid payload");
-		goto cleanup;
-	}
 
 	// TODO: Finish implementation
 
@@ -169,21 +153,22 @@ void cheatplugin_onStartScan(struct ref_t* msg)
 	if (!msg)
 		return;
 
-	struct message_t* message = ref_getIncrement(msg);
+	struct message_header_t* message = ref_getDataAndAcquire(msg);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
+	if (message->request != true)
 		goto cleanup;
 
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(msg) < sizeof(struct cheatplugin_startscan_t))
 	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(msg, -ENOMEM);
-		WriteLog(LL_Error, "invalid payload");
 		goto cleanup;
 	}
 
-	struct cheatplugin_startscan_t* payload = (struct cheatplugin_startscan_t*)message->payload;
+	struct cheatplugin_startscan_t* payload = message_getData(message);
 	if (payload->processId < 0)
 	{
 		messagemanager_sendResponse(msg, -EEXIST);

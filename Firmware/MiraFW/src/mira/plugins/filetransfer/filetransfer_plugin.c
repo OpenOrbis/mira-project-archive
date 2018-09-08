@@ -212,21 +212,19 @@ void filetransfer_stat_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_stat_t))
 	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_stat_t* fileStat = (struct filetransfer_stat_t*)message->payload;
+	struct filetransfer_stat_t* fileStat = message_getData(message);
 	struct stat stat;
 	memset(&stat, 0, sizeof(stat));
 
@@ -248,7 +246,9 @@ void filetransfer_stat_callback(struct ref_t* reference)
 	fileStat->mode = stat.st_mode;
 
 	// Send that shit back
-	kwrite(message->socket, fileStat, sizeof(*fileStat));
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket > 0)
+		kwrite(clientSocket, fileStat, sizeof(*fileStat));
 
 cleanup:
 	ref_release(reference);
@@ -259,21 +259,19 @@ void filetransfer_open_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_open_t))
 	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_open_t* openRequest = (struct filetransfer_open_t*)message->payload;
+	struct filetransfer_open_t* openRequest = message_getData(message);
 
 	WriteLog(LL_Debug, "[+] openRequest %p %d %d.", openRequest, openRequest->flags, openRequest->mode);
 
@@ -285,11 +283,13 @@ void filetransfer_open_callback(struct ref_t* reference)
 		goto cleanup;
 	}
 
-	 messagemanager_sendResponse(reference, 0);
+	messagemanager_sendResponse(reference, 0);
 
 	// Send to socket if needed
-	if (message->socket > 0)
-		kwrite(message->socket, openRequest, sizeof(*openRequest));
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+
+	if (clientSocket > 0)
+		kwrite(clientSocket, openRequest, sizeof(*openRequest));
 
 cleanup:
 	ref_release(reference);
@@ -300,20 +300,19 @@ void filetransfer_rmdir_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
-		goto cleanup;
-
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_rmdir_t))
 	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_rmdir_t* rmdirRequest = (struct filetransfer_rmdir_t*)message->payload;
+	struct filetransfer_rmdir_t* rmdirRequest = message_getData(message);
 
 	WriteLog(LL_Debug, "rmdir (%s)", rmdirRequest->path);
 
@@ -332,20 +331,19 @@ void filetransfer_mkdir_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
-		goto cleanup;
-
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_mkdir_t))
 	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_mkdir_t* mkdirRequest = (struct filetransfer_mkdir_t*)message->payload;
+	struct filetransfer_mkdir_t* mkdirRequest = message_getData(message);
 
 	WriteLog(LL_Debug, "mk (%s) (%d)", mkdirRequest->path, mkdirRequest->mode);
 
@@ -361,17 +359,19 @@ cleanup:
 
 void filetransfer_close_callback(struct ref_t* reference)
 {
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_close_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
+	}
 
-	if (!message->payload)
-		goto cleanup;
-
-	struct filetransfer_close_t* closeRequest = (struct filetransfer_close_t*)message->payload;
+	struct filetransfer_close_t* closeRequest = message_getData(message);
 
 	WriteLog(LL_Debug, "[+] closeRequest %p %d", closeRequest, closeRequest->handle);
 
@@ -388,20 +388,19 @@ void filetransfer_read_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_read_t))
 	{
-  messagemanager_sendResponse(reference, -ENOMEM);
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_read_t* readRequest = (struct filetransfer_read_t*)message->payload;
+	struct filetransfer_read_t* readRequest = message_getData(message);
 
 	// Verify that the handle is valid
 	if (readRequest->handle < 0)
@@ -445,7 +444,7 @@ void filetransfer_read_callback(struct ref_t* reference)
 	uint8_t* buffer = (uint8_t*)kmalloc(bufferSize);
 	if (!buffer)
 	{
-  messagemanager_sendResponse(reference, -ENOMEM);
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -459,8 +458,14 @@ void filetransfer_read_callback(struct ref_t* reference)
 	memset(buffer, 0, bufferSize);
 
 	// Write the header
-	message->header.request = 0;
-	kwrite(message->socket, readRequest, sizeof(*readRequest));
+	message->request = false;
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
+	{
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
+		goto cleanup;
+	}
+	kwrite(clientSocket, readRequest, sizeof(*readRequest));
 
 	// Calculate the blocks and leftover data
 	uint64_t blocks = readRequest->size / bufferSize;
@@ -470,13 +475,13 @@ void filetransfer_read_callback(struct ref_t* reference)
 	for (uint64_t i = 0; i < blocks; ++i)
 	{
 		kread(readRequest->handle, buffer, bufferSize);
-		kwrite(message->socket, buffer, bufferSize);
+		kwrite(clientSocket, buffer, bufferSize);
 		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
 	kread(readRequest->handle, buffer, leftover);
-	kwrite(message->socket, buffer, leftover);
+	kwrite(clientSocket, buffer, leftover);
 
 	kfree(buffer, bufferSize);
 cleanup:
@@ -487,22 +492,27 @@ void filetransfer_readfile_callback(struct ref_t* reference)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	// Validate that the socket is valid before we continue
-	if (message->socket < 0)
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
 	{
-		WriteLog(LL_Error, "[-] socket not set");
+		WriteLog(LL_Error, "client sockets");
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
+		goto cleanup;
+	}
+
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_readfile_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_readfile_t* readRequest = (struct filetransfer_readfile_t*)message->payload;
+	struct filetransfer_readfile_t* readRequest = (struct filetransfer_readfile_t*)message_getData(message);
 	if (!readRequest)
 	{
 		WriteLog(LL_Error, "[-] invalid payload");
@@ -543,8 +553,8 @@ void filetransfer_readfile_callback(struct ref_t* reference)
 	memset(buffer, 0, bufferSize);
 
 	// Write the header
-	message->header.request = 0;
-	kwrite(message->socket, readRequest, sizeof(*readRequest));
+	message->request = 0;
+	kwrite(clientSocket, readRequest, sizeof(*readRequest));
 
 	// Calculate the blocks and leftover data
 	uint64_t blocks = statbuf.st_size / bufferSize;
@@ -554,13 +564,13 @@ void filetransfer_readfile_callback(struct ref_t* reference)
 	for (uint64_t i = 0; i < blocks; ++i)
 	{
 		kread(readRequest->handle, buffer, bufferSize);
-		kwrite(message->socket, buffer, bufferSize);
+		kwrite(clientSocket, buffer, bufferSize);
 		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
 	kread(readRequest->handle, buffer, leftover);
-	kwrite(message->socket, buffer, leftover);
+	kwrite(clientSocket, buffer, leftover);
 
 	kfree(buffer, bufferSize);
 
@@ -575,20 +585,27 @@ void filetransfer_write_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	if (!message->payload)
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
 	{
+		WriteLog(LL_Error, "client socket not open");
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
+		goto cleanup;
+	}
+
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_write_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_write_t* writeRequest = (struct filetransfer_write_t*)message->payload;
+	struct filetransfer_write_t* writeRequest = message_getData(message);
 
 	// Verify that the handle is valid
 	if (writeRequest->handle < 0)
@@ -615,7 +632,7 @@ void filetransfer_write_callback(struct ref_t* reference)
 	memset(buffer, 0, bufferSize);
 
 	// Write the header
-	message->header.request = 0;
+	message->request = false;
 
 	// Calculate the blocks and leftover data
 	uint64_t blocks = writeRequest->size / bufferSize;
@@ -624,13 +641,13 @@ void filetransfer_write_callback(struct ref_t* reference)
 	// Write all blocks
 	for (uint64_t i = 0; i < blocks; ++i)
 	{
-		kread(message->socket, buffer, bufferSize);
+		kread(clientSocket, buffer, bufferSize);
 		kwrite(writeRequest->handle, buffer, bufferSize);
 		memset(buffer, 0, bufferSize);
 	}
 
 	// Write leftover data
-	kread(message->socket, buffer, leftover);
+	kread(clientSocket, buffer, leftover);
 	kwrite(writeRequest->handle, buffer, leftover);
 
 	kfree(buffer, bufferSize);
@@ -646,20 +663,27 @@ void filetransfer_writefile_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	if (!message->payload)
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
 	{
+		WriteLog(LL_Error, "could not open socket");
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
+		goto cleanup;
+	}
+
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_writefile_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
 		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	struct filetransfer_writefile_t* writeRequest = (struct filetransfer_writefile_t*)message->payload;
+	struct filetransfer_writefile_t* writeRequest = message_getData(message);
 
 	// Verify that the handle is valid
 	if (writeRequest->handle < 0)
@@ -692,7 +716,7 @@ void filetransfer_writefile_callback(struct ref_t* reference)
 		int32_t currentSize = MIN(0x4000, writeRequest->size - dataReceived);
 		memset(buffer, 0, bufferSize);
 
-		int recvSize = krecv(message->socket, buffer, currentSize, 0);
+		int recvSize = krecv(clientSocket, buffer, currentSize, 0);
 		if (recvSize < 0)
 		{
 			WriteLog(LL_Error, "could not recv %d", recvSize);
@@ -721,21 +745,27 @@ void filetransfer_getdents_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	if (!message->payload)
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
 	{
-		messagemanager_sendResponse(reference, -ENOMEM);
-		WriteLog(LL_Error, "[-] invalid payload");
+		WriteLog(LL_Error, "could not open socket");
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
 		goto cleanup;
 	}
 
-	struct filetransfer_getdents_t* payload = (struct filetransfer_getdents_t*)message->payload;
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_getdents_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
+		goto cleanup;
+	}
+
+	struct filetransfer_getdents_t* payload = message_getData(message);
 
 	WriteLog(LL_Debug, "[+] getdents %s", payload->path);
 
@@ -794,7 +824,7 @@ void filetransfer_getdents_callback(struct ref_t* reference)
 	messagemanager_sendResponse(reference, 0);
 
 	// Send the dent count
-	kwrite(message->socket, &dentCount, sizeof(dentCount));
+	kwrite(clientSocket, &dentCount, sizeof(dentCount));
 
 	struct filetransfer_getdents_t writeDent;
 	memset(&writeDent, 0, sizeof(writeDent));
@@ -822,7 +852,7 @@ void filetransfer_getdents_callback(struct ref_t* reference)
 			writeDent.type = dent->d_type;
 			writeDent.handle = dent->d_fileno;
 
-			kwrite(message->socket, &writeDent, sizeof(writeDent));
+			kwrite(clientSocket, &writeDent, sizeof(writeDent));
 
 			//printf("[+] writing dent %p\n", dent);
 			dent = (struct dirent*)((uint8_t*)dent + dent->d_reclen);
@@ -841,23 +871,30 @@ void filetransfer_delete_callback(struct ref_t* reference)
 	if (!reference)
 		return;
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != 1)
-		goto cleanup;
-
-	if (!message->payload)
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket < 0)
 	{
-  messagemanager_sendResponse(reference, -ENOMEM);
+		WriteLog(LL_Error, "could not open socket");
+		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
 		goto cleanup;
 	}
 
-	struct filetransfer_delete_t* deleteRequest = (struct filetransfer_delete_t*)message->payload;
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct filetransfer_delete_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
+		goto cleanup;
+	}
 
-	message->header.request = 0;
-	message->header.error_type = kunlink(deleteRequest->path);
+	struct filetransfer_delete_t* deleteRequest = message_getData(message);
+
+	message->request = 0;
+	message->error_type = kunlink(deleteRequest->path);
 
 	 messagemanager_sendResponse(reference, 0);
 

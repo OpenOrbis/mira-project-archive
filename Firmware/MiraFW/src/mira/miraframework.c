@@ -278,21 +278,21 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->orbisUtilsPlugin->plugin);
 
 	// Register file transfer plugin
-	WriteLog(LL_Info, "allocating file transfer plugin");
-	if (framework->fileTransferPlugin)
-	{
-		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
-		framework->fileTransferPlugin = NULL;
-	}
-	
-	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
-	if (!framework->fileTransferPlugin)
-	{
-		WriteLog(LL_Error, "error allocating file transfer plugin");
-		return false;
-	}
-	filetransfer_plugin_init(framework->fileTransferPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
+	//WriteLog(LL_Info, "allocating file transfer plugin");
+	//if (framework->fileTransferPlugin)
+	//{
+	//	kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
+	//	framework->fileTransferPlugin = NULL;
+	//}
+	//
+	//framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
+	//if (!framework->fileTransferPlugin)
+	//{
+	//	WriteLog(LL_Error, "error allocating file transfer plugin");
+	//	return false;
+	//}
+	//filetransfer_plugin_init(framework->fileTransferPlugin);
+	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
 	WriteLog(LL_Warn, "allocating console plugin");
 	if (framework->consolePlugin)

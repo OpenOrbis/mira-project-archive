@@ -74,7 +74,20 @@ uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin)
 
 void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 {
+	// This is how we decrypt the EAP Internal partition key for usage with mounting on PC
+	int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	uint8_t* sbl_eap_internal_partition_key = kdlsym(sbl_eap_internal_partition_key);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+
+#if ONI_PLATFORM>=ONI_PLATFORM_ORBIS_BSD_500
+	// icc functions, 5.00+ does not have bank_id
+	int(*icc_nvs_read)(uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
+#else
+	int(*icc_nvs_read)(uint64_t bank_id, uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
+#endif
+
+	WriteLog(LL_Error, "here");
 
 	if (!reference)
 	{
@@ -82,56 +95,71 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 		return;
 	}
 
-	struct message_t* message = ref_getIncrement(reference);
+	WriteLog(LL_Error, "here");
+
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 	{
 		WriteLog(LL_Error, "invalid message");
 		return;
 	}
 
-	if (message->header.request != true)
+	WriteLog(LL_Error, "here");
+
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct utility_dumphddkeys_t))
 	{
-		WriteLog(LL_Error, "response ignored");
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	if (!message->payload)
-	{
-		WriteLog(LL_Error, "no payload");
-  messagemanager_sendResponse(reference, -ENOMEM);
-		goto cleanup;
-	}
+	WriteLog(LL_Error, "here");
 
-	 messagemanager_sendResponse(reference, 0);
+	struct utility_dumphddkeys_t* request = message_getData(message);
 
-	struct utility_dumphddkeys_t* request = (struct utility_dumphddkeys_t*)message->payload;
-
-	// This is how we decrypt the EAP Internal partition key for usage with mounting on PC
-	int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
-
+	// Zero our bfufers
 	memset(request->key, 0, sizeof(request->key));
 	memset(request->encrypted, 0, sizeof(request->encrypted));
 
-	int result = -1000;
+	WriteLog(LL_Error, "here");
 
+	int32_t result = -1; 
 #if ONI_PLATFORM>=ONI_PLATFORM_ORBIS_BSD_500
-	// icc functions, 5.00+ does not have bank_id
-	int(*icc_nvs_read)(uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
 	result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
 #else
-	int(*icc_nvs_read)(uint64_t bank_id, uint64_t block_id, uint64_t offset, uint64_t size, uint8_t *data_ptr) = kdlsym(icc_nvs_read);
 	result = icc_nvs_read(0, 4, 0x200, 0x60, request->encrypted);
 #endif
 
+	WriteLog(LL_Info, "icc_nvs_read returned %d", result);
+
+	// Check if there was an error returned
 	if (result < 0)
-		WriteLog(LL_Debug, "icc_nvs_sread returned %d", result);
+	{
+		WriteLog(LL_Error, "icc_nvs_sread returned %d", result);
+		messagemanager_sendResponse(reference, result);
+		goto cleanup;
+	}
+		
+	WriteLog(LL_Error, "here");
 
+
+	// Get 'le keys
 	result = sceSblGetEAPInternalPartitionKey(request->encrypted, request->key);
-	WriteLog(LL_Debug, "sceSblGetEAPInternalPartitionKey returned %d", result);
+	if (result < 0)
+	{
+		WriteLog(LL_Error, "sceSblGetEAPInternalPartitionKey failed (%d).", result);
+		messagemanager_sendResponse(reference, result);
+		goto cleanup;
+	}
 
-	//kmemcpy(request->key, gKernelBase + 0x02790C90, 0x20);
+	WriteLog(LL_Error, "here");
 
-	message->header.request = false;
+	// Copy over the key
+	//memcpy(request->key, (const void*)sbl_eap_internal_partition_key, 0x20);
+
+	WriteLog(LL_Error, "here");
+
 	messagemanager_sendResponse(reference, 0);
 
 cleanup:
@@ -140,36 +168,31 @@ cleanup:
 
 void orbisutils_toggleASLR(struct ref_t* reference)
 {
+	void(*critical_enter)(void) = kdlsym(critical_enter);
+	void(*critical_exit)(void) = kdlsym(critical_exit);
+
 	if (!reference)
 	{
 		WriteLog(LL_Error, "invalid ref");
 		return;
 	}
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 	{
 		WriteLog(LL_Error, "invalid message");
 		return;
 	}
 
-	if (message->header.request != true)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct orbisutils_toggleaslr_t))
 	{
-		WriteLog(LL_Error, "response ignored");
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
 	}
 
-	if (!message->payload)
-	{
-		WriteLog(LL_Error, "no payload");
-  messagemanager_sendResponse(reference, -ENOMEM);
-		goto cleanup;
-	}
-
-	struct orbisutils_toggleaslr_t* payload = (struct orbisutils_toggleaslr_t*)message->payload;
-
-	void(*critical_enter)(void) = kdlsym(critical_enter);
-	void(*critical_exit)(void) = kdlsym(critical_exit);
+	struct orbisutils_toggleaslr_t* payload = message_getData(message);
 
 	WriteLog(LL_Debug, "%s ASLR for Userland Executables.", payload->aslrEnabled ? "Enabling" : "Disabling");
 

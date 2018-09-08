@@ -113,7 +113,7 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 
 	WriteLog(LL_Info, "kernel panic detected");
 	WriteLog(LL_Info, dash);
-	WriteLog(LL_Info, "thread: %p proc: %p pid: %d", curthread, curthread->td_proc, curthread->td_proc->p_pid);
+	WriteLog(LL_Info, "thread: %p proc: %p pid: %d path: %s", curthread, curthread->td_proc, curthread->td_proc->p_pid, curthread->td_proc->p_elfpath);
 	WriteLog(LL_Info, "eva: %o", eva);
 	WriteLog(LL_Info, "rdi: %p", frame->tf_rdi);
 	WriteLog(LL_Info, "rsi: %p", frame->tf_rsi);
@@ -144,11 +144,6 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	WriteLog(LL_Info, "rsp: %p", rsp);
 	WriteLog(LL_Info, "err: %p", frame->tf_err);
 	WriteLog(LL_Info, dash);
-
-	// TODO: Remove these 2 lines
-	kkill(curthread->td_proc->p_pid, SIGKILL);
-	return;
-	// TODO: END TODO
 
 	// Intentionally hang the thread
 	for (;;)
@@ -311,13 +306,14 @@ uint8_t debugger_detach(struct debugger_plugin_t* plugin)
 		}
 	}
 
-	struct ucred* cred = proc->p_ucred;
+	int result = -1;
+	struct ucred* cred = proc ? proc->p_ucred : NULL;
 	if (!cred)
 		goto cleanup;
 
 	// TODO: Fix
 	// FIXME: Properly detach and reparent
-	int result = kptrace(PT_DETACH, plugin->pid, NULL, 0);
+	result = kptrace(PT_DETACH, plugin->pid, NULL, 0);
 	if (result < 0)
 		WriteLog(LL_Warn, "could not ptrace detach (%d).", result);
 

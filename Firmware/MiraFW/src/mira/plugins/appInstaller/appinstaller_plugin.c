@@ -49,10 +49,39 @@ uint8_t appinstaller_load(struct appinstallerplugin_t * plugin)
 
 	// Resolve the functions that we need
 	ret = sys_dynlib_dlsym(appInstUtilModule, "sceAppInstUtilInitialize", &plugin->sceAppInstUtilInitialize);
+	if (ret)
+	{
+		WriteLog(LL_Error, "could not resolve sceAppInstUtilInitialize");
+		goto err;
+	}
+
 	ret = sys_dynlib_dlsym(appInstUtilModule, "sceAppInstUtilAppInstallPkg", &plugin->sceAppInstUtilAppInstallPkg);
+	if (ret)
+	{
+		WriteLog(LL_Error, "could not resolve sceAppInstUtilAppInstallPkg");
+		goto err;
+	}
+
 	ret = sys_dynlib_dlsym(appInstUtilModule, "sceAppInstUtilGetTitleIdFromPkg", &plugin->sceAppInstUtilGetTitleIdFromPkg);
+	if (ret)
+	{
+		WriteLog(LL_Error, "could not resolve sceAppInstUtilGetTitleIdFromPkg");
+		goto err;
+	}
+
 	ret = sys_dynlib_dlsym(appInstUtilModule, "sceAppInstUtilAppPrepareOverwritePkg", &plugin->sceAppInstUtilAppPrepareOverwritePkg);
+	if (ret)
+	{
+		WriteLog(LL_Error, "could not resolve sceAppInstUtilAppPrepareOverwritePkg");
+		goto err;
+	}
+
 	ret = sys_dynlib_dlsym(appInstUtilModule, "sceAppInstUtilGetPrimaryAppSlot", &plugin->sceAppInstUtilGetPrimaryAppSlot);
+	if (ret)
+	{
+		WriteLog(LL_Error, "could not resolve sceAppInstUtilGetPrimaryAppSlot");
+		goto err;
+	}
 
 	// TODO: Finish the debugger plugin
 	// TODO: Finish this shit

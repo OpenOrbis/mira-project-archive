@@ -4,6 +4,8 @@
 #include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 
+#include <oni/rpc/rpcserver.h>
+
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/logger.h>
@@ -162,17 +164,22 @@ void consoleplugin_open_callback(struct ref_t* reference)
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 
-	struct message_t* message = ref_getIncrement(reference);
+	struct message_header_t* message = ref_getDataAndAcquire(reference);
 	if (!message)
 		return;
 
-	if (message->header.request != true)
+	if (message->request != true)
 		goto cleanup;
 
-	if (!message->payload)
+	// Verify that our reference has enough space for our payload
+	if (ref_getSize(reference) < sizeof(struct console_open_t))
+	{
+		WriteLog(LL_Error, "not enough space to hold payload");
+		messagemanager_sendResponse(reference, -ENOMEM);
 		goto cleanup;
+	}
 
-	struct console_open_t* request = (struct console_open_t*)message->payload;
+	struct console_open_t* request = message_getData(message);
 	if (request->fd < 0)
 	{
 		request->port = -1;
@@ -281,7 +288,9 @@ void consoleplugin_open_callback(struct ref_t* reference)
 	// TODO: Double send here?
 
 	// Send to socket if needed
-	kwrite(message->socket, request, sizeof(*request));
+	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+	if (clientSocket > 0)
+		kwrite(clientSocket, request, sizeof(*request));
 
 cleanup:
 	ref_release(reference);
