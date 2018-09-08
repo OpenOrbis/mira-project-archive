@@ -118,15 +118,17 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 
 	struct utility_dumphddkeys_t* request = message_getData(message);
 
-	// Zero our bfufers
+	// Zero our buffers
 	memset(request->key, 0, sizeof(request->key));
 	memset(request->encrypted, 0, sizeof(request->encrypted));
+
+	memset(sbl_eap_internal_partition_key, 0, 0x60);
 
 	WriteLog(LL_Error, "here");
 
 	int32_t result = -1; 
 #if ONI_PLATFORM>=ONI_PLATFORM_ORBIS_BSD_500
-	result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
+	result = icc_nvs_read(4, 0x200, 0x60, sbl_eap_internal_partition_key);
 #else
 	result = icc_nvs_read(0, 4, 0x200, 0x60, request->encrypted);
 #endif
@@ -145,7 +147,7 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 
 
 	// Get 'le keys
-	result = sceSblGetEAPInternalPartitionKey(request->encrypted, request->key);
+	result = sceSblGetEAPInternalPartitionKey(sbl_eap_internal_partition_key, request->key);
 	if (result < 0)
 	{
 		WriteLog(LL_Error, "sceSblGetEAPInternalPartitionKey failed (%d).", result);
@@ -154,6 +156,10 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 	}
 
 	WriteLog(LL_Error, "here");
+
+	memcpy(request->encrypted, sbl_eap_internal_partition_key, sizeof(request->encrypted));
+
+	
 
 	// Copy over the key
 	//memcpy(request->key, (const void*)sbl_eap_internal_partition_key, 0x20);
