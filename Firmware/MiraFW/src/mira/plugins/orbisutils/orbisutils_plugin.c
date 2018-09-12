@@ -75,7 +75,7 @@ uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin)
 void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 {
 	// This is how we decrypt the EAP Internal partition key for usage with mounting on PC
-	int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
+	//int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	uint8_t* sbl_eap_internal_partition_key = kdlsym(sbl_eap_internal_partition_key);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
@@ -122,13 +122,14 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 	memset(request->key, 0, sizeof(request->key));
 	memset(request->encrypted, 0, sizeof(request->encrypted));
 
-	memset(sbl_eap_internal_partition_key, 0, 0x60);
+	//memset(sbl_eap_internal_partition_key, 0, 0x60);
+	memcpy(request->encrypted, sbl_eap_internal_partition_key, 0x60);
 
 	WriteLog(LL_Error, "here");
 
 	int32_t result = -1; 
 #if ONI_PLATFORM>=ONI_PLATFORM_ORBIS_BSD_500
-	result = icc_nvs_read(4, 0x200, 0x60, sbl_eap_internal_partition_key);
+	result = icc_nvs_read(4, 0x200, 0x60, request->encrypted);
 #else
 	result = icc_nvs_read(0, 4, 0x200, 0x60, request->encrypted);
 #endif
@@ -146,23 +147,17 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 	WriteLog(LL_Error, "here");
 
 
-	// Get 'le keys
-	result = sceSblGetEAPInternalPartitionKey(sbl_eap_internal_partition_key, request->key);
-	if (result < 0)
-	{
-		WriteLog(LL_Error, "sceSblGetEAPInternalPartitionKey failed (%d).", result);
-		messagemanager_sendResponse(reference, result);
-		goto cleanup;
-	}
+	// Get 'le keys, TODO: This returns some fucked up data, figure out why
+	//result = sceSblGetEAPInternalPartitionKey(request->encrypted, request->key);
+	//if (result < 0)
+	//{
+	//	WriteLog(LL_Error, "sceSblGetEAPInternalPartitionKey failed (%d).", result);
+	//	messagemanager_sendResponse(reference, result);
+	//	goto cleanup;
+	//}	
 
-	WriteLog(LL_Error, "here");
-
-	memcpy(request->encrypted, sbl_eap_internal_partition_key, sizeof(request->encrypted));
-
-	
-
-	// Copy over the key
-	//memcpy(request->key, (const void*)sbl_eap_internal_partition_key, 0x20);
+	// Copy over the key, this is pre-decrypted
+	memcpy(request->key, (const void*)sbl_eap_internal_partition_key, 0x20);
 
 	WriteLog(LL_Error, "here");
 

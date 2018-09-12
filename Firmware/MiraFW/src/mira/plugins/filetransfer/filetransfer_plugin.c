@@ -236,19 +236,14 @@ void filetransfer_stat_callback(struct ref_t* reference)
 		goto cleanup;
 	}
 
-	// Send success message
-	messagemanager_sendResponse(reference, 0);
-
 	// Fill out the struct
 	fileStat->gid = stat.st_gid;
 	fileStat->uid = stat.st_uid;
 	fileStat->size = stat.st_size;
 	fileStat->mode = stat.st_mode;
 
-	// Send that shit back
-	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
-	if (clientSocket > 0)
-		kwrite(clientSocket, fileStat, sizeof(*fileStat));
+	// Send success message
+	messagemanager_sendResponse(reference, 0);
 
 cleanup:
 	ref_release(reference);
@@ -284,12 +279,6 @@ void filetransfer_open_callback(struct ref_t* reference)
 	}
 
 	messagemanager_sendResponse(reference, 0);
-
-	// Send to socket if needed
-	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
-
-	if (clientSocket > 0)
-		kwrite(clientSocket, openRequest, sizeof(*openRequest));
 
 cleanup:
 	ref_release(reference);
@@ -376,6 +365,8 @@ void filetransfer_close_callback(struct ref_t* reference)
 	WriteLog(LL_Debug, "[+] closeRequest %p %d", closeRequest, closeRequest->handle);
 
 	kclose(closeRequest->handle);
+
+	messagemanager_sendResponse(reference, 0);
 
 cleanup:
 	ref_release(reference);
@@ -465,8 +456,9 @@ void filetransfer_read_callback(struct ref_t* reference)
 		messagemanager_sendResponse(reference, -ESOCKTNOSUPPORT);
 		goto cleanup;
 	}
-	kwrite(clientSocket, readRequest, sizeof(*readRequest));
 
+	messagemanager_sendResponse(reference, 0);
+	
 	// Calculate the blocks and leftover data
 	uint64_t blocks = readRequest->size / bufferSize;
 	uint64_t leftover = readRequest->size % bufferSize;
@@ -483,7 +475,9 @@ void filetransfer_read_callback(struct ref_t* reference)
 	kread(readRequest->handle, buffer, leftover);
 	kwrite(clientSocket, buffer, leftover);
 
-	kfree(buffer, bufferSize);
+	if (buffer)
+		kfree(buffer, bufferSize);
+	
 cleanup:
 	ref_release(reference);
 }
@@ -542,19 +536,15 @@ void filetransfer_readfile_callback(struct ref_t* reference)
 		goto cleanup;
 	}
 
-	// Send success
-	messagemanager_sendResponse(reference, 0);
-
 	// Set the size
 	readRequest->size = statbuf.st_size;
 	WriteLog(LL_Debug, "[+] file size: %llx", readRequest->size);
 
+	// Send success
+	messagemanager_sendResponse(reference, 0);
+
 	// Zero the buffer
 	memset(buffer, 0, bufferSize);
-
-	// Write the header
-	message->request = 0;
-	kwrite(clientSocket, readRequest, sizeof(*readRequest));
 
 	// Calculate the blocks and leftover data
 	uint64_t blocks = statbuf.st_size / bufferSize;
@@ -702,6 +692,8 @@ void filetransfer_writefile_callback(struct ref_t* reference)
 		goto cleanup;
 	}
 
+	messagemanager_sendResponse(reference, 0);
+
 	// Seek to the position in file
 	klseek(writeRequest->handle, 0, 0);
 
@@ -731,7 +723,7 @@ void filetransfer_writefile_callback(struct ref_t* reference)
 	kfree(buffer, bufferSize);
 	buffer = NULL;
 
-	messagemanager_sendResponse(reference, 0);
+	
 
 cleanup:
 	ref_release(reference);

@@ -18,7 +18,7 @@ struct henplugin_t
 	struct hook_t* sceSblAuthMgrIsLoadable2Hook;
 	struct hook_t* sceSblAuthMgrVerifyHeaderHook;
 	struct hook_t* sceSblAuthMgrSmLoadSelfBlockHook;
-	struct hook_t* sceSblAuthMgrSmLoadSelfSegmentHook;
+	struct hook_t* sceSblServiceMailboxHook;
 
 	struct hook_t* sceSblKeymgrSmCallfuncHook;
 	struct hook_t* sceSblDriverSendMsgHook;
@@ -118,6 +118,7 @@ uint8_t hen_unload(struct henplugin_t * plugin);
 // FSELF
 int hen_sceSblAuthMgrIsLoadable2(struct self_context* ctx, struct self_auth_info* oldAuthInfo, int pathId, struct self_auth_info* newAuthInfo);
 int hen_sceSblAuthMgrVerifyHeader(struct self_context* ctx);
+int hen_sceSblServiceMailbox(unsigned long service_id, uint8_t* request, void* response);
 
 // FPKG
 union keymgr_payload;

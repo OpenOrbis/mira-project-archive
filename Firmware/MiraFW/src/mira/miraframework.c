@@ -153,15 +153,7 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	}*/
 	//overlayfs_init(framework->overlayfs);
 
-	WriteLog(LL_Debug, "allocating hen plugin");
-	framework->henPlugin = (struct henplugin_t*)kmalloc(sizeof(struct henplugin_t));
-	if (!framework->henPlugin)
-	{
-		WriteLog(LL_Error, "could not allocate hen plugin");
-		return false;
-	}
-	henplugin_init(framework->henPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
+
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
@@ -189,11 +181,6 @@ uint8_t miraframework_installHandlers(struct miraframework_t* framework)
 	const int32_t prio = 1337;
 	EVENTHANDLER_REGISTER(power_suspend, mira_onSuspend, framework, EVENTHANDLER_PRI_LAST + prio);
 	EVENTHANDLER_REGISTER(power_resume, mira_onResume, framework, EVENTHANDLER_PRI_LAST + prio);
-	//EVENTHANDLER_REGISTER(shutdown_pre_sync, mira_onShutdown, framework, EVENTHANDLER_PRI_LAST + prio);
-
-	// Register our process event handlers
-	//EVENTHANDLER_REGISTER(process_ctor, mira_onProcessCtor, framework, EVENTHANDLER_PRI_LAST + prio);
-	//EVENTHANDLER_REGISTER(process_dtor, mira_onProcessDtor, framework, EVENTHANDLER_PRI_LAST + prio);
 
 	return true;
 }
@@ -278,21 +265,21 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->orbisUtilsPlugin->plugin);
 
 	// Register file transfer plugin
-	//WriteLog(LL_Info, "allocating file transfer plugin");
-	//if (framework->fileTransferPlugin)
-	//{
-	//	kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
-	//	framework->fileTransferPlugin = NULL;
-	//}
-	//
-	//framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
-	//if (!framework->fileTransferPlugin)
-	//{
-	//	WriteLog(LL_Error, "error allocating file transfer plugin");
-	//	return false;
-	//}
-	//filetransfer_plugin_init(framework->fileTransferPlugin);
-	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
+	WriteLog(LL_Info, "allocating file transfer plugin");
+	if (framework->fileTransferPlugin)
+	{
+		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
+		framework->fileTransferPlugin = NULL;
+	}
+	
+	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
+	if (!framework->fileTransferPlugin)
+	{
+		WriteLog(LL_Error, "error allocating file transfer plugin");
+		return false;
+	}
+	filetransfer_plugin_init(framework->fileTransferPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
 	WriteLog(LL_Warn, "allocating console plugin");
 	if (framework->consolePlugin)
@@ -359,8 +346,8 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		WriteLog(LL_Error, "could not allocate debugger plugin");
 		return false;
 	}
-	debugger_plugin_init(framework->debuggerPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
+	//debugger_plugin_init(framework->debuggerPlugin);
+	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
 	// Cheat plugin
 	WriteLog(LL_Info, "allocating cheating plugin");
@@ -398,6 +385,17 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		WriteLog(LL_Error, "rpcserver_startup failed");
 		return false;
 	}
+
+	// Register the hen plugin
+	WriteLog(LL_Debug, "allocating hen plugin");
+	framework->henPlugin = (struct henplugin_t*)kmalloc(sizeof(struct henplugin_t));
+	if (!framework->henPlugin)
+	{
+		WriteLog(LL_Error, "could not allocate hen plugin");
+		return false;
+	}
+	henplugin_init(framework->henPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
 
 	return true;
 }
