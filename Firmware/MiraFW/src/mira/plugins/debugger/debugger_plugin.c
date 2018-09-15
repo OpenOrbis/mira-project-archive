@@ -13,6 +13,10 @@
 
 #include <oni/utils/sys_wrappers.h>
 
+#include <oni/init/initparams.h>
+
+#include <mira/miraframework.h>
+
 enum DebuggerCmds
 {
 	DbgCmd_GetProcesses = 0x97077E04,
@@ -26,6 +30,7 @@ enum DebuggerCmds
 // Credits: flatz
 int proc_rw_mem(struct proc* p, void* ptr, size_t size, void* data, size_t* n, int write);
 
+static struct hook_t* gTrapFatalHook = NULL;
 
 uint8_t debugger_load(struct debugger_plugin_t * plugin)
 {
@@ -88,17 +93,18 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	memset(&plugin->debugRegisters, 0, sizeof(plugin->debugRegisters));
 
 	plugin->trapFatalHook = hook_create(kdlsym(trap_fatal), debugger_onTrapFatal);
+	gTrapFatalHook = plugin->trapFatalHook;
 }
 
 void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 {
 	if (!frame)
-		return;
+		goto hang_thread;
 
 	if (!curthread)
 	{
 		WriteLog(LL_Error, "could not get thread context");
-		return;
+		goto hang_thread;
 	}
 
 	void* rsp = ((uint8_t*)frame - 0xA8);
@@ -112,6 +118,18 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	char* dash = "-----------------------";
 
 	WriteLog(LL_Info, "kernel panic detected");
+	
+	// Print extra information in case that Oni/Mira itself crashes
+	if (gInitParams && curthread->td_proc == gInitParams->process)
+	{
+		WriteLog(LL_Info, dash);
+		WriteLog(LL_Info, "mira base: %p size: %p", gInitParams->payloadBase, gInitParams->payloadSize);
+		WriteLog(LL_Info, "mira proc: %p entrypoint: %p", gInitParams->process);
+
+		if (gFramework)
+			WriteLog(LL_Info, "mira messageManager: %p pluginManager: %p rpcServer: %p", gFramework->messageManager, gFramework->pluginManager, gFramework->rpcServer);
+	}
+
 	WriteLog(LL_Info, dash);
 	WriteLog(LL_Info, "thread: %p proc: %p pid: %d path: %s", curthread, curthread->td_proc, curthread->td_proc->p_pid, curthread->td_proc->p_elfpath);
 	WriteLog(LL_Info, "eva: %o", eva);
@@ -141,11 +159,30 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	WriteLog(LL_Info, "rip: %p", frame->tf_rip);
 	WriteLog(LL_Info, "cs: %p", frame->tf_cs);
 	WriteLog(LL_Info, "rflags: %p", frame->tf_rflags);
-	WriteLog(LL_Info, "rsp: %p", rsp);
+	WriteLog(LL_Info, "rsp adjusted: %p rsp: %p", rsp, frame->tf_rsp);
 	WriteLog(LL_Info, "err: %p", frame->tf_err);
 	WriteLog(LL_Info, dash);
 
+	// If the kernel itself crashes, we don't want this to be debuggable, otherwise the entire console hangs
+	if (curthread->td_proc->p_pid == 0)
+	{
+		// See if we have a trap fatal reference, if not we just hang and let the console die
+		if (!gTrapFatalHook)
+			goto hang_thread;
+
+		// Get the original hook
+		void(*onTrapFatal)(struct trapframe* frame, vm_offset_t eva) = hook_getFunctionAddress(gTrapFatalHook);
+
+		// Disable the hook
+		hook_disable(gTrapFatalHook);
+
+		// Call original sce trap fatal
+		onTrapFatal(frame, eva);
+		return;
+	}
+
 	// Intentionally hang the thread
+hang_thread:
 	for (;;)
 		__asm__("nop");
 

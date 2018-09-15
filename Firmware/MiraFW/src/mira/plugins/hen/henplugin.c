@@ -17,6 +17,8 @@
 
 #include <sys/ptrace.h>
 #include <sys/mman.h>
+#include <sys/systm.h>
+#include <sys/param.h>
 
 #include <oni/utils/sys_wrappers.h>
 
@@ -118,145 +120,143 @@ struct proc_vm_map_entry
 	uint16_t prot;
 };
 
-//static int proc_get_vm_map(struct proc *p, struct proc_vm_map_entry **entries, size_t *num_entries)
-//{
-//	void(*vmspace_free)(struct vmspace *) = kdlsym(vmspace_free);
-//	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
-//	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
-//	void(*_vm_map_unlock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_unlock_read);
-//	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
-//	boolean_t(*vm_map_lookup_entry)(vm_map_t, vm_offset_t, vm_map_entry_t *) = kdlsym(vm_map_lookup_entry);
-//
-//	struct proc_vm_map_entry *info = NULL;
-//	struct vm_map_entry *entry = NULL;
-//
-//	struct vmspace *vm = p->p_vmspace; // vmspace_acquire_ref(p);
-//	if (!vm) {
-//		WriteLog(LL_Error, "could not get vmspace");
-//		return -1;
-//	}
-//
-//	struct vm_map *map = &vm->vm_map;
-//
-//	int num = map->nentries;
-//	if (!num) {
-//		WriteLog(LL_Error, "there are no entries");
-//		//vmspace_free(vm);
-//		return 0;
-//	}
-//
-//	vm_map_lock_read(map);
-//
-//	if (vm_map_lookup_entry(map, 0, &entry)) {
-//		WriteLog(LL_Error, "could not look up map entry");
-//		vm_map_unlock_read(map);
-//		//vmspace_free(vm);
-//		return -1;
-//	}
-//
-//	info = (struct proc_vm_map_entry *)kmalloc(num * sizeof(struct proc_vm_map_entry));
-//	if (!info) {
-//		WriteLog(LL_Error, "could not allocate proc vm map entries");
-//		vm_map_unlock_read(map);
-//		//vmspace_free(vm);
-//		return -1;
-//	}
-//
-//	for (int i = 0; i < num; i++) {
-//		info[i].start = entry->start;
-//		info[i].end = entry->end;
-//		info[i].offset = entry->offset;
-//		info[i].prot = entry->protection & (entry->protection >> 8);
-//		//memcpy(info[i].name, entry->name, sizeof(info[i].name));
-//
-//		if (!(entry = entry->next)) {
-//			break;
-//		}
-//	}
-//
-//	vm_map_unlock_read(map);
-//	//vmspace_free(vm);
-//
-//	if (entries) {
-//		*entries = info;
-//	}
-//
-//	if (num_entries) {
-//		*num_entries = num;
-//	}
-//
-//	return 0;
-//}
+//#define  VM_PROT_NONE ((vm_prot_t)0x00)
+//#define  VM_PROT_READ ((vm_prot_t)0x01)
+//#define  VM_PROT_WRITE ((vm_prot_t)0x02)
+//#define  VM_PROT_EXECUTE ((vm_prot_t)0x04)
+#define  VM_PROT_GPU_READ ((vm_prot_t)0x10)
+#define  VM_PROT_GPU_WRITE ((vm_prot_t)0x20)
+//#define  VM_PROT_COPY ((vm_prot_t)0x08)
+//#define VM_PROT_RW (VM_PROT_READ | VM_PROT_WRITE)
+//#define  VM_PROT_ALL (VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE)
+//#define  VM_PROT_DEFAULT VM_PROT_ALL
 
-int proc_get_vm_map(struct proc *p, struct proc_vm_map_entry **entries, uint64_t *num_entries) 
-{
-	boolean_t(*vm_map_lookup_entry)(vm_map_t, vm_offset_t, vm_map_entry_t *) = kdlsym(vm_map_lookup_entry);
-	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+#define PROT_CPU_READ 0x1
+#define PROT_CPU_WRITE 0x2
+#define PROT_CPU_EXEC 0x4
+#define PROT_GPU_READ 0x10
+#define PROT_GPU_WRITE 0x20
 
+// the condition which the compiler should know is false. 
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
+int proc_get_vm_map(struct proc* p, struct proc_vm_map_entry** entries, size_t* num_entries) {
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+	struct vmspace* (*vmspace_acquire_ref)(struct proc *) = kdlsym(vmspace_acquire_ref);
+	void(*vmspace_free)(struct vmspace *) = kdlsym(vmspace_free);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	void(*wakeup)(void*) = kdlsym(wakeup);
 	void(*_vm_map_lock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_lock_read);
 	void(*_vm_map_unlock_read)(vm_map_t map, const char *file, int line) = kdlsym(_vm_map_unlock_read);
+	void(*faultin)(struct proc *p) = kdlsym(faultin);
 
-	struct proc_vm_map_entry *info = NULL;
-	struct vm_map_entry *entry = NULL;
-	int ret = 0;
+	struct vmspace* vm;
+	struct proc_vm_map_entry* info = NULL;
+	vm_map_t map;
+	vm_map_entry_t entry;
+	size_t n, i;
+	int ret;
 
-	struct vmspace *vm = p->p_vmspace;
-	struct vm_map *map = &vm->vm_map;
+	if (!p) {
+		ret = EINVAL;
+		goto error;
+	}
+	if (!entries) {
+		ret = EINVAL;
+		goto error;
+	}
+	if (!num_entries) {
+		ret = EINVAL;
+		goto error;
+	}
+
+	PROC_LOCK(p);
+	if (p->p_flag & P_WEXIT) {
+		PROC_UNLOCK(p);
+		ret = ESRCH;
+		goto error;
+	}
+	_PHOLD(p);
+	PROC_UNLOCK(p);
+
+	vm = vmspace_acquire_ref(p);
+	if (!vm) {
+		PRELE(p);
+		ret = ESRCH;
+		goto error;
+	}
+	map = &vm->vm_map;
 
 	vm_map_lock_read(map);
-
-	int num = map->nentries;
-	if (!num) {
-		goto error;
+	for (entry = map->header.next, n = 0; entry != &map->header; entry = entry->next) {
+		if (entry->eflags & MAP_ENTRY_IS_SUB_MAP)
+			continue;
+		++n;
 	}
-
-	ret = vm_map_lookup_entry(map, NULL, &entry);
-	if (ret) {
-		goto error;
-	}
-
-	info = (struct proc_vm_map_entry *)kmalloc(num * sizeof(struct proc_vm_map_entry));
+	if (n == 0)
+		goto done;
+	size_t allocSize = n * sizeof(*info);
+	info = (struct proc_vm_map_entry*)kmalloc(allocSize);
 	if (!info) {
-		ret = -1;
+		vm_map_unlock_read(map);
+		vmspace_free(vm);
+
+		PRELE(p);
+
+		ret = ENOMEM;
 		goto error;
 	}
+	memset(info, 0, n * sizeof(*info));
+	for (entry = map->header.next, i = 0; entry != &map->header; entry = entry->next) {
+		if (entry->eflags & MAP_ENTRY_IS_SUB_MAP)
+			continue;
 
-	for (int i = 0; i < num; i++) {
 		info[i].start = entry->start;
 		info[i].end = entry->end;
 		info[i].offset = entry->offset;
-		info[i].prot = entry->protection & (entry->protection >> 8);
-		//memcpy(info[i].name, entry->name, sizeof(info[i].name));
 
-		if (!(entry = entry->next)) {
-			break;
-		}
+		info[i].prot = 0;
+		if (entry->protection & VM_PROT_READ)
+			info[i].prot |= PROT_CPU_READ;
+		if (entry->protection & VM_PROT_WRITE)
+			info[i].prot |= PROT_CPU_WRITE;
+		if (entry->protection & VM_PROT_EXECUTE)
+			info[i].prot |= PROT_CPU_EXEC;
+		if (entry->protection & VM_PROT_GPU_READ)
+			info[i].prot |= PROT_GPU_READ;
+		if (entry->protection & VM_PROT_GPU_WRITE)
+			info[i].prot |= PROT_GPU_WRITE;
+
+		++i;
 	}
+
+done:
+	vm_map_unlock_read(map);
+	vmspace_free(vm);
+
+	PRELE(p);
+
+	*num_entries = n;
+	*entries = info;
+
+	info = NULL;
+	ret = 0;
 
 error:
-	WriteLog(LL_Info, "ret: (%d).", ret);
-	vm_map_unlock_read(map);
+	if (info)
+		kfree(info, allocSize);
 
-	if (entries) {
-		*entries = info;
-	}
-
-	if (num_entries) {
-		*num_entries = num;
-	}
-
-	/*static_assert(sizeof(struct vm_map_entry) == 0xC0);
-	static_assert(offsetof(struct vm_map_entry, name) == 0x8D);*/
-
-	//offsetof_ct(struct vm_map_entry, name);
-
-	return 0;
+	return ret;
 }
 
 uint8_t hen_load(struct henplugin_t* plugin)
 {
 	if (!plugin)
 		return false;
+
+	// Assign the reference
+	henPlugin = plugin;
 
 	//
 	// fself hooks
@@ -289,6 +289,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	//void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 	//void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 
+	uint8_t shellCorePatched = false;
 
 	WriteLog(LL_Debug, "here");
 
@@ -299,7 +300,7 @@ uint8_t hen_load(struct henplugin_t* plugin)
 		return false;
 	}
 	WriteLog(LL_Debug, "here");
-	
+
 	// Get the vm map
 	struct proc_vm_map_entry* entries = NULL;
 	size_t numEntries = 0;
@@ -307,17 +308,18 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	if (ret < 0)
 	{
 		WriteLog(LL_Error, "could not get vm map (%d).", ret);
-		return false;
+		goto err;
 	}
 
 	if (!entries || numEntries == 0)
 	{
 		WriteLog(LL_Error, "entries: %p numEntries: %d", entries, numEntries);
-		return false;
+		goto err;
 	}
 
 	uint8_t* entryStart = NULL;
-	for (int i = 0; i < numEntries; i++) {
+	for (size_t i = 0; i < numEntries; i++)
+	{
 		if (entries[i].prot == (PROT_READ | PROT_EXEC)) {
 			entryStart = (uint8_t *)entries[i].start;
 			break;
@@ -329,9 +331,11 @@ uint8_t hen_load(struct henplugin_t* plugin)
 	{
 		WriteLog(LL_Error, "Could not find entry start");
 		kfree(entries, sizeof(*entries) * numEntries);
-		return false;
+		goto err;
 	}
 
+	kfree(entries, sizeof(struct proc_vm_map_entry) * numEntries);
+	entries = NULL; 
 	WriteLog(LL_Debug, "here");
 
 	size_t bytesWritten = 4;
@@ -351,23 +355,30 @@ uint8_t hen_load(struct henplugin_t* plugin)
 		0x799447,
 		0x946D87
 	};
+
 	WriteLog(LL_Debug, "here");
+
+	void* addr = NULL;
 
 	for (uint32_t i = 0; i < ARRAYSIZE(offsets); ++i)
 	{
 		bytesWritten = sizeof(xor__eax_eax);
-		void* addr = (void*)(entryStart + offsets[i]);
+		addr = (void*)(entryStart + offsets[i]);
 		WriteLog(LL_Info, "addr: %p", addr);
 
 		ret = proc_rw_mem(shellCoreProc, addr, sizeof(xor__eax_eax), (void*)xor__eax_eax, &bytesWritten, true);
-		WriteLog(LL_Debug, "ret: %d", ret);
+		WriteLog(LL_Debug, "ret: %d bytesWritten: %lld", ret, bytesWritten);
 		if (ret < 0)
 			WriteLog(LL_Error, "could not write %d (%d).", i, ret);
 	}
 
 	WriteLog(LL_Debug, "finished patching shellcore");
+	shellCorePatched = true;
 
-	return true;
+err:
+	WriteLog(LL_Debug, "Shellcore has %s been patched", shellCorePatched ? "has" : "has not");
+
+	return shellCorePatched;
 }
 
 uint8_t hen_unload(struct henplugin_t* plugin)

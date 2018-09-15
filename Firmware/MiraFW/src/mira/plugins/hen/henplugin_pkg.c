@@ -169,30 +169,57 @@ int hen_sceSblDriverSendMsg(struct sbl_msg* msg, size_t size)
 	//WriteLog(LL_Debug, "here");
 
 	struct henplugin_t* plugin = hen_getHenPlugin();
+	if (!plugin)
+	{
+		WriteLog(LL_Error, "could not get hen plugin");
+		return -1;
+	}
+
+	if (!plugin->sceSblDriverSendMsgHook)
+	{
+		WriteLog(LL_Error, "hook is invalid");
+		return -1;
+	}
 
 	int(*sceSblDriverSendMsg)(struct sbl_msg* msg, size_t size) = hook_getFunctionAddress(plugin->sceSblDriverSendMsgHook);
 
 	int ret = 0;
 
+	// If we do not have a valid message
+	if (!msg)
+	{
+		WriteLog(LL_Error, "msg is invalid");
+		goto call_orig;
+	}
+
+	// Something
 	if (msg->hdr.cmd == 8)
 	{
-		//WriteLog(LL_Debug, "here");
+		WriteLog(LL_Debug, "here");
 
 		union ccp_op* op = NULL;
 		unsigned int cmd_mask = 0;
 		size_t key_len = 0;
 		size_t i = 0;
 
+		WriteLog(LL_Debug, "here");
+
 		if (msg->hdr.cmd != SBL_MSG_CCP)
 			goto done;
+
+		WriteLog(LL_Debug, "here");
 
 		op = &msg->service.ccp.op;
 		if (CCP_OP(op->common.cmd) != CCP_OP_AES)
 			goto done;
 
+		WriteLog(LL_Debug, "here");
+
 		cmd_mask = CCP_USE_KEY_FROM_SLOT | CCP_GENERATE_KEY_AT_SLOT;
 		if ((op->aes.cmd & cmd_mask) != cmd_mask || (op->aes.key_index != PFS_FAKE_OBF_KEY_ID))
 			goto done;
+
+		WriteLog(LL_Debug, "here");
 
 		op->aes.cmd &= ~CCP_USE_KEY_FROM_SLOT;
 
@@ -202,23 +229,24 @@ int hen_sceSblDriverSendMsg(struct sbl_msg* msg, size_t size)
 		for (i = 0; i < key_len; ++i)
 			op->aes.key[i] = s_fake_key_seed[key_len - i - 1];
 
+		WriteLog(LL_Debug, "here");
+
 	done:
-
-		hook_disable(plugin->sceSblDriverSendMsgHook);
-		ret = sceSblDriverSendMsg(msg, size);
-		hook_enable(plugin->sceSblDriverSendMsgHook);
-
-		return ret;
-
-	}
-	else
-	{
+		WriteLog(LL_Debug, "here");
 		hook_disable(plugin->sceSblDriverSendMsgHook);
 		ret = sceSblDriverSendMsg(msg, size);
 		hook_enable(plugin->sceSblDriverSendMsgHook);
 
 		return ret;
 	}
+
+
+call_orig:
+	hook_disable(plugin->sceSblDriverSendMsgHook);
+	ret = sceSblDriverSendMsg(msg, size);
+	hook_enable(plugin->sceSblDriverSendMsgHook);
+
+	return ret;
 }
 
 int hen_sceSblPfsSetKeys(uint32_t* ekh, uint32_t* skh, uint8_t* eekpfs, struct ekc* eekc, unsigned int pubkey_ver, unsigned int key_ver, struct pfs_header* hdr, size_t hdr_size, unsigned int type, unsigned int finalized, unsigned int is_disc)

@@ -44,7 +44,7 @@ L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
 LIBS	:= -l:OniFramework.a
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}"
+ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__
 
 # C++ Flags, -02 Optimizations break shit badly
 CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas

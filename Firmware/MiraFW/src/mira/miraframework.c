@@ -346,8 +346,8 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		WriteLog(LL_Error, "could not allocate debugger plugin");
 		return false;
 	}
-	//debugger_plugin_init(framework->debuggerPlugin);
-	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
+	debugger_plugin_init(framework->debuggerPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
 	// Cheat plugin
 	WriteLog(LL_Info, "allocating cheating plugin");
