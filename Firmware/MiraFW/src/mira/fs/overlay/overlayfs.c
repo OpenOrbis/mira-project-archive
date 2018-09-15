@@ -231,9 +231,7 @@ int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap)
 	size_t path_len;
 	copyinstr(uap->path, path, sizeof(path), &path_len);
 
-	if (strcmp("SceShellCore", p->p_comm) != 0)
-		return 0;
-
+	if (strcmp("SceShellCore", p->p_comm) == 0)
 	{
 		char* pos1 = strstr(path, "/mnt/sandbox/");
 		char* pos2 = strstr(path, "/mnt/sandbox/pfsmnt/");
@@ -260,7 +258,6 @@ int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap)
 			snprintf(app_folder, 300, "/mnt/sandbox/%s_000", appid);
 
 			int ret = -1;
-
 			if (strstr(app_folder, path) == 0) {
 				struct thread_info_t prevInfo;
 				memset(&prevInfo, 0, sizeof(prevInfo));
