@@ -9,6 +9,8 @@
 #include <sys/proc.h>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
+#include <sys/unistd.h>
+#include <sys/sysent.h>
 
 #include <machine/reg.h>
 
@@ -29,8 +31,7 @@ void* injector_allocateMemory(int32_t pid, uint32_t size)
 	// Get the process main thread
 	struct thread *td = process->p_singlethread != NULL ? process->p_singlethread : process->p_threads.tqh_first;
 	
-	_mtx_unlock_flags(&process->p_mtx, 0, __FILE__, __LINE__);
-	//PROC_UNLOCK(process);
+	PROC_UNLOCK(process);
 
 	// clear errors
 	td->td_retval[0] = 0;
@@ -47,7 +48,139 @@ void* injector_allocateMemory(int32_t pid, uint32_t size)
 		return (caddr_t)(int64_t)-error;
 
 	// return
-	return (caddr_t)td->td_retval[0];
+	return (void*)td->td_retval[0];
+}
+
+uint8_t injector_createUserProcess(uint8_t* moduleData, uint32_t moduleSize)
+{
+	struct vmspace* (*vmspace_alloc)(vm_offset_t min, vm_offset_t max) = kdlsym(vmspace_alloc);
+	void(*pmap_activate)(struct thread *td) = kdlsym(pmap_activate);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+
+
+	// Get syscore process
+	struct proc* syscoreProc = proc_find_by_name("SceSysCore");
+	if (!syscoreProc)
+	{
+		WriteLog(LL_Error, "could not find syscore");
+		return false;
+	}
+
+	// Get the main thread
+	struct thread* td = syscoreProc->p_singlethread ? syscoreProc->p_singlethread : syscoreProc->p_threads.tqh_first;
+	if (!td)
+	{
+		WriteLog(LL_Error, "could not get syscore thread");
+		return false;
+	}
+
+	// Fork syscore into it's own process
+	pid_t newPid = krfork_t(RFPROC | RFCFDG, td);
+	WriteLog(LL_Debug, "forked syscore from pid (%d) to pid (%d)", syscoreProc->p_pid, newPid);
+	if (newPid <= 0)
+	{
+		WriteLog(LL_Error, "could not fork syscore (%d).", newPid);
+		return false;
+	}
+
+	// Freeze the newly created process
+	kkill(newPid, SIGSTOP);
+
+	// Get our new proc's structure, the process is returned LOCKED
+	struct proc* newProc = pfind(newPid);
+	if (!newProc)
+	{
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	struct thread* newThread = newProc->p_singlethread ? newProc->p_singlethread : newProc->p_threads.tqh_first;
+	if (!newThread)
+	{
+		PROC_UNLOCK(newProc);
+		WriteLog(LL_Error, "getting new proc's thread failed\n");
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Create a new vmspace for our process
+	vm_offset_t sv_minuser = MAX(sv->sv_minuser, PAGE_SIZE);
+	struct vmspace* vmspace = vmspace_alloc(sv_minuser, sv->sv_maxuser);
+	if (!vmspace)
+	{
+		PROC_UNLOCK(newProc);
+		WriteLog(LL_Error, "vmspace_alloc failed\n");
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Assign our new vmspace to our process
+	newProc->p_vmspace = vmspace;
+	pmap_activate(newThread);
+
+	PROC_UNLOCK(newProc);
+
+	uint8_t* procModuleData = injector_allocateMemory(newPid, moduleSize);
+	if (!procModuleData)
+	{
+		WriteLog(LL_Error, "could not allocate memory inside new process.");
+		PROC_UNLOCK(newProc);
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Write our module
+	size_t bytesWritten = moduleSize;
+	int ret = proc_rw_mem(newProc, procModuleData, moduleSize, moduleData, &bytesWritten, true);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not write module (%d).", ret);
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Attach to the process
+	ret = kptrace(PT_ATTACH, newPid, NULL, 0);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not trace process (%d).", ret);
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// TODO: Add ELF parsing
+
+	struct reg registers;
+	memset(&registers, 0, sizeof(registers));
+
+	// TODO: Get and save registers
+	ret = kptrace(PT_GETREGS, newPid, (caddr_t)&registers, 0);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not get registers (%d).", ret);
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Set the new instruction pointer, currently assuming that the first instruction is jmp <entrypoint>
+	registers.r_rip = (register_t)procModuleData;
+
+	// Set the registers
+	ret = kptrace(PT_SETREGS, newPid, (caddr_t)&registers, 0);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not set registers (%d).", ret);
+		kkill(newPid, SIGTERM);
+		return false;
+	}
+
+	// Resume the process
+	kkill(newPid, SIGCONT);
+
+	return true;
 }
 
 uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleSize, uint8_t newThread)

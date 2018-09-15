@@ -243,6 +243,8 @@ static void mira_onResume(struct miraframework_t* framework)
 	WriteLog(LL_Info, "enabling hooks");
 }
 
+#include <mira/utils/injector.h>
+
 uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 {
 	// Initialize default plugins
@@ -396,6 +398,15 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	henplugin_init(framework->henPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
+
+	uint8_t nopLoop[] =
+	{
+		0x90,		// nx:	nop
+		0xEB, 0xFD,	//		jmp nx
+	};
+
+	uint8_t ret = injector_createUserProcess(nopLoop, ARRAYSIZE(nopLoop));
+	WriteLog(LL_Debug, "injector_createUserProcess: %s", ret ? "success" : "failure");
 
 	return true;
 }
