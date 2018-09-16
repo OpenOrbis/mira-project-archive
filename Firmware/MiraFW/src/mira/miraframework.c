@@ -388,6 +388,8 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		return false;
 	}
 
+	// TODO: Remove this ifdef once stable, and port to all different platforms
+#if ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_501
 	// Register the hen plugin
 	WriteLog(LL_Debug, "allocating hen plugin");
 	framework->henPlugin = (struct henplugin_t*)kmalloc(sizeof(struct henplugin_t));
@@ -407,6 +409,9 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	uint8_t ret = injector_createUserProcess(nopLoop, ARRAYSIZE(nopLoop));
 	WriteLog(LL_Debug, "injector_createUserProcess: %s", ret ? "success" : "failure");
+#else
+	framework->henPlugin = NULL;
+#endif
 
 	return true;
 }
