@@ -396,7 +396,7 @@ int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv)
 	if (result < 0)
 	{
 		WriteLog(LL_Warn, "could not mount NullFS %s on %s ! (%d)", pfsmnt_app, app0, result);
-		goto end_root;
+		//goto end_root;
 	}
 
 	// Mount mod0 in pfsmnt (from /user/data)
