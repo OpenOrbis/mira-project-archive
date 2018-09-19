@@ -2,7 +2,7 @@
 
 ## Project Layout
 
-At first glance, it may seem like the Mira-Project is very complicated, but once you understand the basic layout it is very clear and simple.
+At first glance, it may seem like Mira is very complicated, but once you understand the basic layout it is very clear and simple.
 
 * `Tools/` - The tooling folder, which may contain additional libraries and tools to assist with Mira development. These tools are not required to build Mira, but will help developers.
 * `Scripts/` - These are general puropse scripts that may get executed automatically by the build, or are there for initializing development environments.
@@ -14,11 +14,11 @@ At first glance, it may seem like the Mira-Project is very complicated, but once
 
 ## Setting up the development environment
 
-In order to build Mira, you will need either a Windows machine with Visual Studio 2017, the C++ for Linux plugin and Windows Subsystem for Linux (highly reccomended), or a linux-based machine or VM with `build-essentials` (gcc, clang, etc).
+In order to build Mira, you will need either a Windows machine with Visual Studio 2017, the C++ for Linux plugin and Windows Subsystem for Linux (highly recommended), or a linux-based machine/VM with the `build-essentials` package installed (gcc, clang, etc).
 
 ### Windows Setup
 
-This is the most reccomended way to develop for Mira. Since Mira is developed using Unix Makefiles, there is a direct compatibility with the Windows and Linux development environments.
+This is recommended way to develop for Mira. Since Mira is developed using Unix Makefiles, there is a direct compatibility with the Windows and Linux development environments.
 
 1. [Download & Install](https://www.visualstudio.com/downloads/) Visual Studio 2017 WITH the [C++ for Linux support](https://blogs.msdn.microsoft.com/vcblog/2017/04/11/linux-development-with-c-in-visual-studio/)
 2. [Enable](https://docs.microsoft.com/en-us/windows/wsl/install-win10) the Windows Subsystem for Linux
@@ -94,3 +94,14 @@ make
 ```
 
 The output files by default will be labelled `MiraFW_Orbis.bin` and `MiraFW_Orbis.elf` inside the `Firmware/MiraFW` directory. `MiraFW_Orbis.bin` is the payload you want to send to your PS4. 
+
+## Contribution
+In the past, contributing to Mira was kind of a free-for-all. Code was getting commited that was untested, and there were conflictions. To solve this issue, Mira now has a proper pipeline for development. There are three main branches now - these branches are the following:
+
+`master` - Stable branch
+`testing` - Beta branch
+`vNext` - Alpha branch
+
+When forking the repo to work on features, you should now work off of the `vNext` branch. This is like the alpha stage of development. When a feature is completed and ready for testing, it will be merged into the `testing` branch, where it will be tested by Mira verified testers on Mira's supported platforms.
+
+Finally, after your code has been tested by Mira's verified testers and has been vetted by a Mira developer, your code may be processed into the master branch. 
