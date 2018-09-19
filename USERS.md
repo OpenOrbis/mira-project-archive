@@ -2,34 +2,26 @@
 
 This user guide will help you build, install and use the Mira Framework on your Playstation 4 console.
 
-## How to install
+## Installation
 
-You can install Mira firmware via several methods. You should choose the method that works best for you. Typically, this will be via a webkit exploit in the web browser.
+The Mira payload is typically launched through WebKit after the console has been jailbroken. Some jailbreak pages have Mira baked-in - however with the exception of ones published by developers associated with Open Orbis, they are not officially supported providers of Mira, and may contain a modified payload.
 
-### Webkit exploit (non-permanent installation)
-
-This involves using a webkit userland exploit to elevate the kernel to install MiraCFW. The changes will be lost upon reboot, but should survive sleep mode.
+Exploits that don't have payloads baked-in will listen on a port (usually `9020`) for a payload to execute. Using this, you can execute the Mira payload on your system. Using a pre-built binary file provided in this repo or in our Discord server, you can send this payload to your system over TCP. When Mira is running, you'll get a notification on the system informing you that Mira is running.
 
 ### Permanent installation
 
-There is no permanent install option at this time, nor will one be offered in the near future.
+There is no permanent install option at this time, it is unclear if one will be offered in the future.
 
-#### Preparing
+### Requirements
 
-TODO: Instructions on how to prepare
-
-#### Installing
-
-In order to install Mira you will need a few things...
-
-1. An exploitable PlayStation
-2. Support within Mira
-3. Way to send payloads
+1. A Playstation 4 on a jailbreakable firmware
+2. A firmware that is officially supported by Mira.
+3. A method of sending payloads to the system
     1. Windows
     2. Linux
     3. Android
 
-Start by downloading the latest release of Mira from the github Releases page. If there are no current releases for your current firmware, then you will need to compile the payloads from source code. If this is the case, refer to the developers documentation.
+Start by downloading the latest release of Mira from the github Releases page. If there are no current releases for your current firmware, then you will need to compile the payloads from source code. If this is the case, refer to [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md).
 
 * We are also working towards preparing full stack webpage loaders in the near future for those who don't want to send payloads themselves.
 
@@ -45,7 +37,7 @@ Provided you are using the default build paths of Mira.
 
 Currently there are no tools provided by the Mira-Project that will send payloads to the console. You may use your favorite tool for sending TCP payloads and it should work the same.
 
-#### Using MiraCFW
+#### Using Mira
 
 Once Mira has been installed, it will automatically self-elevate, and check by default in the `/user/mira` folder for `config.ini` which contains the rest of the configuration for Mira. It will load plugins from the `/user/mira/plugins` directory and initialize them.
 
