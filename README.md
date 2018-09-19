@@ -1,3 +1,5 @@
+![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
+
 # The Mira Project
 The Mira Project is a set of tools that grants you more power and control over your jailbroken Playstation 4. It is the result of all the hard work by the OpenOrbis team.
 
@@ -56,8 +58,6 @@ The users guide can be found at [USERS.md](https://github.com/OpenOrbis/mira-pro
 You will need VS2017, with Linux plugin and WSL (Ubuntu on Windows) or a physical Linux machine or Linux VM to be able to build the project. You may find the documentation for developers at [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md)
 
 Potential contributors: Please carefully read the [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md) file, especially the section at the bottom for contribution - we have a formalized development pipeline now.
-
-![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
 
 ## Special Thanks and Friends
 
