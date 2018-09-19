@@ -55,6 +55,11 @@ The users guide can be found at [USERS.md](https://github.com/OpenOrbis/mira-pro
 
 You will need VS2017, with Linux plugin and WSL (Ubuntu on Windows) or a physical Linux machine or Linux VM to be able to build the project. You may find the documentation for developers at [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md)
 
+![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
+
+## Thanks to the Open Orbis team
+* !
+
 ## Special Thanks and Friends
 
 We want to give a special shout out to these people in no particular order.

@@ -1,6 +1,6 @@
 #include "example_plugin.h"
 #include <oni/framework.h>
-#include <oni/utils/log/logger.h>
+#include <oni/utils/logger.h>
 
 uint64_t plugin_size = sizeof(struct example_plugin_t);
 struct framework_t* gFramework = NULL;

@@ -12,16 +12,16 @@ endif
 PROJ_NAME := MiraFW
 
 # C++ compiler
-CPPC	:=	gcc++
+CPPC	:=	clang
 
 # Linker
-LNK		:= gcc # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
+LNK		:= ld # ps4-ld, we are compiling for the kernel so this is not going to use the OpenOrbis userland linker
 
 # C compiler
-CC		:=	gcc
+CC		:=	clang
 
 # Archiver
-AS		:=	gcc
+AS		:=	llvm-ar
 
 # Objcopy
 OBJCOPY	:=	objcopy
@@ -35,25 +35,26 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(ONI_FRAMEWORK)/depends/include -I$(ONI_FRAMEWORK)/include -I$(BSD_INC)
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
-L_DIRS	:=	-L.	-Llib -L$(ONI_FRAMEWORK)
+L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
 
 # Included libraries
 LIBS	:= -l:OniFramework.a
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL -D_DEBUG=1
+ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__
 
-# C++ Flags
-CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O2 -fno-builtin -nostartfiles -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
+# C++ Flags, -02 Optimizations break shit badly
+CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
 
 # Assembly flags
-SFLAGS	:= -nostartfiles -nodefaultlibs -nostdlib -fPIC
+SFLAGS	:= -nodefaultlibs -nostdlib -fPIC
 
 # Linker flags
-LFLAGS	:= $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x -Wl,--build-id=none
+# -Wl,--build-id=none
+LFLAGS	:= -v -static $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x 
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)
@@ -72,12 +73,13 @@ ALL_OBJ_C := $(ALL_OBJ_CPP:.c=.o)
 ALL_OBJ := $(ALL_OBJ_C:.s=.o)
 
 # Target elf name
-TARGET = $(PROJ_NAME)_Orbis.elf
+TARGET = "$(PROJ_NAME)_Orbis_${ONI_PLATFORM}.elf"
 
 # Target payload name (data + text only, no elf)
-PAYLOAD = $(PROJ_NAME)_Orbis.bin
+PAYLOAD = "$(PROJ_NAME)_Orbis_${ONI_PLATFORM}.bin"
 
 $(TARGET): $(ALL_OBJ)
+	@echo "Building for Firmware $(ONI_PLATFORM)..."
 	@echo Compiling $(PROJ_NAME)...
 	@$(LNK) $(ALL_OBJ) -o $(TARGET) $(LFLAGS) $(LIBS)
 	@echo "Creating Payload..."

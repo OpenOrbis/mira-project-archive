@@ -37,22 +37,22 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;_DEBUG;_KERNEL;</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_STANDALONE_DEBUG;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
-    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>Oni_Orbis.elf;Oni_Orbis.bin</RemoteBuildOutputs>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;_KERNEL;</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_STANDALONE</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;make</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;make clean;make</RemoteReBuildCommandLine>
-    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>Oni_Orbis.elf;Oni_Orbis.bin</RemoteBuildOutputs>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
     <None Include="src\crt0.s" />
@@ -62,26 +62,44 @@
     <Text Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\mira\boot\patches.c" />
-    <ClCompile Include="src\mira\boot\patches\patches501.c" />
     <ClCompile Include="src\entrypoint.c" />
-    <ClCompile Include="src\mira\boot\patches\patches505.c" />
+    <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
+    <ClCompile Include="src\mira\miraframework.c" />
+    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
+    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_utils.c" />
+    <ClCompile Include="src\mira\plugins\cheat\cheat_plugin.c" />
+    <ClCompile Include="src\mira\plugins\console\consoleplugin.c" />
+    <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
+    <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
+    <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
+    <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
+    <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
-    <ClCompile Include="src\mira\utils\hde\hde64.c" />
-    <ClCompile Include="src\mira\utils\hook.c" />
+    <ClCompile Include="src\mira\utils\elfloader.c" />
+    <ClCompile Include="src\mira\utils\ini\ini.c" />
+    <ClCompile Include="src\mira\utils\injector.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\mira\boot\patches.h" />
+    <ClInclude Include="src\mira\fs\fuse\netfs.h" />
+    <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
+    <ClInclude Include="src\mira\miraframework.h" />
+    <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
+    <ClInclude Include="src\mira\plugins\cheat\cheat_plugin.h" />
+    <ClInclude Include="src\mira\plugins\console\consoleplugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
+    <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
+    <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
+    <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
-    <ClInclude Include="src\mira\utils\hde\hde64.h" />
-    <ClInclude Include="src\mira\utils\hde\table64.h" />
-    <ClInclude Include="src\mira\utils\hook.h" />
+    <ClInclude Include="src\mira\trainers\trainermanager.h" />
+    <ClInclude Include="src\mira\utils\elfloader.h" />
+    <ClInclude Include="src\mira\utils\ini\ini.h" />
+    <ClInclude Include="src\mira\utils\injector.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

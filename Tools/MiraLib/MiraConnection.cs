@@ -337,7 +337,7 @@ namespace MiraLib
             }
         }
 
-        public (RpcMessageHeader, byte[]) ReceiveObjectAndPayload()
+        public (RpcMessageHeader, byte[]) ReceiveHeaderAndPayload()
         {
             using (var s_Reader = new BinaryReader(m_Client.GetStream(), Encoding.ASCII, true))
             {
@@ -350,6 +350,28 @@ namespace MiraLib
 
                 return (s_Header, s_Payload);
             }
+        }
+
+        public (RpcMessageHeader, T) ReceiveHeaderAndObject<T>()
+        {
+            using (var s_Reader = new BinaryReader(m_Client.GetStream(), Encoding.ASCII, true))
+            {
+
+                var s_Header = new RpcMessageHeader(s_Reader.ReadUInt64());
+
+                var s_PayloadSize = (ushort)(s_Header.PayloadSize > c_BufferSize ? c_BufferSize : s_Header.PayloadSize);
+
+                var s_Payload = s_Reader.ReadBytes(s_PayloadSize);
+
+                var s_Object = DeserializeObject<T>(s_Payload);
+
+                return (s_Header, s_Object);
+            }
+        }
+
+        public NetworkStream GetStream()
+        {
+            return m_Client.GetStream();
         }
     }
 }
