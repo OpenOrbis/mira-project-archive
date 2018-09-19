@@ -126,4 +126,6 @@ void load_elf(uint8_t* data, uint64_t size)
 			break;
 		}
 	}
+
+	// Test change
 } 
