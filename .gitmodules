@@ -1,8 +1,8 @@
 [submodule "Firmware/Dependencies/oni-framework"]
 	path = Firmware/Dependencies/oni-framework
-	url = git@github.com:OpenOrbis/oni-framework.git
+	url = https://github.com/OpenOrbis/oni-framework.git
 	branch = master
 [submodule "Firmware/Dependencies/freebsd-headers"]
 	path = Firmware/Dependencies/freebsd-headers
-	url = git@github.com:OpenOrbis/freebsd-headers.git
+	url = https://github.com/OpenOrbis/freebsd-headers.git
 	branch = master
