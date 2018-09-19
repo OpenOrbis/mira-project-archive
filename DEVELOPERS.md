@@ -99,7 +99,9 @@ The output files by default will be labelled `MiraFW_Orbis.bin` and `MiraFW_Orbi
 In the past, contributing to Mira was kind of a free-for-all. Code was getting commited that was untested, and there were conflictions. To solve this issue, Mira now has a proper pipeline for development. There are three main branches now - these branches are the following:
 
 `master` - Stable branch
+
 `testing` - Beta branch
+
 `vNext` - Alpha branch
 
 When forking the repo to work on features, you should now work off of the `vNext` branch. This is like the alpha stage of development. When a feature is completed and ready for testing, it will be merged into the `testing` branch, where it will be tested by Mira verified testers on Mira's supported platforms.
