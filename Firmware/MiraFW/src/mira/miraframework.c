@@ -306,7 +306,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		framework->logServerPlugin = NULL;
 	}
 		
-
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
 	if (!framework->logServerPlugin)
 	{
@@ -407,8 +406,15 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 		0xEB, 0xFD,	//		jmp nx
 	};
 
-	uint8_t ret = injector_createUserProcess(nopLoop, ARRAYSIZE(nopLoop));
-	WriteLog(LL_Debug, "injector_createUserProcess: %s", ret ? "success" : "failure");
+	//uint8_t nullPtrDeref[] =
+	//{
+	//	0x48, 0x31, 0xC0,	// xor rax, rax
+	//	0xFF, 0xD0			// call rax
+	//};
+
+	
+	uint8_t ret = injector_injectModule(0, nopLoop, ARRAYSIZE(nopLoop), true);
+	WriteLog(LL_Debug, "injector_injectModule: %s", ret ? "success" : "failure");
 #else
 	framework->henPlugin = NULL;
 #endif
