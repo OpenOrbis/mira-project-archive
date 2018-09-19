@@ -1,11 +1,11 @@
 # The Mira Project
-The Mira Project is a set of tools that grants you more power and control over your jailbroken Playstation 4. It is the result of all the  hard work by the OpenOrbis team.
+The Mira Project is a set of tools that grants you more power and control over your jailbroken Playstation 4. It is the result of all the hard work by the OpenOrbis team.
 
 It works differently to the custom firmware experience on Playstation 3, where CFW would be installed on the system via modified PUP files (e.g. Rebug), however once the framework is installed and ran it gives users the same functionality they were previously used to.
 
 ## WARNING
 
-There are quite a few fake, scam OpenOrbis websites, youtube, twitter etc. Take note, ~~WE DO NOT HAVE A WEBSITE, OR ANY SOCIAL MEDIA. All information will be here on the GitHub repository ONLY!~~ We currently have a [OpenOrbis discord server](https://discord.gg/GQr8ydn) for those who want to help contribute and have no other way of communication. All other outlets about this project are fake, possibly contain viruses, and should be avoided at all costs. Once again, THIS GitHub repository is the only way to get official news, information, and releases about the Mira-Project. (Discord bots will pull from this repository)
+There are quite a few fake, scam OpenOrbis websites, youtube, twitter etc. Take note, ~~WE DO NOT HAVE A WEBSITE, OR ANY SOCIAL MEDIA. All information will be here on the GitHub repository ONLY!~~ We currently have a [OpenOrbis discord server](https://discord.gg/GQr8ydn) for those who want to help contribute and have no other way of communication. All other outlets about this project are fake, possibly contain viruses, and should be avoided at all costs. Once again, THIS GitHub repository is the only way to get official news, information, and releases about the Mira-Project. Discord bots will pull from this repository.
 
 ## Firmware
 
@@ -55,10 +55,9 @@ The users guide can be found at [USERS.md](https://github.com/OpenOrbis/mira-pro
 
 You will need VS2017, with Linux plugin and WSL (Ubuntu on Windows) or a physical Linux machine or Linux VM to be able to build the project. You may find the documentation for developers at [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md)
 
-![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
+Potential contributors: Please carefully read the [DEVELOPERS.md](https://github.com/OpenOrbis/mira-project/blob/master/DEVELOPERS.md) file, especially the section at the bottom for contribution - we have a formalized development pipeline now.
 
-## Thanks to the Open Orbis team
-* !
+![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true "Build Status")
 
 ## Special Thanks and Friends
 
@@ -73,7 +72,7 @@ We want to give a special shout out to these people in no particular order.
 * Mistawes
 * Abkarino
 * qwertyoruiop
-* CTurT
+* CTurt
 * Mathieulh
 * Senaxx
 * m0rph3us1987
