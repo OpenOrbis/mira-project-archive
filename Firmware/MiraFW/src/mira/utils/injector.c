@@ -5,6 +5,7 @@
 #include <oni/utils/kernel.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/escape.h>
+#include <mira/utils/elfutils.h>
 
 #include <sys/sysproto.h>
 #include <sys/proc.h>
@@ -224,22 +225,11 @@ uint8_t injector_createUserProcess(uint8_t* moduleData, uint32_t moduleSize)
 	return true;
 }
 
-uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleSize, uint8_t newThread)
+uint8_t injector_injectElf(int32_t pid, uint8_t* moduleData, uint32_t moduleSize)
 {
-	//void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-
-	struct proc* syscoreProc = proc_find_by_name("SceSysCore.elf");
-	if (!syscoreProc)
-	{
-		WriteLog(LL_Debug, "syscoreproc: %p", syscoreProc);
-		return false;
-	}
-
-	// Set the pid
-	pid = syscoreProc->p_pid;
+	int(*kern_thr_create)(struct thread * td, uint64_t ctx, void(*start_func)(void *), void *arg, char *stack_base, uint64_t stack_size, char *tls_base, long *child_tid, long *parent_tid, uint64_t flags, uint64_t rtp) = kdlsym(kern_thr_create);
 
 	if (!moduleData || moduleSize == 0)
 		return false;
@@ -247,33 +237,142 @@ uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleS
 	if (pid <= 0)
 		return false;
 
+	// Hold our status if our injection was succesful
+	uint8_t injectionSuccessful = false;
+
 	// First allocate memory using mmap inside of the target process
 	size_t processMemorySize = (PAGE_SIZE - (moduleSize % PAGE_SIZE));
-
 	WriteLog(LL_Debug, "attempting to allocate %llx for %llx", processMemorySize, moduleSize);
 
+	// Allocate elf memory
 	uint8_t* processMemory = injector_allocateMemory(pid, processMemorySize);
 	if (!processMemory)
-		return false;
-
+	{
+		WriteLog(LL_Error, "could not allocate (%llx) process bytes in pid (%d).", processMemorySize, pid);
+		goto error;
+	}
 	WriteLog(LL_Debug, "allocated process memory at %p", processMemory);
 
+	// Allocate stack
 	size_t stackMemorySize = 0x80000;
 	uint8_t* stackMemory = injector_allocateMemory(pid, stackMemorySize);
 	if (!stackMemory)
-		return false;
-
+	{
+		WriteLog(LL_Error, "could not allocate (%llx) stack bytes in pid (%d).", stackMemory, pid);
+		goto error;
+	}
 	WriteLog(LL_Debug, "allocated stack memory at %p", stackMemory);
 
+	// Get the elf entry point
+	uint64_t entryPoint = (uint64_t)elfutils_getEntryPoint(moduleData, moduleSize);
+	if (!entryPoint)
+	{
+		WriteLog(LL_Error, "could not get entry point.");
+		goto error;
+	}
+	WriteLog(LL_Debug, "entryPoint %p", entryPoint);
 
-	// TODO: Write the module data into the new target process space
+	// TODO: Set permissions to elf sections
+
+	// Write the module data into the new target process space
 	size_t bytesWritten = 0;
 
 	// Write the module data
 	int32_t result = proc_rw_mem_pid(pid, processMemory, moduleSize, moduleData, &bytesWritten, true);
 	if (result < 0)
 		return false;
+	WriteLog(LL_Debug, "returned: %d, wrote %lld bytes of module %p to %p", result, bytesWritten, moduleData, processMemory);
 
+	// Pause the target process
+	result = kkill(pid, SIGSTOP);
+	if (result != 0)
+	{
+		WriteLog(LL_Error, "could not stop process for module injection");
+		goto error;
+	}
+
+	// Get the process for our target process
+	struct proc* targetProc = pfind(pid);
+	if (!targetProc)
+	{
+		WriteLog(LL_Error, "Could not get proc for pid (%d).", pid);
+		goto continueAndReturn; // We use continue and return to make sure we un-freeze the process if injection fails
+	}
+
+	// Acquire the main thread
+	struct thread* targetMainThread = TAILQ_FIRST(&targetProc->p_threads);
+	PROC_UNLOCK(targetProc);
+
+	// Create a new thread using the main threads process
+	result = kern_thr_create(targetMainThread, 0, (void(*)(void*))processMemory + entryPoint, NULL, (char*)stackMemory, stackMemorySize, NULL, NULL, NULL, 0, 0);
+	if (result < 0)
+	{
+		WriteLog(LL_Error, "could not create new thread in target process (%d).", result);
+		goto continueAndReturn;
+	}
+
+	injectionSuccessful = true;
+	WriteLog(LL_Debug, "thread created! result: (%d)", result);
+
+continueAndReturn:
+	// Resume the process
+	kkill(pid, SIGCONT);
+
+error:
+	return injectionSuccessful;
+}
+
+uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleSize)
+{
+	//void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	int(*kern_thr_create)(struct thread * td, uint64_t ctx, void(*start_func)(void *), void *arg, char *stack_base, uint64_t stack_size, char *tls_base, long *child_tid, long *parent_tid, uint64_t flags, uint64_t rtp) = kdlsym(kern_thr_create);
+
+	if (!moduleData || moduleSize == 0)
+		return false;
+
+	if (pid <= 0)
+		return false;
+
+	// Hold our status if our injection was succesful
+	uint8_t injectionSuccessful = false;
+
+	// First allocate memory using mmap inside of the target process
+	size_t processMemorySize = (PAGE_SIZE - (moduleSize % PAGE_SIZE));
+	WriteLog(LL_Debug, "attempting to allocate %llx for %llx", processMemorySize, moduleSize);
+
+	// Allocate elf memory
+	uint8_t* processMemory = injector_allocateMemory(pid, processMemorySize);
+	if (!processMemory)
+	{
+		WriteLog(LL_Error, "could not allocate (%llx) process bytes in pid (%d).", processMemorySize, pid);
+		goto error;
+	}
+	WriteLog(LL_Debug, "allocated process memory at %p", processMemory);
+
+	// Allocate stack
+	size_t stackMemorySize = 0x80000;
+	uint8_t* stackMemory = injector_allocateMemory(pid, stackMemorySize);
+	if (!stackMemory)
+	{
+		WriteLog(LL_Error, "could not allocate (%llx) stack bytes in pid (%d).", stackMemory, pid);
+		goto error;
+	}
+	WriteLog(LL_Debug, "allocated stack memory at %p", stackMemory);
+
+	//void* entryPoint = elfutils_getEntryPoint(moduleData, moduleSize);
+	// TODO: Parse elf for all information
+	// TODO: Set permissions to elf sections
+
+	// Write the module data into the new target process space
+	size_t bytesWritten = 0;
+
+	// Write the module data
+	int32_t result = proc_rw_mem_pid(pid, processMemory, moduleSize, moduleData, &bytesWritten, true);
+	if (result < 0)
+		return false;
 	WriteLog(LL_Debug, "returned: %d, wrote %lld bytes of module %p to %p", result,  bytesWritten, moduleData, processMemory);
 
 	// Pause the target process
@@ -281,39 +380,36 @@ uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleS
 	if (result != 0)
 	{
 		WriteLog(LL_Error, "could not stop process for module injection");
-		return false;
+		goto error;
 	}
 
 	// Get the process for our target process
 	struct proc* targetProc = pfind(pid);
 	if (!targetProc)
 	{
-		WriteLog(LL_Error, "dsadas");
-		return false;
+		WriteLog(LL_Error, "Could not get proc for pid (%d).", pid);
+		goto continueAndReturn; // We use continue and return to make sure we un-freeze the process if injection fails
 	}
 
 	// Acquire the main thread
 	struct thread* targetMainThread = TAILQ_FIRST(&targetProc->p_threads);
-
 	PROC_UNLOCK(targetProc);
 
-	
-
 	// Create a new thread using the main threads process
-	int(*create_thread)(struct thread * td, uint64_t ctx, void(*start_func)(void *), void *arg, char *stack_base, uint64_t stack_size, char *tls_base, long *child_tid, long *parent_tid, uint64_t flags, uint64_t rtp) = (void*)(gKernelBase + 0x001BE0E0);
-
-	long threadId = 0;
-	result = create_thread(targetMainThread, 0, (void(*)(void*))processMemory, NULL, (char*)stackMemory, stackMemorySize, NULL, NULL, NULL, 0, 0);
+	result = kern_thr_create(targetMainThread, 0, (void(*)(void*))processMemory, NULL, (char*)stackMemory, stackMemorySize, NULL, NULL, NULL, 0, 0);
 	if (result < 0)
 	{
 		WriteLog(LL_Error, "could not create new thread in target process (%d).", result);
-		return false;
+		goto continueAndReturn;
 	}
 
+	injectionSuccessful = true;
+	WriteLog(LL_Debug, "thread created! result: (%d)", result);
+
+continueAndReturn:
 	// Resume the process
 	kkill(pid, SIGCONT);
 
-	WriteLog(LL_Debug, "thread created id: %p (%d)", threadId, result);
-
-	return true;
+error:
+	return injectionSuccessful;
 }
