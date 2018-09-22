@@ -204,6 +204,8 @@ void orbisutils_toggleASLR(struct ref_t* reference)
 	* (uint8_t*)(gKernelBase + 0x00389555) = payload->aslrEnabled ? 0x74 : 0xEB;
 #elif ONI_PLATFORM==ONI_PLATFORM_ORBIS_BSD_505
 	* (uint8_t*)(gKernelBase + 0x00389925) = payload->aslrEnabled ? 0x74 : 0xEB;
+#else
+#error ASLR Platform not supported
 #endif
 
 	cpu_enable_wp();
