@@ -300,7 +300,7 @@ uint8_t injector_injectModule(int32_t pid, uint8_t* moduleData, uint32_t moduleS
 	
 
 	// Create a new thread using the main threads process
-	int(*create_thread)(struct thread * td, uint64_t ctx, void(*start_func)(void *), void *arg, char *stack_base, uint64_t stack_size, char *tls_base, long *child_tid, long *parent_tid, uint64_t flags, uint64_t rtp) = (void*)(gKernelBase + 0x001BE0E0);
+	int(*create_thread)(struct thread * td, uint64_t ctx, void(*start_func)(void *), void *arg, char *stack_base, uint64_t stack_size, char *tls_base, long *child_tid, long *parent_tid, uint64_t flags, uint64_t rtp) = kdlsym(kern_thr_create);
 
 	long threadId = 0;
 	result = create_thread(targetMainThread, 0, (void(*)(void*))processMemory, NULL, (char*)stackMemory, stackMemorySize, NULL, NULL, NULL, 0, 0);
