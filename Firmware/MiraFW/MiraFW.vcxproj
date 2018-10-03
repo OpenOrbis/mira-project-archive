@@ -79,6 +79,7 @@
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
     <ClCompile Include="src\mira\rpc\mirabuiltin.pb.c" />
+    <ClCompile Include="src\mira\rpc\pbconnection.c" />
     <ClCompile Include="src\mira\rpc\pbserver.c" />
     <ClCompile Include="src\mira\utils\elfutils.c" />
     <ClCompile Include="src\mira\utils\ini\ini.c" />
@@ -104,6 +105,7 @@
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
     <ClInclude Include="src\mira\rpc\mirabuiltin.pb.h" />
     <ClInclude Include="src\mira\rpc\pbserver.h" />
+    <ClInclude Include="src\mira\rpc\pbconnection.h" />
     <ClInclude Include="src\mira\trainers\trainermanager.h" />
     <ClInclude Include="src\mira\utils\elfutils.h" />
     <ClInclude Include="src\mira\utils\ini\ini.h" />
