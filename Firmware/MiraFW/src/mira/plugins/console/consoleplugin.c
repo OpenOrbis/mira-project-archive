@@ -4,7 +4,7 @@
 #include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 
-#include <oni/rpc/rpcserver.h>
+#include <oni/rpc/pbserver.h>
 
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/sys_wrappers.h>
@@ -16,6 +16,8 @@
 #include <machine/endian.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#include <nanopb/mirabuiltin.pb.h>
 
 enum ConsoleCmds
 {
@@ -86,8 +88,8 @@ uint8_t consoleplugin_load(struct consoleplugin_t* plugin)
 	if (!plugin)
 		return false;
 
-	messagemanager_registerCallback(mira_getFramework()->framework.messageManager, RPCCAT_LOG, ConsoleCmd_Open, consoleplugin_open_callback);
-	messagemanager_registerCallback(mira_getFramework()->framework.messageManager, RPCCAT_LOG, ConsoleCmd_Close, consoleplugin_close_callback);
+	messagemanager_registerCallback(mira_getFramework()->framework.messageManager, MessageCategory_LOG, ConsoleCmd_Open, consoleplugin_open_callback);
+	messagemanager_registerCallback(mira_getFramework()->framework.messageManager, MessageCategory_LOG, ConsoleCmd_Close, consoleplugin_close_callback);
 	
 	return true;
 }
@@ -97,8 +99,8 @@ uint8_t consoleplugin_unload(struct consoleplugin_t* plugin)
 	if (!plugin)
 		return false;
 
-	messagemanager_unregisterCallback(mira_getFramework()->framework.messageManager, RPCCAT_LOG, ConsoleCmd_Open, consoleplugin_open_callback);
-	messagemanager_unregisterCallback(mira_getFramework()->framework.messageManager, RPCCAT_LOG, ConsoleCmd_Close, consoleplugin_close_callback);
+	messagemanager_unregisterCallback(mira_getFramework()->framework.messageManager, MessageCategory_LOG, ConsoleCmd_Open, consoleplugin_open_callback);
+	messagemanager_unregisterCallback(mira_getFramework()->framework.messageManager, MessageCategory_LOG, ConsoleCmd_Close, consoleplugin_close_callback);
 
 	return true;
 }
@@ -158,142 +160,142 @@ void consoleDestroyConsole(struct console_t* console)
 
 void consoleplugin_open_callback(struct ref_t* reference)
 {
-	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-	int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
-	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
-	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+	//void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	//int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
+	//void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+	//void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 
-	struct message_header_t* message = ref_getDataAndAcquire(reference);
-	if (!message)
-		return;
-
-	if (message->request != true)
-		goto cleanup;
-
-	// Verify that our reference has enough space for our payload
-	if (ref_getSize(reference) < sizeof(struct console_open_t))
-	{
-		WriteLog(LL_Error, "not enough space to hold payload");
-		messagemanager_sendResponse(reference, -ENOMEM);
-		goto cleanup;
-	}
-
-	struct console_open_t* request = message_getData(message);
-	if (request->fd < 0)
-	{
-		request->port = -1;
-		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
-		WriteLog(LL_Error, "invalid file descriptor");
-		goto cleanup;
-	}
-	// TODO: Rewrite this to be less racey
-
-	// Get the free index
-	int32_t index = consoleplugin_getFreeIndex(mira_getFramework()->consolePlugin);
-	if (index < 0)
-	{
-		WriteLog(LL_Error, "no free index");
-		request->port = -1;
-		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
-		goto cleanup;
-	}
-	
-	// Select a port based on index
-	uint16_t selectedPort = PORT_START + index;
-
-	struct console_t* console = consoleCreateConsole(mira_getFramework()->consolePlugin, request->fd, -1/*We don't have a socket yet*/);
-	if (!console)
-	{
-		WriteLog(LL_Error, "could not allocate console");
-		request->port = -1;
-		messagemanager_sendResponse(reference, -ENOMEM);
-		goto cleanup;
-	}
-
-	// Set up address
-	struct sockaddr_in address;
-	memset(&address, 0, sizeof(address));
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = __bswap16(selectedPort);
-	address.sin_len = sizeof(address);
-
-	WriteLog(LL_Debug, "allocating new socket on port %u", selectedPort);
-
-	console->socketDescriptor = ksocket(AF_INET, SOCK_STREAM, 0);
-	if (console->socketDescriptor < 0)
-	{
-		
-		WriteLog(LL_Error, "could not allocate listen socket");
-		request->port = -1;
-		messagemanager_sendResponse(reference, console->socketDescriptor);
-
-		kfree(console, sizeof(*console));
-		goto cleanup;
-	}
-
-	int32_t ret = kbind(console->socketDescriptor, (struct sockaddr*)&address, sizeof(address));
-	if (ret < 0)
-	{
-
-		kshutdown(console->socketDescriptor, 2);
-		kclose(console->socketDescriptor);
-		console->socketDescriptor = -1;
-		WriteLog(LL_Error, "could not bind to the socket (err: %d)", ret);
-
-		kfree(console, sizeof(*console));
-		goto cleanup;
-	}
-
-	ret = klisten(console->socketDescriptor, 1);
-	if (ret < 0)
-	{
-		kshutdown(console->socketDescriptor, 2);
-		kclose(console->socketDescriptor);
-		console->socketDescriptor = -1;
-		WriteLog(LL_Error, "could not listen to the socket (err: %d)", ret);
-
-		kfree(console, sizeof(*console));
-		goto cleanup;
-	}
-
-	ret = kthread_add((void(*)(void*))consoleplugin_consoleThread, console, mira_getProc(), (struct thread**)&console->consoleThread, 0, 0, "mconsole");
-	if (ret != 0)
-	{
-		kshutdown(console->socketDescriptor, 2);
-		kclose(console->socketDescriptor);
-		console->socketDescriptor = -1;
-		WriteLog(LL_Error, "could not start thread(err: %d)", ret);
-
-		kfree(console, sizeof(*console));
-		goto cleanup;
-	}
-
-	// Set the console for tracking for later
-	_mtx_lock_flags(&mira_getFramework()->consolePlugin->mutex, 0, __FILE__, __LINE__);
-
-	mira_getFramework()->consolePlugin->consoles[index] = console;
-
-	_mtx_unlock_flags(&mira_getFramework()->consolePlugin->mutex, 0, __FILE__, __LINE__);
-
-	// Set the port
-	request->port = selectedPort;
-
-	// TODO: Investigate this implementation seems wrong
-
-	// Send the RPC message back to the client with the port
-	messagemanager_sendResponse(reference, 0);
-
-	// TODO: Double send here?
-
-	// Send to socket if needed
-	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
-	if (clientSocket > 0)
-		kwrite(clientSocket, request, sizeof(*request));
-
-cleanup:
-	ref_release(reference);
+//	struct message_header_t* message = ref_getDataAndAcquire(reference);
+//	if (!message)
+//		return;
+//
+//	if (message->request != true)
+//		goto cleanup;
+//
+//	// Verify that our reference has enough space for our payload
+//	if (ref_getSize(reference) < sizeof(struct console_open_t))
+//	{
+//		WriteLog(LL_Error, "not enough space to hold payload");
+//		messagemanager_sendResponse(reference, -ENOMEM);
+//		goto cleanup;
+//	}
+//
+//	struct console_open_t* request = message_getData(message);
+//	if (request->fd < 0)
+//	{
+//		request->port = -1;
+//		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
+//		WriteLog(LL_Error, "invalid file descriptor");
+//		goto cleanup;
+//	}
+//	// TODO: Rewrite this to be less racey
+//
+//	// Get the free index
+//	int32_t index = consoleplugin_getFreeIndex(mira_getFramework()->consolePlugin);
+//	if (index < 0)
+//	{
+//		WriteLog(LL_Error, "no free index");
+//		request->port = -1;
+//		messagemanager_sendResponse(reference, -EADDRNOTAVAIL);
+//		goto cleanup;
+//	}
+//	
+//	// Select a port based on index
+//	uint16_t selectedPort = PORT_START + index;
+//
+//	struct console_t* console = consoleCreateConsole(mira_getFramework()->consolePlugin, request->fd, -1/*We don't have a socket yet*/);
+//	if (!console)
+//	{
+//		WriteLog(LL_Error, "could not allocate console");
+//		request->port = -1;
+//		messagemanager_sendResponse(reference, -ENOMEM);
+//		goto cleanup;
+//	}
+//
+//	// Set up address
+//	struct sockaddr_in address;
+//	memset(&address, 0, sizeof(address));
+//	address.sin_family = AF_INET;
+//	address.sin_addr.s_addr = INADDR_ANY;
+//	address.sin_port = __bswap16(selectedPort);
+//	address.sin_len = sizeof(address);
+//
+//	WriteLog(LL_Debug, "allocating new socket on port %u", selectedPort);
+//
+//	console->socketDescriptor = ksocket(AF_INET, SOCK_STREAM, 0);
+//	if (console->socketDescriptor < 0)
+//	{
+//		
+//		WriteLog(LL_Error, "could not allocate listen socket");
+//		request->port = -1;
+//		messagemanager_sendResponse(reference, console->socketDescriptor);
+//
+//		kfree(console, sizeof(*console));
+//		goto cleanup;
+//	}
+//
+//	int32_t ret = kbind(console->socketDescriptor, (struct sockaddr*)&address, sizeof(address));
+//	if (ret < 0)
+//	{
+//
+//		kshutdown(console->socketDescriptor, 2);
+//		kclose(console->socketDescriptor);
+//		console->socketDescriptor = -1;
+//		WriteLog(LL_Error, "could not bind to the socket (err: %d)", ret);
+//
+//		kfree(console, sizeof(*console));
+//		goto cleanup;
+//	}
+//
+//	ret = klisten(console->socketDescriptor, 1);
+//	if (ret < 0)
+//	{
+//		kshutdown(console->socketDescriptor, 2);
+//		kclose(console->socketDescriptor);
+//		console->socketDescriptor = -1;
+//		WriteLog(LL_Error, "could not listen to the socket (err: %d)", ret);
+//
+//		kfree(console, sizeof(*console));
+//		goto cleanup;
+//	}
+//
+//	ret = kthread_add((void(*)(void*))consoleplugin_consoleThread, console, mira_getProc(), (struct thread**)&console->consoleThread, 0, 0, "mconsole");
+//	if (ret != 0)
+//	{
+//		kshutdown(console->socketDescriptor, 2);
+//		kclose(console->socketDescriptor);
+//		console->socketDescriptor = -1;
+//		WriteLog(LL_Error, "could not start thread(err: %d)", ret);
+//
+//		kfree(console, sizeof(*console));
+//		goto cleanup;
+//	}
+//
+//	// Set the console for tracking for later
+//	_mtx_lock_flags(&mira_getFramework()->consolePlugin->mutex, 0, __FILE__, __LINE__);
+//
+//	mira_getFramework()->consolePlugin->consoles[index] = console;
+//
+//	_mtx_unlock_flags(&mira_getFramework()->consolePlugin->mutex, 0, __FILE__, __LINE__);
+//
+//	// Set the port
+//	request->port = selectedPort;
+//
+//	// TODO: Investigate this implementation seems wrong
+//
+//	// Send the RPC message back to the client with the port
+//	messagemanager_sendResponse(reference, 0);
+//
+//	// TODO: Double send here?
+//
+//	// Send to socket if needed
+//	int32_t clientSocket = pbserver_findSocketFromThread(gFramework->rpcServer, curthread);
+//	if (clientSocket > 0)
+//		kwrite(clientSocket, request, sizeof(*request));
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void consoleplugin_close_callback(struct ref_t* reference)

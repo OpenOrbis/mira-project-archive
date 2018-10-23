@@ -5,8 +5,8 @@
 //	Oni-Framework core
 //
 #include <oni/messaging/messagemanager.h>
-#include <oni/rpc/rpcserver.h>
 #include <oni/init/initparams.h>
+#include <oni/rpc/pbserver.h>
 
 //
 //	Built-in plugins
@@ -17,7 +17,6 @@
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
-#include <mira/plugins/cheat/cheat_plugin.h>
 #include <mira/plugins/console/consoleplugin.h>
 #include <mira/plugins/hen/henplugin.h>
 
@@ -217,7 +216,7 @@ static void mira_onSuspend(struct miraframework_t* framework)
 
 	// Stop the RPC server
 	WriteLog(LL_Info, "stopping RPC server.");
-	if (!rpcserver_shutdown(framework->framework.rpcServer))
+	if (!pbserver_shutdown(framework->framework.rpcServer))
 		WriteLog(LL_Error, "there was an error stopping the rpc server.");
 	
 	// Stop the klog server
@@ -227,7 +226,6 @@ static void mira_onSuspend(struct miraframework_t* framework)
 	WriteLog(LL_Info, "Disabling hooks");
 
 	WriteLog(LL_Info, "Everything *should* be stable m8");
-
 }
 
 static void mira_onResume(struct miraframework_t* framework)
@@ -350,38 +348,27 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	debugger_plugin_init(framework->debuggerPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
-	// Cheat plugin
-	WriteLog(LL_Info, "allocating cheating plugin");
-
-	framework->cheatPlugin = (struct cheat_plugin_t*)kmalloc(sizeof(struct cheat_plugin_t));
-	if (!framework->cheatPlugin)
-	{
-		WriteLog(LL_Error, "could not allocate cheat plugin");
-		return false;
-	}
-	cheat_plugin_init(framework->cheatPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->cheatPlugin->plugin);
-	
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
-	framework->framework.rpcServer = NULL;
+	
 	if (framework->framework.rpcServer)
 	{
 		kfree(framework->framework.rpcServer, sizeof(*framework->framework.rpcServer));
 		framework->framework.rpcServer = NULL;
 	}
 
-	framework->framework.rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
+	// New pbserver iteration
+	framework->framework.rpcServer = (struct pbserver_t*)kmalloc(sizeof(struct pbserver_t));
 	if (!framework->framework.rpcServer)
 	{
 		WriteLog(LL_Error, "could not allocate rpc server.");
 		return false;
 	}
-	rpcserver_init(framework->framework.rpcServer, curthread->td_proc);
+	pbserver_init(framework->framework.rpcServer);
 
 	// Startup the server, it will kick off the thread
 	WriteLog(LL_Info, "starting rpc server");
-	if (!rpcserver_startup(framework->framework.rpcServer, ONI_RPC_PORT))
+	if (!pbserver_startup(framework->framework.rpcServer, ONI_RPC_PORT))
 	{
 		WriteLog(LL_Error, "rpcserver_startup failed");
 		return false;

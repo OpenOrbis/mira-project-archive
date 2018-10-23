@@ -17,6 +17,8 @@
 
 #include <mira/miraframework.h>
 
+#include <nanopb/mirabuiltin.pb.h>
+
 enum DebuggerCmds
 {
 	DbgCmd_GetProcesses = 0x97077E04,
@@ -37,11 +39,11 @@ uint8_t debugger_load(struct debugger_plugin_t * plugin)
 	if (!plugin)
 		return false;
 
-	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
-	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
-	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
-	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
-	messagemanager_registerCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_ReadMemory, debugger_readmem_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_WriteMemory, debugger_writemem_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_Ptrace, debugger_ptrace_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_Kill, debugger_kill_callback);
 
 	hook_enable(plugin->trapFatalHook);
 
@@ -53,11 +55,11 @@ uint8_t debugger_unload(struct debugger_plugin_t * plugin)
 	if (!plugin)
 		return false;
 
-	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_GetProcesses, debugger_getprocs_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_ReadMemory, debugger_readmem_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_WriteMemory, debugger_writemem_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Ptrace, debugger_ptrace_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_DBG, DbgCmd_Kill, debugger_kill_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_ReadMemory, debugger_readmem_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_WriteMemory, debugger_writemem_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_Ptrace, debugger_ptrace_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_DEBUG, DbgCmd_Kill, debugger_kill_callback);
 
 	hook_disable(plugin->trapFatalHook);
 

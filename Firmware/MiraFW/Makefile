@@ -35,7 +35,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(SRC_DIR)/nanopb -I"$(ONI_FRAMEWORK)/include/nanopb" -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
@@ -44,7 +44,7 @@ L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
 LIBS	:= -l:OniFramework.a
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__
+ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__ -DPB_FIELD_16BIT
 
 # C++ Flags, -02 Optimizations break shit badly
 CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas

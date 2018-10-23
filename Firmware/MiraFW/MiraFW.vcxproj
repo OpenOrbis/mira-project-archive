@@ -37,8 +37,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_STANDALONE_DEBUG;</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;_STANDALONE_DEBUG;</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
@@ -46,8 +46,8 @@
     <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_STANDALONE</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;_STANDALONE</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
@@ -67,54 +67,40 @@
     <ClCompile Include="src\mira\miraframework.c" />
     <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
     <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_utils.c" />
-    <ClCompile Include="src\mira\plugins\cheat\cheat_plugin.c" />
     <ClCompile Include="src\mira\plugins\console\consoleplugin.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
+    <ClCompile Include="src\mira\plugins\filetransfer\fileexplorer.pb.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
     <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
     <ClCompile Include="src\mira\plugins\pluginloader.c" />
-    <ClCompile Include="src\mira\rpc\mirabuiltin.pb.c" />
-    <ClCompile Include="src\mira\rpc\pbconnection.c" />
-    <ClCompile Include="src\mira\rpc\pbserver.c" />
     <ClCompile Include="src\mira\utils\elfutils.c" />
     <ClCompile Include="src\mira\utils\ini\ini.c" />
     <ClCompile Include="src\mira\utils\injector.c" />
-    <ClCompile Include="src\nanopb\pb.c" />
-    <ClCompile Include="src\nanopb\pb_common.c" />
-    <ClCompile Include="src\nanopb\pb_decode.c" />
-    <ClCompile Include="src\nanopb\pb_encode.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
     <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
-    <ClInclude Include="src\mira\plugins\cheat\cheat_plugin.h" />
     <ClInclude Include="src\mira\plugins\console\consoleplugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
+    <ClInclude Include="src\mira\plugins\filetransfer\fileexplorer.pb.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
-    <ClInclude Include="src\mira\rpc\mirabuiltin.pb.h" />
-    <ClInclude Include="src\mira\rpc\pbserver.h" />
-    <ClInclude Include="src\mira\rpc\pbconnection.h" />
     <ClInclude Include="src\mira\trainers\trainermanager.h" />
     <ClInclude Include="src\mira\utils\elfutils.h" />
     <ClInclude Include="src\mira\utils\ini\ini.h" />
     <ClInclude Include="src\mira\utils\injector.h" />
     <ClInclude Include="src\mira\utils\miraelf.h" />
-    <ClInclude Include="src\nanopb\pb.h" />
-    <ClInclude Include="src\nanopb\pb_common.h" />
-    <ClInclude Include="src\nanopb\pb_decode.h" />
-    <ClInclude Include="src\nanopb\pb_encode.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
