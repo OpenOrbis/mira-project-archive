@@ -26,7 +26,6 @@ struct miraframework_t
 	struct orbisutils_plugin_t* orbisUtilsPlugin;
 	struct cheat_plugin_t* cheatPlugin;
 
-	struct consoleplugin_t* consolePlugin;
 	struct henplugin_t* henPlugin;
 
 	struct pluginloader_t* pluginLoader;

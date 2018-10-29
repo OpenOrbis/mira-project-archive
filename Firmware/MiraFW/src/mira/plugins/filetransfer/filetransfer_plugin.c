@@ -14,12 +14,7 @@
 #include <oni/rpc/pbserver.h>
 #include <oni/utils/escape.h>
 
-#include <nanopb/mirabuiltin.pb.h>
-#include <nanopb/pb_common.h>
-#include <nanopb/pb_encode.h>
-#include <nanopb/pb_decode.h>
-
-#include "fileexplorer.pb.h"
+#include <protobuf-c/mirabuiltin.pb-c.h>
 
 #ifndef MIN
 #define MIN ( x, y ) ( (x) < (y) ? : (x) : (y) )
@@ -73,38 +68,38 @@ void filetransfer_plugin_init(struct filetransfer_plugin_t* plugin)
 uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
 {
 	// Register all of the callbacks
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Open, filetransfer_open_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Close, filetransfer_close_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Read, filetransfer_read_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_ReadFile, filetransfer_readfile_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Write, filetransfer_write_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_WriteFile, filetransfer_writefile_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Delete, filetransfer_delete_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Stat, filetransfer_stat_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Open, filetransfer_open_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Close, filetransfer_close_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Read, filetransfer_read_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_ReadFile, filetransfer_readfile_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Write, filetransfer_write_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_WriteFile, filetransfer_writefile_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Delete, filetransfer_delete_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Stat, filetransfer_stat_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
 
 	return true;
 }
 
 uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 {
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Open, filetransfer_open_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Close, filetransfer_close_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Read, filetransfer_read_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_ReadFile, filetransfer_readfile_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Write, filetransfer_write_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_WriteFile, filetransfer_writefile_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Delete, filetransfer_delete_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Stat, filetransfer_stat_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MessageCategory_FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Open, filetransfer_open_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Close, filetransfer_close_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Read, filetransfer_read_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_ReadFile, filetransfer_readfile_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Write, filetransfer_write_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_WriteFile, filetransfer_writefile_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_GetDents, filetransfer_getdents_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Delete, filetransfer_delete_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Stat, filetransfer_stat_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Mkdir, filetransfer_mkdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FileTransfer_Rmdir, filetransfer_rmdir_callback);
 
 	return true;
 }
-
+/*
 #define SEND_ERROR_RESPONSE(ResponseType, Header, Error) \
 	{ size_t _bufferSize = 2 * PAGE_SIZE; \
 	ResponseType _response; \
@@ -164,6 +159,7 @@ memcpy(_refData, _buffer, _messageSize); \
 messagemanager_sendResponse(_responseRef); \
 ref_release(_responseRef); \
 }
+*/
 
 // CRITICAL TEMP TRACKING
 //{
@@ -215,461 +211,429 @@ ref_release(_responseRef); \
 
 void filetransfer_stat_callback(struct ref_t* reference)
 {
-	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-		goto cleanup;
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	StatRequest message;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, StatRequest_fields, &message))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	// Verify that our reference has enough space for our payload
-	if (messageDataSize < sizeof(StatRequest))
-	{
-		WriteLog(LL_Error, "not enough space to hold payload");
-
-		SEND_ERROR_RESPONSE(StatResponse, message.header, -ENOMEM);
-		goto cleanup;
-	}
-	struct stat stat;
-	memset(&stat, 0, sizeof(stat));
-
-	int result = kstat(message.path, &stat);
-	if (result < 0)
-	{
-		WriteLog(LL_Error, "kstat (%s) returned (%d)", message.path, result);
-
-		SEND_ERROR_RESPONSE(StatResponse, message.header, result);
-		goto cleanup;
-	}
-
-	// Fill out the struct
-	StatResponse response;
-	response.header = message.header;
-	response.header.error = 0;
-
-	response.dev = stat.st_dev;
-	response.has_dev = true;
-
-	response.ino = stat.st_ino;
-	response.has_ino = true;
-
-	response.mode = stat.st_mode;
-	response.has_mode = true;
-
-	response.nlink = stat.st_nlink;
-	response.has_nlink = true;
-
-	response.uid = stat.st_uid;
-	response.has_uid = true;
-
-	response.gid = stat.st_gid;
-	response.has_gid = true;
-
-	response.rdev = stat.st_rdev;
-	response.has_rdev = true;
-
-	response.atim.sec = stat.st_atim.tv_sec;
-	response.atim.nsec = stat.st_atim.tv_nsec;
-	response.has_atim = true;
-
-	response.mtim.sec = stat.st_mtim.tv_sec;
-	response.mtim.nsec = stat.st_mtim.tv_nsec;
-	response.has_mtim = true;
-
-	response.ctim.sec = stat.st_ctim.tv_sec;
-	response.ctim.nsec = stat.st_ctim.tv_nsec;
-	response.has_ctim = true;
-
-	response.size = stat.st_size;
-	response.has_size = true;
-
-	response.blocks = stat.st_blocks;
-	response.has_blocks = true;
-
-	response.blksize = stat.st_blksize;
-	response.has_blksize = true;
-
-	response.flags = stat.st_flags;
-	response.has_flags = true;
-
-	response.gen = stat.st_gen;
-	response.has_gen = true;
-
-	response.lspare = stat.st_lspare;
-	response.has_lspare = true;
-
-	response.birthtim.nsec = stat.st_birthtim.tv_nsec;
-	response.birthtim.sec = stat.st_birthtim.tv_sec;
-	response.has_birthtim = true;
-	// Send success message
-
-	SEND_RESPONSE(StatResponse, response, message.header);
-cleanup:
-	ref_release(reference);
+//	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+//
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//		goto cleanup;
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	StatRequest message;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, StatRequest_fields, &message))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	// Verify that our reference has enough space for our payload
+//	if (messageDataSize < sizeof(StatRequest))
+//	{
+//		WriteLog(LL_Error, "not enough space to hold payload");
+//
+//		SEND_ERROR_RESPONSE(StatResponse, message.header, -ENOMEM);
+//		goto cleanup;
+//	}
+//	struct stat stat;
+//	memset(&stat, 0, sizeof(stat));
+//
+//	int result = kstat(message.path, &stat);
+//	if (result < 0)
+//	{
+//		WriteLog(LL_Error, "kstat (%s) returned (%d)", message.path, result);
+//
+//		SEND_ERROR_RESPONSE(StatResponse, message.header, result);
+//		goto cleanup;
+//	}
+//
+//	// Fill out the struct
+//	StatResponse response;
+//	response.header = message.header;
+//	response.header.error = 0;
+//
+//	response.dev = stat.st_dev;
+//	response.ino = stat.st_ino;
+//	response.mode = stat.st_mode;
+//	response.nlink = stat.st_nlink;
+//	response.uid = stat.st_uid;
+//	response.gid = stat.st_gid;
+//	response.rdev = stat.st_rdev;
+//	response.atim.sec = stat.st_atim.tv_sec;
+//	response.atim.nsec = stat.st_atim.tv_nsec;
+//	response.mtim.sec = stat.st_mtim.tv_sec;
+//	response.mtim.nsec = stat.st_mtim.tv_nsec;
+//	response.ctim.sec = stat.st_ctim.tv_sec;
+//	response.ctim.nsec = stat.st_ctim.tv_nsec;
+//	response.size = stat.st_size;
+//	response.blocks = stat.st_blocks;
+//
+//	response.blksize = stat.st_blksize;
+//
+//	response.flags = stat.st_flags;
+//
+//	response.gen = stat.st_gen;
+//
+//	response.lspare = stat.st_lspare;
+//
+//	response.birthtim.nsec = stat.st_birthtim.tv_nsec;
+//	response.birthtim.sec = stat.st_birthtim.tv_sec;
+//	// Send success message
+//
+//	SEND_RESPONSE(StatResponse, response, message.header);
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_open_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-		return;
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	OpenRequest message;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, OpenRequest_fields, &message))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "[+] openRequest %s %d %d.", message.path, message.flags, message.mode);
-
-	struct thread_info_t threadInfo;
-	memset(&threadInfo, 0, sizeof(threadInfo));
-
-	oni_threadEscape(curthread, &threadInfo);
-
-	int32_t handle = kopen(message.path, message.flags, message.mode);
-
-	oni_threadRestore(curthread, &threadInfo);
-
-	if (handle < 0)
-	{
-		WriteLog(LL_Error, "[-] could not open file %s %d.", message.path, handle);
-		SEND_ERROR_RESPONSE(OpenResponse, message.header, handle);
-		goto cleanup;
-	}
-
-	OpenResponse response;
-	response.handle = handle;
-	response.has_handle = true;
-
-	SEND_RESPONSE(OpenResponse, response, message.header);
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//		return;
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	OpenRequest message;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, OpenRequest_fields, &message))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "[+] openRequest %s %d %d.", message.path, message.flags, message.mode);
+//
+//	struct thread_info_t threadInfo;
+//	memset(&threadInfo, 0, sizeof(threadInfo));
+//
+//	oni_threadEscape(curthread, &threadInfo);
+//
+//	int32_t handle = kopen(message.path, message.flags, message.mode);
+//
+//	oni_threadRestore(curthread, &threadInfo);
+//
+//	if (handle < 0)
+//	{
+//		WriteLog(LL_Error, "[-] could not open file %s %d.", message.path, handle);
+//		SEND_ERROR_RESPONSE(OpenResponse, message.header, handle);
+//		goto cleanup;
+//	}
+//
+//	OpenResponse response;
+//	response.handle = handle;
+//
+//	SEND_RESPONSE(OpenResponse, response, message.header);
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_rmdir_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-	{
-		WriteLog(LL_Error, "could not get message data.");
-		goto cleanup;
-	}
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	RemoveDirectoryRequest request;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, RemoveDirectoryRequest_fields, &request))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "rmdir (%s)", request.path);
-
-	int result = krmdir(request.path);
-
-	RemoveDirectoryResponse response;
-
-	if (result == -1)
-	{
-		SEND_ERROR_RESPONSE(RemoveDirectoryResponse, request.header, -EPERM);
-	}
-	else
-	{
-		SEND_RESPONSE(RemoveDirectoryResponse, response, request.header);
-	}
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//	{
+//		WriteLog(LL_Error, "could not get message data.");
+//		goto cleanup;
+//	}
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	RemoveDirectoryRequest request;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, RemoveDirectoryRequest_fields, &request))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "rmdir (%s)", request.path);
+//
+//	int result = krmdir(request.path);
+//
+//	RemoveDirectoryResponse response;
+//
+//	if (result == -1)
+//	{
+//		SEND_ERROR_RESPONSE(RemoveDirectoryResponse, request.header, -EPERM);
+//	}
+//	else
+//	{
+//		SEND_RESPONSE(RemoveDirectoryResponse, response, request.header);
+//	}
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_mkdir_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-	{
-		WriteLog(LL_Error, "could not get message data.");
-		goto cleanup;
-	}
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	MakeDirectoryRequest request;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, MakeDirectoryRequest_fields, &request))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "mkdir (%s)", request.path);
-
-	int result = kmkdir(request.path, request.mode);
-
-	MakeDirectoryResponse response;
-
-	if (result == -1)
-	{
-		SEND_ERROR_RESPONSE(MakeDirectoryResponse, request.header, -EPERM);
-	}
-	else
-	{
-		SEND_RESPONSE(MakeDirectoryResponse, response, request.header);
-	}
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//	{
+//		WriteLog(LL_Error, "could not get message data.");
+//		goto cleanup;
+//	}
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	MakeDirectoryRequest request;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, MakeDirectoryRequest_fields, &request))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "mkdir (%s)", request.path);
+//
+//	int result = kmkdir(request.path, request.mode);
+//
+//	MakeDirectoryResponse response;
+//
+//	if (result == -1)
+//	{
+//		SEND_ERROR_RESPONSE(MakeDirectoryResponse, request.header, -EPERM);
+//	}
+//	else
+//	{
+//		SEND_RESPONSE(MakeDirectoryResponse, response, request.header);
+//	}
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_close_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-	{
-		WriteLog(LL_Error, "could not get message data.");
-		goto cleanup;
-	}
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	CloseRequest request;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, CloseRequest_fields, &request))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "close (%d)", request.handle);
-
-	kclose(request.handle);
-
-	CloseResponse response;
-
-	SEND_RESPONSE(CloseResponse, response, request.header);
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//	{
+//		WriteLog(LL_Error, "could not get message data.");
+//		goto cleanup;
+//	}
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	CloseRequest request;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, CloseRequest_fields, &request))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "close (%d)", request.handle);
+//
+//	kclose(request.handle);
+//
+//	CloseResponse response;
+//
+//	SEND_RESPONSE(CloseResponse, response, request.header);
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_read_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-	{
-		WriteLog(LL_Error, "could not get message data.");
-		goto cleanup;
-	}
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	ReadRequest request;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, ReadRequest_fields, &request))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "read (%d)", request.handle);
-
-	// Restrict the maxium size that we can read out
-	if (request.size > 0x4000)
-	{
-		WriteLog(LL_Error, "request size (%llx) is greater than max (%llx).", request.size, 0x4000);
-		SEND_ERROR_RESPONSE(ReadResponse, request.header, -EINVAL);
-		goto cleanup;
-	}
-
-	// If the offset is -1 then we do not seek anywhere before reading
-	if (request.offset == -1)
-		klseek(request.handle, request.offset, SEEK_SET);
-
-	ReadResponse response;
-
-	// Read out our data
-	int32_t result = kread(request.handle, response.data.bytes, request.size);
-	if (result < 0)
-	{
-		WriteLog(LL_Error, "could not read (%d).", result);
-		SEND_ERROR_RESPONSE(ReadResponse, request.header, result);
-		goto cleanup;
-	}
-
-	// Set our size and that we have data
-	response.has_data = true;
-	response.data.size = request.size;
-
-	// Send the response back
-	SEND_RESPONSE(ReadResponse, response, request.header);
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//	{
+//		WriteLog(LL_Error, "could not get message data.");
+//		goto cleanup;
+//	}
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	ReadRequest request;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, ReadRequest_fields, &request))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "read (%d)", request.handle);
+//
+//	// Restrict the maxium size that we can read out
+//	if (request.size > 0x4000)
+//	{
+//		WriteLog(LL_Error, "request size (%llx) is greater than max (%llx).", request.size, 0x4000);
+//		SEND_ERROR_RESPONSE(ReadResponse, request.header, -EINVAL);
+//		goto cleanup;
+//	}
+//
+//	// If the offset is -1 then we do not seek anywhere before reading
+//	if (request.offset == -1)
+//		klseek(request.handle, request.offset, SEEK_SET);
+//
+//	ReadResponse response;
+//
+//	// Read out our data
+//	int32_t result = kread(request.handle, response.data.bytes, request.size);
+//	if (result < 0)
+//	{
+//		WriteLog(LL_Error, "could not read (%d).", result);
+//		SEND_ERROR_RESPONSE(ReadResponse, request.header, result);
+//		goto cleanup;
+//	}
+//
+//	// Set our size and that we have data
+//	response.data.size = result;
+//
+//	// Send the response back
+//	SEND_RESPONSE(ReadResponse, response, request.header);
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_readfile_callback(struct ref_t* reference)
 {
-	if (!reference)
-		return;
-
-	uint8_t* messageData = ref_getDataAndAcquire(reference);
-	if (!messageData)
-	{
-		WriteLog(LL_Error, "could not get message data.");
-		goto cleanup;
-	}
-
-	size_t messageDataSize = ref_getSize(reference);
-
-	ReadFileRequest request;
-	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
-	if (!pb_decode(&stream, ReadFileRequest_fields, &request))
-	{
-		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
-		goto cleanup;
-	}
-
-	WriteLog(LL_Debug, "readfile (%s)", request.path);
-
-	struct thread_info_t outThreadInfo;
-	oni_threadEscape(curthread, &outThreadInfo);
-
-	// If the offset is -1 then we do not seek anywhere before reading
-	int32_t handle = kopen(request.path, O_RDONLY, 0);
-	if (handle < 0)
-	{
-		WriteLog(LL_Error, "could not open (%s) returned (%d).", request.path, handle);
-		SEND_ERROR_RESPONSE(ReadFileResponse, request.header, handle);
-		goto cleanup;
-	}
-
-	struct stat fileInfo;
-	kfstat(handle, &fileInfo);
-
-	uint64_t fileSize = fileInfo.st_size;
-	uint64_t blockSize = 0x4000;
-	uint64_t blockCount = fileInfo.st_size / blockSize;
-
-	// Handle single block files that are smaller than our buffer
-	if (fileSize < blockSize)
-	{
-		ReadResponse response;
-
-		// Read out our data
-		int32_t result = kread(handle, response.data.bytes, fileSize);
-		if (result < 0)
-		{
-			WriteLog(LL_Error, "could not read (%d).", result);
-			SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
-			goto cleanup;
-		}
-
-		// Set our size and that we have data
-		response.has_data = true;
-		response.data.size = fileSize;
-
-		SEND_RESPONSE(ReadFileResponse, response, request.header);
-	}
-	else // Handle large file transfers that cannot fit in one buffer
-	{
-		uint64_t readDataCount = 0;
-
-		uint64_t leftoverDataSize = fileSize % blockSize;
-
-		for (uint64_t blockIndex = 0; blockIndex < blockCount; blockIndex++)
-		{
-			ReadFileResponse response;
-
-			// Read out the block of data
-			ssize_t result = kread(handle, response.data.bytes, blockSize);
-			if (result < 0)
-			{
-				WriteLog(LL_Error, "could not read data (%d).", result);
-				SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
-				goto cleanup;
-			}
-
-			// Set the data
-			response.has_data = true;
-			response.data.size = blockSize;
-
-			// Set our current offset
-			response.offset = readDataCount;
-
-			// Add the count of data we are currently at
-			readDataCount += result;
-
-			// Send the response back
-			SEND_RESPONSE(ReadFileResponse, response, request.header);
-		}
-
-		ReadFileResponse response;
-
-		// Read out the block of data
-		ssize_t result = kread(handle, response.data.bytes, leftoverDataSize);
-		if (result < 0)
-		{
-			WriteLog(LL_Error, "could not read data (%d).", result);
-			SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
-			goto cleanup;
-		}
-
-		// Set the data
-		response.has_data = true;
-		response.data.size = leftoverDataSize;
-
-		// Set our current offset
-		response.offset = readDataCount;
-
-		// Add the count of data we are currently at
-		readDataCount += result;
-
-		SEND_RESPONSE(ReadFileResponse, response, request.header);
-	}
-
-	// Send the final response, data size of 0 with success
-	ReadFileResponse terminatingResponse;
-	terminatingResponse.has_data = true;
-	terminatingResponse.data.size = 0;
-
-	SEND_RESPONSE(ReadFileResponse, terminatingResponse, request.header);
-
-cleanup:
-	ref_release(reference);
+//	if (!reference)
+//		return;
+//
+//	uint8_t* messageData = ref_getDataAndAcquire(reference);
+//	if (!messageData)
+//	{
+//		WriteLog(LL_Error, "could not get message data.");
+//		goto cleanup;
+//	}
+//
+//	size_t messageDataSize = ref_getSize(reference);
+//
+//	ReadFileRequest request;
+//	pb_istream_t stream = pb_istream_from_buffer(messageData, messageDataSize);
+//	if (!pb_decode(&stream, ReadFileRequest_fields, &request))
+//	{
+//		WriteLog(LL_Error, "could not decode header (%s).", PB_GET_ERROR(&stream));
+//		goto cleanup;
+//	}
+//
+//	WriteLog(LL_Debug, "readfile (%s)", request.path);
+//
+//	struct thread_info_t outThreadInfo;
+//	oni_threadEscape(curthread, &outThreadInfo);
+//
+//	// If the offset is -1 then we do not seek anywhere before reading
+//	int32_t handle = kopen(request.path, O_RDONLY, 0);
+//	if (handle < 0)
+//	{
+//		WriteLog(LL_Error, "could not open (%s) returned (%d).", request.path, handle);
+//		SEND_ERROR_RESPONSE(ReadFileResponse, request.header, handle);
+//		goto cleanup;
+//	}
+//
+//	struct stat fileInfo;
+//	kfstat(handle, &fileInfo);
+//
+//	uint64_t fileSize = fileInfo.st_size;
+//	uint64_t blockSize = 0x4000;
+//	uint64_t blockCount = fileInfo.st_size / blockSize;
+//
+//	// Handle single block files that are smaller than our buffer
+//	if (fileSize < blockSize)
+//	{
+//		ReadResponse response;
+//
+//		// Read out our data
+//		int32_t result = kread(handle, response.data.bytes, fileSize);
+//		if (result < 0)
+//		{
+//			WriteLog(LL_Error, "could not read (%d).", result);
+//			SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
+//			goto cleanup;
+//		}
+//
+//		// Set our size and that we have data
+//		response.data.size = fileSize;
+//
+//		SEND_RESPONSE(ReadFileResponse, response, request.header);
+//	}
+//	else // Handle large file transfers that cannot fit in one buffer
+//	{
+//		uint64_t readDataCount = 0;
+//
+//		uint64_t leftoverDataSize = fileSize % blockSize;
+//
+//		for (uint64_t blockIndex = 0; blockIndex < blockCount; blockIndex++)
+//		{
+//			ReadFileResponse response;
+//
+//			// Read out the block of data
+//			ssize_t result = kread(handle, response.data.bytes, blockSize);
+//			if (result < 0)
+//			{
+//				WriteLog(LL_Error, "could not read data (%d).", result);
+//				SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
+//				goto cleanup;
+//			}
+//
+//			// Set the data
+//			response.data.size = blockSize;
+//
+//			// Set our current offset
+//			response.offset = readDataCount;
+//
+//			// Add the count of data we are currently at
+//			readDataCount += result;
+//
+//			// Send the response back
+//			SEND_RESPONSE(ReadFileResponse, response, request.header);
+//		}
+//
+//		ReadFileResponse response;
+//
+//		// Read out the block of data
+//		ssize_t result = kread(handle, response.data.bytes, leftoverDataSize);
+//		if (result < 0)
+//		{
+//			WriteLog(LL_Error, "could not read data (%d).", result);
+//			SEND_ERROR_RESPONSE(ReadFileResponse, request.header, result);
+//			goto cleanup;
+//		}
+//
+//		// Set the data
+//		response.data.size = leftoverDataSize;
+//
+//		// Set our current offset
+//		response.offset = readDataCount;
+//
+//		// Add the count of data we are currently at
+//		readDataCount += result;
+//
+//		WriteLog(LL_Debug, "read total file size (%llx).", readDataCount);
+//
+//		SEND_RESPONSE(ReadFileResponse, response, request.header);
+//	}
+//
+//	// Send the final response, data size of 0 with success
+//	ReadFileResponse terminatingResponse;
+//	terminatingResponse.data.size = 0;
+//
+//	SEND_RESPONSE(ReadFileResponse, terminatingResponse, request.header);
+//
+//cleanup:
+//	ref_release(reference);
 }
 
 void filetransfer_write_callback(struct ref_t* reference)

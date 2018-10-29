@@ -17,7 +17,6 @@
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
-#include <mira/plugins/console/consoleplugin.h>
 #include <mira/plugins/hen/henplugin.h>
 
 //
@@ -43,6 +42,9 @@
 #include <sys/eventhandler.h>
 #include <sys/proc.h>					// proc
 #include <sys/sysent.h>
+#include <string.h> // memmove, memcpy
+#include <stdlib.h> // malloc, free
+#include <assert.h>
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 
@@ -95,13 +97,37 @@ struct miraframework_t* mira_getFramework()
 	return (struct miraframework_t*)gFramework;
 }
 
+void mira_assert(const char * a, const char * b, int c, const char * d)
+{
+
+}
+
+#include <protobuf-c/protobuf-c.h>
+
+ProtobufCAllocator protobuf_c__allocator = {
+.alloc = NULL,
+.free = NULL,
+.allocator_data = NULL,
+};
+
 uint8_t miraframework_initialize(struct miraframework_t* framework)
 {
 	if (!framework)
 		return false;
 
+	// This is required for the operation of protobuf-c
+	__assert = (void*)mira_assert;
+	strcmp = kdlsym(strcmp);
+	strlen = kdlsym(strlen);
+	memset = kdlsym(memset);
+	memmove = kdlsym(memmove);
+	memcpy = kdlsym(memcpy);
+	malloc = k_malloc;
+	free = k_free;
+	protobuf_c__allocator.alloc = (void*(*)(void*, size_t))malloc;
+	protobuf_c__allocator.free = (void(*)(void*, void*))free;
+	
 	// Zero initialize everything
-	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	memset(framework, 0, sizeof(*framework));
 
 	// Load the settings from file if it exists
@@ -281,22 +307,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	filetransfer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
-	WriteLog(LL_Warn, "allocating console plugin");
-	if (framework->consolePlugin)
-	{
-		kfree(framework->consolePlugin, sizeof(*framework->consolePlugin));
-		framework->consolePlugin = NULL;
-	}
-
-	framework->consolePlugin = (struct consoleplugin_t*)kmalloc(sizeof(struct consoleplugin_t));
-	if (!framework->consolePlugin)
-	{
-		WriteLog(LL_Error, "could not allocate console plugin");
-		return false;
-	}
-	consoleplugin_init(framework->consolePlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->consolePlugin->plugin);
-
 	WriteLog(LL_Info, "allocating logserver");
 	if (framework->logServerPlugin)
 	{
@@ -331,22 +341,22 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginloader_loadPlugins(framework->pluginLoader);
 
 	// Debugger
-	WriteLog(LL_Debug, "allocating debugger");
+	//WriteLog(LL_Debug, "allocating debugger");
 
-	if (framework->debuggerPlugin)
-	{
-		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
-		framework->debuggerPlugin = NULL;
-	}
-		
-	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
-	if (!framework->debuggerPlugin)
-	{
-		WriteLog(LL_Error, "could not allocate debugger plugin");
-		return false;
-	}
-	debugger_plugin_init(framework->debuggerPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
+	//if (framework->debuggerPlugin)
+	//{
+	//	kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
+	//	framework->debuggerPlugin = NULL;
+	//}
+	//	
+	//framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
+	//if (!framework->debuggerPlugin)
+	//{
+	//	WriteLog(LL_Error, "could not allocate debugger plugin");
+	//	return false;
+	//}
+	//debugger_plugin_init(framework->debuggerPlugin);
+	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");

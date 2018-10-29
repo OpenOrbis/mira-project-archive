@@ -89,153 +89,154 @@ void* debugger_getTextAddress(struct debugger_plugin_t* plugin)
 
 int32_t debugger_addBreakpoint(struct debugger_plugin_t* plugin, void* address, uint8_t size, uint8_t hardware)
 {
-	if (!plugin)
-		return -1;
-
-	if (!address)
-		return -1;
-
-	// The only sizes that can be passed in are 1, 2, 4 bytes
-	switch (size)
-	{
-	case 1:
-	case 2:
-	case 4:
-		break;
-	default:
-		return -1;
-	}
-	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
-	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
-	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
-	void(*critical_enter)(void) = kdlsym(critical_enter);
-	void(*critical_exit)(void) = kdlsym(critical_exit);
-	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
-
-	struct proc* proc = pfind(plugin->pid);
-	if (!proc)
-		return -1;
-
-	_mtx_lock_flags(&plugin->lock, 0, __FILE__, __LINE__);
-
-	int32_t index = -1;
-	if (hardware)
-	{
-		WriteLog(LL_Info, "hardware breakpoints aren't supported yet.");
-		index = -1;
-		goto cleanup;
-	}
-
-	// Check that this address is mapped
-	if (!debugger_isAddressMapped(plugin, address))
-	{
-		WriteLog(LL_Error, "address %p is not mapped", address);
-		index = -1;
-		goto cleanup;
-	}
-
-	uint8_t* textAddress = debugger_getTextAddress(plugin);
-	if (!textAddress)
-	{
-		WriteLog(LL_Error, "could not get text address");
-		index = -1;
-		goto cleanup;
-	}
-
-	size_t breakpointOffset = (uint8_t*)address - textAddress;
-	int32_t backupLength = debugger_getDisassemblyMinLength(plugin, address, size);
-	if (backupLength <= 0)
-	{
-		WriteLog(LL_Debug, "could not get disassembly length %p %d", address, size);
-		index = -1;
-		goto cleanup;
-	}
-
-	// Find a free index
-	index = debugger_findFreeBreakpointIndex(plugin);
-	if (index < 0)
-	{
-		WriteLog(LL_Debug, "no free breakpoints");
-		index = -1;
-		goto cleanup;
-	}
-
-	// Get our breakpoint address
-	struct breakpoint_t* breakpoint = &plugin->breakpoints[index];
-
-	// Zero out any nasties that may not have been reset
-	memset(breakpoint, 0, sizeof(*breakpoint));
-
-	// Backup these bytes
-	breakpoint->backup = kmalloc(backupLength);
-	if (!breakpoint->backup)
-	{
-		WriteLog(LL_Error, "could not allocate backup bytes");
-		index = -1;
-		goto cleanup;
-	}
-	memset(breakpoint->backup, 0, backupLength);
-
-	// Copy the memory
-	if ((uint64_t)address & 0x8000000000000000ULL) // handle kernel address
-		memcpy(breakpoint->backup, address, backupLength);
-	else
-	{
-		size_t bytesRead = 0;
-		// handle userland address
-		int result = proc_rw_mem(proc, address, backupLength, breakpoint->backup, &bytesRead, false);
-
-		// Handle errors
-		if (result < 0)
-		{
-			kfree(breakpoint->backup, backupLength);
-			breakpoint->backup = NULL;
-			WriteLog(LL_Error, "could not read userland memory %p (%d)", address, result);
-			index = -1;
-			goto cleanup;
-		}
-	}
-
-	// Set the address
-	breakpoint->address = address;
-	breakpoint->offset = breakpointOffset;
-	breakpoint->backupLength = backupLength;
-	breakpoint->size = size;
-
-	// Write the final breakpoint
-	if ((uint64_t)address & 0x8000000000000000ULL) // handle kernel address
-	{
-		WriteLog(LL_Debug, "software breakpointing kernel address %p", address);
-		critical_enter();
-		cpu_disable_wp();
-		memset(address, 0xCC, 1);
-		cpu_enable_wp();
-		critical_exit();
-	}
-	else // handle software bp
-	{
-		WriteLog(LL_Debug, "software breakpointing userland address %p", address);
-		uint8_t bp[] = { 0xCC };
-		size_t bytesWritten = 0;
-
-		int result = proc_rw_mem(proc, address, 1, bp, &bytesWritten, true);
-
-		if (result < 0)
-		{
-			kfree(breakpoint->backup, backupLength);
-			breakpoint->backup = NULL;
-			memset(breakpoint, 0, sizeof(*breakpoint));
-			WriteLog(LL_Error, "could not write userland breakpoint %p", address);
-			index = -1;
-			goto cleanup;
-		}
-	}
-
-cleanup:
-	_mtx_unlock_flags(&plugin->lock, 0, __FILE__, __LINE__);
-	PROC_UNLOCK(proc);
-	return index;
+	return -1;
+//	if (!plugin)
+//		return -1;
+//
+//	if (!address)
+//		return -1;
+//
+//	// The only sizes that can be passed in are 1, 2, 4 bytes
+//	switch (size)
+//	{
+//	case 1:
+//	case 2:
+//	case 4:
+//		break;
+//	default:
+//		return -1;
+//	}
+//	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+//	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+//	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
+//	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
+//	void(*critical_enter)(void) = kdlsym(critical_enter);
+//	void(*critical_exit)(void) = kdlsym(critical_exit);
+//	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
+//
+//	struct proc* proc = pfind(plugin->pid);
+//	if (!proc)
+//		return -1;
+//
+//	_mtx_lock_flags(&plugin->lock, 0, __FILE__, __LINE__);
+//
+//	int32_t index = -1;
+//	if (hardware)
+//	{
+//		WriteLog(LL_Info, "hardware breakpoints aren't supported yet.");
+//		index = -1;
+//		goto cleanup;
+//	}
+//
+//	// Check that this address is mapped
+//	if (!debugger_isAddressMapped(plugin, address))
+//	{
+//		WriteLog(LL_Error, "address %p is not mapped", address);
+//		index = -1;
+//		goto cleanup;
+//	}
+//
+//	uint8_t* textAddress = debugger_getTextAddress(plugin);
+//	if (!textAddress)
+//	{
+//		WriteLog(LL_Error, "could not get text address");
+//		index = -1;
+//		goto cleanup;
+//	}
+//
+//	size_t breakpointOffset = (uint8_t*)address - textAddress;
+//	int32_t backupLength = debugger_getDisassemblyMinLength(plugin, address, size);
+//	if (backupLength <= 0)
+//	{
+//		WriteLog(LL_Debug, "could not get disassembly length %p %d", address, size);
+//		index = -1;
+//		goto cleanup;
+//	}
+//
+//	// Find a free index
+//	index = debugger_findFreeBreakpointIndex(plugin);
+//	if (index < 0)
+//	{
+//		WriteLog(LL_Debug, "no free breakpoints");
+//		index = -1;
+//		goto cleanup;
+//	}
+//
+//	// Get our breakpoint address
+//	struct breakpoint_t* breakpoint = &plugin->breakpoints[index];
+//
+//	// Zero out any nasties that may not have been reset
+//	memset(breakpoint, 0, sizeof(*breakpoint));
+//
+//	// Backup these bytes
+//	breakpoint->backup = kmalloc(backupLength);
+//	if (!breakpoint->backup)
+//	{
+//		WriteLog(LL_Error, "could not allocate backup bytes");
+//		index = -1;
+//		goto cleanup;
+//	}
+//	memset(breakpoint->backup, 0, backupLength);
+//
+//	// Copy the memory
+//	if ((uint64_t)address & 0x8000000000000000ULL) // handle kernel address
+//		memcpy(breakpoint->backup, address, backupLength);
+//	else
+//	{
+//		size_t bytesRead = 0;
+//		// handle userland address
+//		int result = proc_rw_mem(proc, address, backupLength, breakpoint->backup, &bytesRead, false);
+//
+//		// Handle errors
+//		if (result < 0)
+//		{
+//			kfree(breakpoint->backup, backupLength);
+//			breakpoint->backup = NULL;
+//			WriteLog(LL_Error, "could not read userland memory %p (%d)", address, result);
+//			index = -1;
+//			goto cleanup;
+//		}
+//	}
+//
+//	// Set the address
+//	breakpoint->address = address;
+//	breakpoint->offset = breakpointOffset;
+//	breakpoint->backupLength = backupLength;
+//	breakpoint->size = size;
+//
+//	// Write the final breakpoint
+//	if ((uint64_t)address & 0x8000000000000000ULL) // handle kernel address
+//	{
+//		WriteLog(LL_Debug, "software breakpointing kernel address %p", address);
+//		critical_enter();
+//		cpu_disable_wp();
+//		memset(address, 0xCC, 1);
+//		cpu_enable_wp();
+//		critical_exit();
+//	}
+//	else // handle software bp
+//	{
+//		WriteLog(LL_Debug, "software breakpointing userland address %p", address);
+//		uint8_t bp[] = { 0xCC };
+//		size_t bytesWritten = 0;
+//
+//		int result = proc_rw_mem(proc, address, 1, bp, &bytesWritten, true);
+//
+//		if (result < 0)
+//		{
+//			kfree(breakpoint->backup, backupLength);
+//			breakpoint->backup = NULL;
+//			memset(breakpoint, 0, sizeof(*breakpoint));
+//			WriteLog(LL_Error, "could not write userland breakpoint %p", address);
+//			index = -1;
+//			goto cleanup;
+//		}
+//	}
+//
+//cleanup:
+//	_mtx_unlock_flags(&plugin->lock, 0, __FILE__, __LINE__);
+//	PROC_UNLOCK(proc);
+//	return index;
 }
 
 uint8_t debugger_removeBreakpoint(struct debugger_plugin_t* plugin, void* address)

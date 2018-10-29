@@ -55,6 +55,9 @@
     <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="proto\debugger\debugger.proto" />
+    <None Include="proto\fileexplorer\fileexplorer.proto" />
+    <None Include="proto\mirabuiltin.proto" />
     <None Include="src\crt0.s" />
     <None Include="src\link.x" />
   </ItemGroup>
@@ -62,16 +65,15 @@
     <Text Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="proto\mirabuiltin.pb-c.c" />
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
     <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
     <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_utils.c" />
-    <ClCompile Include="src\mira\plugins\console\consoleplugin.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
-    <ClCompile Include="src\mira\plugins\filetransfer\fileexplorer.pb.c" />
     <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
@@ -83,13 +85,12 @@
     <ClCompile Include="src\mira\utils\injector.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="proto\mirabuiltin.pb-c.h" />
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
     <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
-    <ClInclude Include="src\mira\plugins\console\consoleplugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
-    <ClInclude Include="src\mira\plugins\filetransfer\fileexplorer.pb.h" />
     <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />

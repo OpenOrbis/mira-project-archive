@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+// You will need protoc.exe and nanopb_generator.exe in the same directory as this file
+// https://jpa.kapsi.fi/nanopb/download/
+
+// To build this file:
+// .\protoc.exe "-omirabuiltin.pb" "mirabuiltin.proto"
+// or
+// .\protoc.exe "-omirabuiltin.pb" --nanopb_out=-v:. .\mirabuiltin.proto
+// .\nanopb_generator.exe .\mirabuiltin.pb
+
+// Limitations:
+// https://jpa.kapsi.fi/nanopb/docs/concepts.html#id9 (data types)
+// strings [(nanopb).max_size = 40];
+
+import "nanopb.proto";
+import "mirabuiltin.proto";
+
+message DirEnt {
+    enum DirectoryType {
+        DT_UNKNOWN = 0;
+        DT_FIFO = 1;
+        DT_CHR = 2;
+        DT_DIR = 4;
+        DT_BLK = 6;
+        DT_REG = 8;
+        DT_LNK = 10;
+        DT_SOCK = 12;
+        DT_WHT = 14;
+    }
+    uint32 fileno = 1;
+    uint32 reclen = 2;
+    DirectoryType type = 3;
+    string name = 4 [(nanopb).max_size = 256];
+}
+
+// open
+message OpenRequest {
+    MessageHeader header = 1;
+    string path = 2 [(nanopb).max_size = 256];
+    int32 flags = 3;
+    int32 mode = 4;
+}
+
+message OpenResponse {
+    MessageHeader header = 1;
+
+    int32 handle = 2;
+}
+
+// close
+message CloseRequest {
+    MessageHeader header = 1;
+
+    // Handle of the file to close
+    int32 handle = 2;
+}
+
+message CloseResponse {
+    MessageHeader header = 1;
+}
+
+// read
+message ReadRequest {
+    MessageHeader header = 1;
+
+    int32 handle = 2;
+
+    int64 offset = 3;
+
+    uint64 size = 4;
+}
+
+message ReadResponse {
+    MessageHeader header = 1;
+
+    bytes data = 2 [(nanopb).max_size = 16384]; // 0x4000
+}
+
+// read file
+message ReadFileRequest {
+    MessageHeader header = 1;
+
+    string path = 2 [(nanopb).max_size = 256];
+}
+
+// The way that this is supposed to work is, you send a ReadFileRequest
+// You get multiple FileResponse's with data size and you just write that to file until data.length = 0
+message ReadFileResponse {
+    MessageHeader header = 1;
+
+    uint64 offset = 2;
+
+    bytes data = 3 [(nanopb).max_size = 16384]; // 0x4000
+}
+
+// mkdir
+message MakeDirectoryRequest {
+    MessageHeader header = 1;
+    string path = 2 [(nanopb).max_size = 256];
+    int32 mode = 3;
+}
+
+message MakeDirectoryResponse {
+    MessageHeader header = 1;
+}
+
+// rmdir
+message RemoveDirectoryRequest {
+    MessageHeader header = 1;
+    string path = 2 [(nanopb).max_size = 256];
+}
+
+message RemoveDirectoryResponse {
+    MessageHeader header = 1;
+}
+
+// unlink
+message UnlinkRequest {
+    MessageHeader header = 1;
+
+    string path = 2 [(nanopb).max_size = 256];
+}
+
+message UnlinkResponse {
+    MessageHeader header = 1;
+}
+
+// stats
+message TimeSpec {
+    int64 sec = 1;
+    uint64 nsec = 2;
+}
+
+message StatRequest {
+    MessageHeader header = 1;
+
+    string path = 2 [(nanopb).max_size = 256];
+}
+
+message StatResponse {
+    MessageHeader header = 1;
+
+    string path = 2 [(nanopb).max_size = 256];
+
+    // device
+    uint32 dev = 3;
+
+    // inode
+    uint32 ino = 4;
+
+    // protection mode, uint16
+    uint32 mode = 5;
+
+    // number of hard links, uint16
+    uint32 nlink = 6;
+
+    // user id
+    uint32 uid = 7;
+
+    // group id
+    uint32 gid = 8;
+
+    // device type
+    uint32 rdev = 9;
+
+    // time of last access
+    TimeSpec atim = 10;
+    
+    // time of last modification
+    TimeSpec mtim = 11;
+
+    // time of last file status change
+    TimeSpec ctim = 12;
+
+    // file size, in blocks
+    int64 size = 13;
+
+    // blocks allocated for file
+    int64 blocks = 14;
+
+    // optimal blocksize for i/o
+    uint32 blksize = 15;
+
+    // user defined flags
+    uint32 flags = 16;
+
+    // file generation number
+    uint32 gen = 17;
+
+    int32 lspare = 18;
+
+    // time of creation
+    TimeSpec birthtim = 19;
+}
+
+// getdents
+message GetDentsRequest {
+    MessageHeader header = 1;
+
+    string path = 2 [(nanopb).max_size = 256];
+}
+
+message GetDentsResponse {
+    MessageHeader header = 1;
+
+    uint64 entriesLeft = 2;
+
+    repeated DirEnt entries = 3 [(nanopb).max_count = 32];
+}

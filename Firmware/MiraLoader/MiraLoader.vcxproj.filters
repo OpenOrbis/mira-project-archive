@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{eb7541d5-6b55-486e-a5fe-50310de7b595}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Makefile" />
+    <ClInclude Include="src\sce\dynlib.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loader\loader.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\types.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\syscall.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\elf\elfutils.h" />
+    <ClInclude Include="src\util\initparams.h" />
+    <ClInclude Include="src\loader\loaderkey.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\sce\dynlib.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\loader\loader.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\entrypoint.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\util\syscall.s">
+      <Filter>src</Filter>
+    </None>
+  </ItemGroup>
+</Project>
