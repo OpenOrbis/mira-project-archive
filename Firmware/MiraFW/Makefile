@@ -47,14 +47,14 @@ LIBS	:= -l:OniFramework.a
 ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__ -DPB_FIELD_16BIT
 
 # C++ Flags, -02 Optimizations break shit badly
-CFLAGS	:= $(I_DIRS) $(ORB_VER) -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -m64 -fPIC -Werror -Wno-unknown-pragmas
+CFLAGS	:= $(I_DIRS) $(ORB_VER) -fpic -m64 -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -Werror -Wno-unknown-pragmas
 
 # Assembly flags
-SFLAGS	:= -nodefaultlibs -nostdlib -fPIC
+SFLAGS	:= -fpic -m64 -nodefaultlibs -nostdlib
 
 # Linker flags
 # -Wl,--build-id=none
-LFLAGS	:= -v -static $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x 
+LFLAGS	:= -v $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)

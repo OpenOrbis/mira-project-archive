@@ -10,7 +10,7 @@
 void   message_header__init
                      (MessageHeader         *message)
 {
-   MessageHeader init_value = MESSAGE_HEADER__INIT;
+  static MessageHeader init_value = MESSAGE_HEADER__INIT;
   *message = init_value;
 }
 size_t message_header__get_packed_size
@@ -50,7 +50,7 @@ void   message_header__free_unpacked
   assert(message->base.descriptor == &message_header__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
- const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
+static const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
 {
   {
     "category",
@@ -89,12 +89,12 @@ void   message_header__free_unpacked
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
- const unsigned message_header__field_indices_by_name[] = {
+static const unsigned message_header__field_indices_by_name[] = {
   0,   /* field[0] = category */
   2,   /* field[2] = error */
   1,   /* field[1] = type */
 };
- const ProtobufCIntRange message_header__number_ranges[1 + 1] =
+static const ProtobufCIntRange message_header__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 3 }
@@ -114,7 +114,7 @@ const ProtobufCMessageDescriptor message_header__descriptor =
   (ProtobufCMessageInit) message_header__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
- const ProtobufCEnumValue message_category__enum_values_by_number[7] =
+static const ProtobufCEnumValue message_category__enum_values_by_number[7] =
 {
   { "NONE", "MESSAGE_CATEGORY__NONE", 0 },
   { "SYSTEM", "MESSAGE_CATEGORY__SYSTEM", 1 },
@@ -124,10 +124,10 @@ const ProtobufCMessageDescriptor message_header__descriptor =
   { "CMD", "MESSAGE_CATEGORY__CMD", 5 },
   { "MAX", "MESSAGE_CATEGORY__MAX", 6 },
 };
- const ProtobufCIntRange message_category__value_ranges[] = {
+static const ProtobufCIntRange message_category__value_ranges[] = {
 {0, 0},{0, 7}
 };
- const ProtobufCEnumValueIndex message_category__enum_values_by_name[7] =
+static const ProtobufCEnumValueIndex message_category__enum_values_by_name[7] =
 {
   { "CMD", 5 },
   { "DEBUG", 3 },

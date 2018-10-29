@@ -65,7 +65,6 @@
     <Text Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="proto\mirabuiltin.pb-c.c" />
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
@@ -85,7 +84,6 @@
     <ClCompile Include="src\mira\utils\injector.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="proto\mirabuiltin.pb-c.h" />
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
