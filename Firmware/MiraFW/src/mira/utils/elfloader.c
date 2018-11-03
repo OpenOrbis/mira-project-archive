@@ -1,4 +1,3 @@
-#include "elfloader.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -18,11 +17,14 @@
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/logger.h>
 #include <oni/utils/memory/allocator.h>
+#include <oni/utils/kdlsym.h>
+
 #include <sys/fcntl.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #endif
 
+#include "elfloader.h"
 
 //
 //	Utility Functions
@@ -108,6 +110,10 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 	loader->dataSize = allocationSize;
 
 #else
+#ifndef _KERNEL
+#error Userland Mode Loader not implemented
+#endif
+
 	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
 	// TODO: Handle loading from file
@@ -116,7 +122,7 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 	struct stat fileStat;
 	memset(&fileStat, 0, sizeof(fileStat));
 
-	int32_t result = kstat(filePath, &fileStat);
+	int32_t result = kstat((char*)filePath, &fileStat);
 	if (result < 0)
 	{
 		WriteLog(LL_Error, "could not get file stat for path (%s) result (%d).", filePath, result);
@@ -140,7 +146,7 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 	// Zero out the allocaiton
 	memset(allocationData, 0, allocationSize);
 
-	int32_t fileDescriptor = kopen(filePath, O_RDONLY, 0);
+	int32_t fileDescriptor = kopen((char*)filePath, O_RDONLY, 0);
 	if (fileDescriptor < 0)
 	{
 		WriteLog(LL_Error, "could not open file (%s) returned (%d).", filePath, fileDescriptor);
@@ -473,7 +479,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 		if (!programHeader)
 			continue;
 
-		programHeader->p_vaddr = loader->data + programHeader->p_offset;
+		programHeader->p_vaddr = ((Elf64_Addr)loader->data + programHeader->p_offset);
 		programHeader->p_memsz = programHeader->p_filesz;
 	}
 
@@ -485,7 +491,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionIndex);
 
 		// Update current address
-		sectionHeader->sh_addr = loader->data + sectionHeader->sh_offset;
+		sectionHeader->sh_addr = ((Elf64_Addr)loader->data + sectionHeader->sh_offset);
 
 		// If the section header is not a relocatable section skip it
 		if (sectionHeader->sh_type != SHT_RELA)
