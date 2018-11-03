@@ -29,6 +29,8 @@ SECTIONS
 		. = ALIGN(4);
 	} : ph_text = 0x90909090
 
+	. = ALIGN(0x4000);
+
 	.rodata :
 	{
 		*(.rodata .rodata.*)

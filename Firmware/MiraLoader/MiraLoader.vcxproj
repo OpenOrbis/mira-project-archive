@@ -88,6 +88,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
+    <ClCompile Include="src\main.c" />
     <ClCompile Include="src\sce\dynlib.c" />
     <ClCompile Include="src\loader\loader.c" />
   </ItemGroup>

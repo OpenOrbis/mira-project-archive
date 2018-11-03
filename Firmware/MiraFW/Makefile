@@ -54,7 +54,7 @@ SFLAGS	:= -fpic -m64 -nodefaultlibs -nostdlib
 
 # Linker flags
 # -Wl,--build-id=none
-LFLAGS	:= -v $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x
+LFLAGS	:= -v $(L_DIRS) --emit-relocs -nostdlib -T $(SRC_DIR)/link.x
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)
