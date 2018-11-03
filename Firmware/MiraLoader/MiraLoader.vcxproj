@@ -71,16 +71,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(ProjectDir)src</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(ProjectDir)src</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
+    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
-    <ClInclude Include="src\elf\elfutils.h" />
-    <ClInclude Include="src\loader\loaderkey.h" />
+    <ClInclude Include="src\loader\elfloader.h" />
     <ClInclude Include="src\sce\dynlib.h" />
-    <ClInclude Include="src\loader\loader.h" />
     <ClInclude Include="Makefile" />
     <ClInclude Include="src\util\initparams.h" />
     <ClInclude Include="src\util\syscall.h" />
@@ -88,11 +94,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
-    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\loader\elfloader.c" />
     <ClCompile Include="src\sce\dynlib.c" />
-    <ClCompile Include="src\loader\loader.c" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\crt0.s" />
+    <None Include="src\link.x" />
     <None Include="src\util\syscall.s" />
   </ItemGroup>
   <ItemDefinitionGroup />

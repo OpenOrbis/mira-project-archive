@@ -1,8 +1,3 @@
-# If ONI_FRAMEWORK is not set, we will use a default path of same directory
-ifeq ($(ONI_FRAMEWORK),)
-ONI_FRAMEWORK := ../Dependencies/oni-framework
-endif
-
 # If the FREEBSD headers path is not set we will try to use the relative path
 ifeq ($(BSD_INC),)
 BSD_INC := ../Dependencies/freebsd-headers
@@ -35,13 +30,13 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(BSD_INC)"
 
 # Library directory paths
-L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
+L_DIRS	:=	-L.	-Llib
 
 # Included libraries
-LIBS	:= -l:OniFramework.a
+LIBS	:= 
 
 # Orbis flags
 ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__ -DPB_FIELD_16BIT

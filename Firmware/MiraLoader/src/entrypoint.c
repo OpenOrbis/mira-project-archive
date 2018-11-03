@@ -1,12 +1,17 @@
-#include "loader.h"
-#include "dynlib.h"
+#include <util/types.h>
 
+#include <loader/elfloader.h>
+
+#include <util/initparams.h>
+
+#include <sce/dynlib.h>
+
+#include <sys/elf64.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
-
 int(*sceKernelLoadStartModule)(const char *name, size_t argc, const void *argv, unsigned int flags, int, int) = NULL;
-
-
 int(*sceNetSocket)(const char *, int, int, int) = NULL;
 int(*sceNetSocketClose)(int) = NULL;
 int(*sceNetConnect)(int, struct sockaddr *, int) = NULL;
@@ -17,12 +22,7 @@ int(*sceNetAccept)(int, struct sockaddr *, unsigned int *) = NULL;
 int(*sceNetRecv)(int, void *, size_t, int) = NULL;
 int(*sceNetSocketAbort)(int, int) = NULL;
 
-void main(int32_t argCount, char* args[])
-{
-	// Unused
-}
-
-void loader_init()
+void main()
 {
 	int32_t sysUtilModuleId = -1;
 	int32_t netModuleId = -1;
@@ -60,60 +60,14 @@ void loader_init()
 		sys_dynlib_dlsym(netModuleId, "sceNetAccept", &sceNetAccept);
 		sys_dynlib_dlsym(netModuleId, "sceNetRecv", &sceNetRecv);
 	}
-}
 
-void loader_uninit()
-{
-
-}
-
-void webkit_entry(struct initparams_t* webkitParams)
-{
-	// Do not do anything if the webkit parameters aren't set correctly
-	if (!webkitParams)
-		return;
-
-	uint64_t payloadAddress = webkitParams->payloadBase;
-	uint64_t payloadSize = webkitParams->payloadSize;
-
-	// Verify that we have a valid address, and size
-	if (!payloadAddress || !payloadSize)
-		return;
-}
-
-uint8_t allocate_memory(uint8_t** outputData, uint32_t* outputSize)
-{
-	if (!outputData || !outputSize)
-		return false;
-
-	uint32_t allocationSize = *outputSize;
-	if (!allocationSize)
-		return false;
-
-
-}
-
-uint8_t install_and_relocate()
-{
-	return false;
-}
-
-#define bswap16(x) (((x) >> 8) | ((x) << 8))
-
-int32_t _mmap(void* addr, int len, int prot, int flags, int fd, long pos)
-{
-
-}
-
-void blah()
-{
 	uint8_t buffer[0x4000];
 
 	// Initialize
 	struct sockaddr_in serverAddress;
 	serverAddress.sin_len = sizeof(serverAddress);
 	serverAddress.sin_addr.s_addr = INADDR_ANY;
-	serverAddress.sin_port = bswap16(9020);
+	serverAddress.sin_port = (in_port_t)15395; // port 9020
 
 	for (size_t i = 0; i < ARRAYSIZE(serverAddress.sin_zero); ++i)
 		serverAddress.sin_zero[i] = 0;
@@ -124,7 +78,7 @@ void blah()
 		return;
 
 	// Bind to localhost
-	int32_t result = sceNetBind(serverSocket, &serverAddress, sizeof(serverAddress));
+	int32_t result = sceNetBind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
 	if (result < 0)
 		return;
 
@@ -156,11 +110,25 @@ void blah()
 	serverSocket = -1;
 
 	uint32_t magic = *(uint32_t*)buffer;
-	if (magic == 0x464C457F)
+	if (magic == (uint32_t)1179403647) // 0x7F 'ELF'
 	{
 		// Launch ELF
 
 		// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
+		ElfLoader_t loader;
+		if (!elfloader_initFromMemory(&loader, buffer, currentSize))
+			return;
+
+		if (!elfloader_isElfValid(&loader))
+			return;
+
+		if (!elfloader_handleRelocations(&loader))
+			return;
+
+		if (!loader.elfMain)
+			return;
+
+		loader.elfMain();
 	}
 	else
 	{
@@ -169,4 +137,4 @@ void blah()
 		void(*payload_start)() = (void(*)())buffer;
 		payload_start();
 	}
-//}
+}
