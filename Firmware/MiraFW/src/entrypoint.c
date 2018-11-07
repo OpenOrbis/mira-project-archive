@@ -94,8 +94,10 @@ int init_oni(struct initparams_t* userInitParams)
 	configurations should be set up and the framework initialized
 */
 {
+#ifdef _OLD_AND_DEPRECATED
 	// Elevate to kernel
 	SelfElevateAndRun(userInitParams);
+#endif
 
 	return true;
 }

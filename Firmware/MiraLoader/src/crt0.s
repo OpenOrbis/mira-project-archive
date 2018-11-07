@@ -4,4 +4,4 @@
 .global _start
 
 _start:
-	jmp		main
+	jmp		mira_entry
