@@ -44,17 +44,17 @@ L_DIRS	:=	-L.	-Llib
 LIBS	:=
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__ -DPB_FIELD_16BIT
+ORB_VER	:= -D__LP64__ -D_M_X64 -D__amd64__ # -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}"  -DPB_FIELD_16BIT
 
 # C++ Flags, -02 Optimizations break shit badly
-CFLAGS	:= $(I_DIRS) $(ORB_VER) -fpic -m64 -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -Werror -Wno-unknown-pragmas
+CFLAGS	:= --target=x86_64-scei-ps4 $(I_DIRS) -fno-builtin -nodefaultlibs -nostdlib -nostdinc $(ORB_VER) -fPIC -m64 -std=c11 -O0 -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -Werror -Wno-unknown-pragmas
 
 # Assembly flags
-SFLAGS	:= -fpic -m64 -nodefaultlibs -nostdlib
+SFLAGS	:= -fPIC -m64 -nodefaultlibs -nostdlib
 
 # Linker flags
 # -Wl,--build-id=none
-LFLAGS	:= -v $(L_DIRS) -static -nostdlib -T $(SRC_DIR)/link.x
+LFLAGS	:= -v $(L_DIRS) -nostdlib -T $(SRC_DIR)/link.x
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)

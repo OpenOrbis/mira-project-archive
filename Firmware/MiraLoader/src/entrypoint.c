@@ -54,11 +54,20 @@ void writelog(char* msg)
 	mdbg_service(0x7, &arg, NULL);
 }
 
+uintptr_t __stack_chk_guard = 0;
+
+void __stack_chk_fail(void)
+{
+
+}
+
 void* mira_entry(void* args)
 {
 	// Prompt the user
 	int moduleId = -1;
-	sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
+	sys_dynlib_load_prx("libSceSysUtil.sprx", &moduleId);
+	if (moduleId == -1)
+		syscall1(0, NULL);
 
 	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
 
