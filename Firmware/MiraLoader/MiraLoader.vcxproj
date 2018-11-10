@@ -69,7 +69,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(ProjectDir)src</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
@@ -77,7 +77,7 @@
     <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(ProjectDir)src</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
@@ -86,21 +86,15 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="src\loader\elfloader.h" />
-    <ClInclude Include="src\sce\dynlib.h" />
     <ClInclude Include="Makefile" />
-    <ClInclude Include="src\util\initparams.h" />
-    <ClInclude Include="src\util\syscall.h" />
-    <ClInclude Include="src\util\types.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\loader\elfloader.c" />
-    <ClCompile Include="src\sce\dynlib.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\crt0.s" />
     <None Include="src\link.x" />
-    <None Include="src\util\syscall.s" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

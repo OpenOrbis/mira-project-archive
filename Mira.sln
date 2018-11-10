@@ -54,6 +54,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraLib", "Tools\MiraLib\MiraLib.vcxproj", "{78AFEB15-B4CA-4A56-987E-DAE7ED529BAE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraLoader", "Firmware\MiraLoader\MiraLoader.vcxproj", "{B5C14A31-FF3D-4536-AD0A-2743A17D27FE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {73D88A70-8F6F-49A7-B921-9DB254527F92}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

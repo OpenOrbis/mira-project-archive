@@ -1,6 +1,5 @@
 #pragma once
-#include <util/types.h>
-#include <stdint.h>
+#include <oni/utils/types.h>
 #include <sys/elf64.h>
 
 typedef struct _ElfLoader_t

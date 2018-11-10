@@ -11,7 +11,7 @@
 
 #else
 #include <sys/elf64.h>
-#include <util/syscall.h>
+#include <oni/utils/syscall.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #endif
@@ -19,7 +19,6 @@
 //
 //	Utility Functions
 //
-caddr_t _mmap(caddr_t addr, size_t len, int prot, int flags, int fd, off_t pos);
 
 int
 elfloader_strcmp(const char *s1, const char *s2)
@@ -129,7 +128,7 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	size_t allocationSize = elfloader_roundUp(elfSize, 0x4000);
 
 	// Allocate RWX data
-	caddr_t allocationData = _mmap( NULL, allocationSize, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
+	caddr_t allocationData = _mmap( NULL, allocationSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON, -1, 0);
 	if (!allocationData)
 		return false;
 

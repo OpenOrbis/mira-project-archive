@@ -7,29 +7,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Makefile" />
-    <ClInclude Include="src\sce\dynlib.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\util\types.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\util\syscall.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\util\initparams.h" />
     <ClInclude Include="src\loader\elfloader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\sce\dynlib.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\loader\elfloader.c" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\util\syscall.s">
-      <Filter>src</Filter>
-    </None>
     <None Include="src\link.x" />
     <None Include="src\crt0.s" />
   </ItemGroup>
