@@ -87,10 +87,12 @@
   <ItemGroup>
     <ClInclude Include="src\loader\elfloader.h" />
     <ClInclude Include="Makefile" />
+    <ClInclude Include="src\utils\notify.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\loader\elfloader.c" />
+    <ClCompile Include="src\utils\notify.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\crt0.s" />

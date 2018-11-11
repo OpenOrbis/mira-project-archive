@@ -8,10 +8,12 @@
   <ItemGroup>
     <ClInclude Include="Makefile" />
     <ClInclude Include="src\loader\elfloader.h" />
+    <ClInclude Include="src\utils\notify.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\loader\elfloader.c" />
+    <ClCompile Include="src\utils\notify.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\link.x" />

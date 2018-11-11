@@ -1,6 +1,7 @@
 #include <oni/utils/types.h>
 
 #include <loader/elfloader.h>
+#include <utils/notify.h>
 
 #include <oni/init/initparams.h>
 #include <oni/utils/syscall.h>
@@ -14,10 +15,6 @@
 #include <sys/elf64.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
-//uint8_t buffer[0x4000];
-
-void loader_displayNotification(int32_t id, char* text);
 
 struct mdbg_service_arg {
 	uint32_t unknown0;
@@ -85,28 +82,6 @@ void mira_escape(struct thread* td, void* uap)
 
 	cpu_enable_wp();
 	crtical_exit();
-}
-
-void loader_displayNotification(int32_t id, char* text)
-{
-	if (!text)
-		return;
-
-	// Prompt the user
-	int moduleId = -1;
-	sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
-
-	if (moduleId == -1)
-		return;
-
-	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
-
-	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
-
-	if (sceSysUtilSendSystemNotificationWithText)
-		sceSysUtilSendSystemNotificationWithText(222, text);
-
-	sys_dynlib_unload_prx(moduleId);
 }
 
 void ghetto_memset(void* address, int32_t val, size_t len)
@@ -186,7 +161,7 @@ void* mira_entry(void* args)
 	// Listen
 	result = sceNetListen(serverSocket, 10);
 
-	writelog("waiting for clients\n");
+	WriteLizog("waiting for clients\n");
 
 	// Wait for a client to send something
 	int32_t clientSocket = sceNetAccept(serverSocket, NULL, NULL);
@@ -222,7 +197,7 @@ void* mira_entry(void* args)
 		buffer[3] == ELFMAG3) // 0x7F 'ELF'
 	{
 		// Launch ELF
-		writelog("launching elf\n");
+		//writelog("launching elf\n");
 
 		// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
 		ElfLoader_t loader;

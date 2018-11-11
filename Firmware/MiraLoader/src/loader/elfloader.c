@@ -10,10 +10,13 @@
 #define PROT_NONE	0x0     /* Page can not be accessed.  */
 
 #else
+#include <sys/param.h>
 #include <sys/elf64.h>
 #include <oni/utils/syscall.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+
+#include <utils/notify.h>
 #endif
 
 //
@@ -125,10 +128,10 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	size_t elfSize = dataLength;
 
 	// Round up to the nearest page size
-	size_t allocationSize = elfloader_roundUp(elfSize, 0x4000);
+	size_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
 
 	// Allocate RWX data
-	caddr_t allocationData = _mmap( NULL, allocationSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON, -1, 0);
+	caddr_t allocationData = _mmap();
 	if (!allocationData)
 		return false;
 
@@ -228,6 +231,11 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 
 	if (!loader->data || loader->dataSize == 0)
 		return NULL;
+
+	if (!name)
+		return NULL;
+
+	loader_displayNotification(222, "getSectionHeaderByName1");
 
 	Elf64_Ehdr* header = (Elf64_Ehdr*)loader->data;
 
@@ -331,7 +339,7 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 
 	if (outStringTable == NULL)
 		return false;
-	
+
 	*outStringTable = NULL;
 
 	if (outStringTableSize)
@@ -341,7 +349,12 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 
 	// Bounds check the section header offset
 	if (elfHeader->e_shoff >= loader->dataSize)
+	{
+		WriteLizog("section header is outside of bounds");
 		return false;
+	}
+
+	loader_displayNotification(222, "internalGetStringTable2");
 
 	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
 	for (Elf64_Half index = 0; index < sectionHeaderCount; index++)
@@ -403,20 +416,29 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 	uint64_t stringTableSize = 0;
 	const char* stringTable = NULL;
 	if (!elfloader_internalGetStringTable(loader, &stringTable, &stringTableSize))
-		return false;
+	{
+		//loader_displayNotification(222, "could not find string table");
+		//return false;
+	}
 
 	// Check to see if the main has been resolved already
 	if (loader->elfMain == NULL)
 	{
 		Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
+		
+
 		if (textHeader)
 		{
+			loader_displayNotification(222, "got text");
+
 			if (textHeader->sh_offset >= loader->dataSize)
 				return false;
 
 			uint8_t* entryPoint = loader->data + textHeader->sh_offset + elfHeader->e_entry;
 
 			loader->elfMain = (void(*)())entryPoint;
+
+			loader_displayNotification(222, "got entry point");
 		}
 	}
 	
@@ -462,7 +484,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 			uint8_t** ref = (uint8_t**)(loader->data + relocationTab->r_offset);
 
 			int32_t symbolSectionIndex = ELF64_R_SYM(relocationTab->r_info);
-			if (symbolSectionIndex != SHN_UNDEF)
+			if (symbolSectionIndex != SHN_UNDEF && stringTable != NULL && stringTableSize != 0)
 			{
 				//// TODO: Handle symbols
 				//Elf64_Shdr* symbolTableHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeader->sh_info);
