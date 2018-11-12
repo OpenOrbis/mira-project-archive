@@ -2,6 +2,7 @@
 
 #include <loader/elfloader.h>
 #include <utils/notify.h>
+#include <utils/utils.h>
 
 #include <oni/init/initparams.h>
 #include <oni/utils/syscall.h>
@@ -14,47 +15,9 @@
 
 #include <sys/elf64.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-
-struct mdbg_service_arg {
-	uint32_t unknown0;
-	uint32_t padding4;
-	void* unknown8;
-	void* unknown10;
-	void* unknown18;
-	void* unknown20;
-};
-
-void mdbg_service(uint32_t cmd, void* arg2, void* arg3)
-{
-	syscall3(601, (void*)(uint64_t)cmd, arg2, arg3);
-}
-
-void writelog(char* msg)
-{
-	loader_displayNotification(222, msg);
-
-	//struct mdbg_service_arg arg = 
-	//{
-	//	0,		// unknown0
-	//	0,		// padding4
-	//	msg,	// unknown8
-	//	0,		// unknown10
-	//	0,		// unknown18
-	//	0		// unknown20
-	//};
-
-	//mdbg_service(0x7, &arg, NULL);
-}
-
-uintptr_t __stack_chk_guard = 0;
-
-void __stack_chk_fail(void)
-{
-
-}
-
 #include <sys/proc.h>
+
+#include <netinet/in.h>
 
 void mira_escape(struct thread* td, void* uap)
 {
@@ -84,26 +47,10 @@ void mira_escape(struct thread* td, void* uap)
 	crtical_exit();
 }
 
-void ghetto_memset(void* address, int32_t val, size_t len)
-{
-	for (size_t i = 0; i < len; ++i)
-		*(((uint8_t*)address) + i) = 0;
-}
+
 void* mira_entry(void* args)
 {
-	//int(*sceKernelLoadStartModule)(const char *name, size_t argc, const void *argv, unsigned int flags, int, int) = NULL;
-	int(*sceNetSocket)(const char *, int, int, int) = NULL;
-	int(*sceNetSocketClose)(int) = NULL;
-	//int(*sceNetConnect)(int, struct sockaddr *, int) = NULL;
-	//int(*sceNetSend)(int, const void *, size_t, int) = NULL;
-	int(*sceNetBind)(int, struct sockaddr *, int) = NULL;
-	int(*sceNetListen)(int, int) = NULL;
-	int(*sceNetAccept)(int, struct sockaddr *, unsigned int *) = NULL;
-	int(*sceNetRecv)(int, void *, size_t, int) = NULL;
-	//int(*sceNetSocketAbort)(int, int) = NULL;
-
-	int(*snprintf)(char *str, size_t size, const char *format, ...) = NULL;
-
+	// Escape the jail and sandbox
 	syscall2(11, mira_escape, NULL);
 
 	//int32_t sysUtilModuleId = -1;
@@ -129,24 +76,33 @@ void* mira_entry(void* args)
 		sys_dynlib_dlsym(netModuleId, "sceNetRecv", &sceNetRecv);
 	}
 
-	// Initialize
-	uint8_t buffer[PAGE_SIZE];
-	ghetto_memset(buffer, 0, sizeof(buffer));
 
+
+	// Allocate a 5MB buffer
+	uint8_t* buffer = (uint8_t*)_Allocate5MB();
+	size_t bufferSize = 0x500000;
+	if (!buffer)
+	{
+		WriteLizog("could not allocate 5MB buffer");
+		return NULL;
+	}
+	loader_memset(buffer, 0, bufferSize);
+
+	// Hold our server socket address
 	struct sockaddr_in serverAddress;
+	loader_memset(&serverAddress, 0, sizeof(serverAddress));
 
-	ghetto_memset(&serverAddress, 0, sizeof(serverAddress));
-
+	// Listen on port 9021
 	serverAddress.sin_len = sizeof(serverAddress);
 	serverAddress.sin_addr.s_addr = INADDR_ANY;
 	serverAddress.sin_port = __bswap16(9021); // port 9020
 	serverAddress.sin_family = AF_INET;
-	
+
 	// Create a new socket
 	int32_t serverSocket = sceNetSocket("loader", AF_INET, SOCK_STREAM, 0);
 	if (serverSocket < 0)
 	{
-		writelog("socket error\n");
+		WriteLizog("socket error");
 		return 0;
 	}
 
@@ -154,20 +110,20 @@ void* mira_entry(void* args)
 	int32_t result = sceNetBind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
 	if (result < 0)
 	{
-		writelog("bind error\n");
+		WriteLizog("bind error");
 		return 0;
 	}
 
 	// Listen
 	result = sceNetListen(serverSocket, 10);
 
-	WriteLizog("waiting for clients\n");
+	WriteLizog("waiting for clients");
 
 	// Wait for a client to send something
 	int32_t clientSocket = sceNetAccept(serverSocket, NULL, NULL);
 	if (clientSocket < 0)
 	{
-		writelog("accept errror\n");
+		WriteLizog("accept errror");
 		return 0;
 	}
 
@@ -175,13 +131,8 @@ void* mira_entry(void* args)
 	int32_t recvSize = 0;
 
 	// Recv one byte at a time until we get our buffer
-	while ((recvSize = sceNetRecv(clientSocket, buffer + currentSize, sizeof(buffer) - currentSize, 0)) > 0)
-	{
+	while ((recvSize = sceNetRecv(clientSocket, buffer + currentSize, bufferSize - currentSize, 0)) > 0)
 		currentSize += recvSize;
-
-		if (sizeof(buffer) - 1 >= currentSize)
-			break;
-	}
 
 	// Close the client and server socket connections
 	sceNetSocketClose(clientSocket);
@@ -197,47 +148,46 @@ void* mira_entry(void* args)
 		buffer[3] == ELFMAG3) // 0x7F 'ELF'
 	{
 		// Launch ELF
-		//writelog("launching elf\n");
 
 		// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
 		ElfLoader_t loader;
 		if (!elfloader_initFromMemory(&loader, buffer, currentSize))
 		{
-			writelog("could not init from memory\n");
+			WriteLizog("could not init from memory");
 			return NULL;
 		}
 
 		if (!elfloader_isElfValid(&loader))
 		{
-			writelog("elf not valid\n");
+			WriteLizog("elf not valid");
 			return NULL;
 		}
 
 		if (!elfloader_handleRelocations(&loader))
 		{
-			writelog("could not handle relocation\n");
+			WriteLizog("could not handle relocation");
 			return NULL;
 		}
 
 		if (!loader.elfMain)
 		{
-			writelog("could not find main\n");
+			WriteLizog("could not find main");
 			return NULL;
 		}
 
 		char buf[64];
-		ghetto_memset(buf, 0, sizeof(buf));
+		loader_memset(buf, 0, sizeof(buf));
 
 		snprintf(buf, sizeof(buf), "elfMain: %p", loader.elfMain);
 
-		writelog(buf);
+		WriteLizog(buf);
 
 		loader.elfMain();
 	}
 	else
 	{
 		// Launch Userland Payload
-		writelog("launching payload");
+		WriteLizog("launching payload");
 
 		void(*payload_start)() = (void(*)())buffer;
 		payload_start();

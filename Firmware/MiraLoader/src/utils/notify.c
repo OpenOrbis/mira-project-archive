@@ -3,7 +3,7 @@
 #include <oni/utils/dynlib.h>
 #include <stdarg.h>
 
-
+#include <utils/utils.h>
 
 void loader_displayNotification(int id, char* text)
 {
@@ -29,7 +29,7 @@ void loader_displayNotification(int id, char* text)
 	sys_dynlib_unload_prx(moduleId);
 }
 
-void loader_writelog(enum LogLevels level, const char* function, int line, const char* fmt, ...)
+void loader_writelog(const char* function, int line, const char* fmt, ...)
 {
 	int(*snprintf)(char *str, size_t size, const char *format, ...) = NULL;
 	int(*vsnprintf)(char *str, size_t size, const char *format, va_list ap) = NULL;
@@ -46,9 +46,12 @@ void loader_writelog(enum LogLevels level, const char* function, int line, const
 	sys_dynlib_dlsym(libcModuleId, "snprintf", &snprintf);
 	sys_dynlib_dlsym(libcModuleId, "vsnprintf", &vsnprintf);
 
+	if (!snprintf || !vsnprintf)
+		return;
+
 	// Declare some buffers
-	char buffer[64];
-	char finalBuffer[64];
+	char buffer[128];
+	char finalBuffer[128];
 
 	// Zero out our buffers
 	for (size_t i = 0; i < sizeof(buffer); ++i)

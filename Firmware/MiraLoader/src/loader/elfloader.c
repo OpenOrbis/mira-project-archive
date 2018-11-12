@@ -17,20 +17,14 @@
 #include <sys/mman.h>
 
 #include <utils/notify.h>
+#include <utils/utils.h>
 #endif
 
 //
 //	Utility Functions
 //
 
-int
-elfloader_strcmp(const char *s1, const char *s2)
-{
-	while (*s1 == *s2++)
-		if (*s1++ == '\0')
-			return (0);
-	return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
-}
+
 
 uint64_t elfloader_roundUp(uint64_t number, uint64_t multiple)
 {
@@ -128,13 +122,15 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	size_t elfSize = dataLength;
 
 	// Round up to the nearest page size
-	size_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
+	uint64_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
 
 	// Allocate RWX data
-	caddr_t allocationData = _mmap();
+	caddr_t allocationData = _Allocate5MB();
 	if (!allocationData)
 		return false;
 
+	// TODO: Remove this, temp hack to save the entire 5MB range
+	allocationSize = 0x500000;
 	// Zero out the allocaiton
 	for (size_t i = 0; i < allocationSize; ++i)
 		allocationData[i] = 0;
@@ -235,7 +231,7 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 	if (!name)
 		return NULL;
 
-	loader_displayNotification(222, "getSectionHeaderByName1");
+	WriteLizog("gshbn1");
 
 	Elf64_Ehdr* header = (Elf64_Ehdr*)loader->data;
 
@@ -256,10 +252,13 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 		if (!sectionHeader)
 			continue;
 
+		WriteLizog("gshbn2");
+
 		// Bounds check the section header name offset
 		if (sectionHeader->sh_name >= loader->dataSize)
 			continue;
 
+		WriteLizog("gshbn3");
 		// Verify that it is within bounds of the string table size
 		if (sectionHeader->sh_name >= stringTableSize)
 			continue;
@@ -268,7 +267,7 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 		const char* sectionName = stringTable + sectionHeader->sh_name; 
 
 		// Compare
-		if (elfloader_strcmp(name, sectionName) != 0)
+		if (loader_strcmp(name, sectionName) != 0)
 			continue;
 
 		// We have a match
@@ -354,8 +353,6 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 		return false;
 	}
 
-	loader_displayNotification(222, "internalGetStringTable2");
-
 	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
 	for (Elf64_Half index = 0; index < sectionHeaderCount; index++)
 	{
@@ -429,7 +426,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 
 		if (textHeader)
 		{
-			loader_displayNotification(222, "got text");
+			WriteLizog("got .text");
 
 			if (textHeader->sh_offset >= loader->dataSize)
 				return false;
@@ -438,7 +435,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 
 			loader->elfMain = (void(*)())entryPoint;
 
-			loader_displayNotification(222, "got entry point");
+			WriteLizog("got entry point");
 		}
 	}
 	
