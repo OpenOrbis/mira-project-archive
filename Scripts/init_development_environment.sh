@@ -108,6 +108,12 @@ make create;
 make clean;
 make;
 
+# Navigate to the Mira Loader directory
+cd ../MiraLoader;
+make create;
+make clean;
+make;
+
 echo "-----------------------------------------------";
 echo "Done!";
 exit 0;

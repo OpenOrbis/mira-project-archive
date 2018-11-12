@@ -3,7 +3,7 @@
 //
 #include <oni/plugins/pluginmanager.h>
 #include <oni/messaging/messagemanager.h>
-#include <oni/rpc/rpcserver.h>
+#include <oni/rpc/pbserver.h>
 #include <oni/init/initparams.h>
 #include <oni/framework.h>
 #include <oni/config.h>
@@ -94,8 +94,10 @@ int init_oni(struct initparams_t* userInitParams)
 	configurations should be set up and the framework initialized
 */
 {
+#ifdef _OLD_AND_DEPRECATED
 	// Elevate to kernel
 	SelfElevateAndRun(userInitParams);
+#endif
 
 	return true;
 }

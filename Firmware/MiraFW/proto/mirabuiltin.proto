@@ -1,0 +1,40 @@
+syntax = "proto2";
+
+// To build this file:
+// .\protoc-c --c_out=. <name>.proto
+
+// This holds each kind of message request that will be going through mira
+enum MessageCategory {
+    // This is used for no message category
+    NONE = 0;
+
+    // System messages
+    SYSTEM = 1;
+
+    // Logging messages
+    LOG = 2;
+
+    // Debugger messages
+    DEBUG = 3;
+
+    // File manager messages
+    FILE = 4;
+
+    // Generic command messages
+    CMD = 5;
+
+    // THIS MUST ALWAYS BE THE LAST
+    MAX = 6;
+}
+
+// The header of each message
+message MessageHeader {
+    // The category of each message
+    required MessageCategory category = 1;
+
+    // The message type (CRC32(<Message Type Name>))
+    required uint32 type = 2;
+
+    // The error code, 0 on success
+    required int32 error = 3; 
+}

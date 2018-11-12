@@ -1,6 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x86">
+      <Configuration>Debug</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x86">
+      <Configuration>Release</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -11,16 +27,32 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{db146b77-3c14-4680-85ac-50b83292b1a8}</ProjectGuid>
+    <ProjectGuid>{b5c14a31-ff3d-4536-ad0a-2743a17d27fe}</ProjectGuid>
     <Keyword>Linux</Keyword>
-    <RootNamespace>MiraFW</RootNamespace>
+    <RootNamespace>MiraLoader</RootNamespace>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <ApplicationType>Linux</ApplicationType>
     <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
     <TargetLinuxPlatform>Generic</TargetLinuxPlatform>
-    <LinuxProjectType>{2238F9CD-F817-4ECC-BD14-2524D2669B35}</LinuxProjectType>
+    <LinuxProjectType>{FC1A4D80-50E9-41DA-9192-61C0DBAA00D2}</LinuxProjectType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
     <ConfigurationType>Makefile</ConfigurationType>
@@ -38,70 +70,35 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;_STANDALONE_DEBUG;</NMakePreprocessorDefinitions>
-    <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;_STANDALONE</NMakePreprocessorDefinitions>
-    <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;</NMakePreprocessorDefinitions>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="proto\debugger\debugger.proto" />
-    <None Include="proto\fileexplorer\fileexplorer.proto" />
-    <None Include="proto\mirabuiltin.proto" />
-    <None Include="src\crt0.s" />
-    <None Include="src\link.x" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Makefile" />
+    <ClInclude Include="src\loader\elfloader.h" />
+    <ClInclude Include="Makefile" />
+    <ClInclude Include="src\utils\notify.h" />
+    <ClInclude Include="src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entrypoint.c" />
-    <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
-    <ClCompile Include="src\mira\miraframework.c" />
-    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
-    <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_utils.c" />
-    <ClCompile Include="src\mira\plugins\debugger\debugger_breakpoints.c" />
-    <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
-    <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
-    <ClCompile Include="src\mira\plugins\filetransfer\filetransfer_plugin.c" />
-    <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
-    <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
-    <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
-    <ClCompile Include="src\mira\plugins\orbisutils\orbisutils_plugin.c" />
-    <ClCompile Include="src\mira\plugins\pluginloader.c" />
-    <ClCompile Include="src\mira\utils\elfloader.c" />
-    <ClCompile Include="src\mira\utils\elfutils.c" />
-    <ClCompile Include="src\mira\utils\ini\ini.c" />
-    <ClCompile Include="src\mira\utils\injector.c" />
+    <ClCompile Include="src\loader\elfloader.c" />
+    <ClCompile Include="src\utils\notify.c" />
+    <ClCompile Include="src\utils\utils.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\mira\fs\fuse\netfs.h" />
-    <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
-    <ClInclude Include="src\mira\miraframework.h" />
-    <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
-    <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
-    <ClInclude Include="src\mira\plugins\filetransfer\filetransfer_plugin.h" />
-    <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
-    <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
-    <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
-    <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
-    <ClInclude Include="src\mira\plugins\pluginloader.h" />
-    <ClInclude Include="src\mira\trainers\trainermanager.h" />
-    <ClInclude Include="src\mira\utils\elfloader.h" />
-    <ClInclude Include="src\mira\utils\elfutils.h" />
-    <ClInclude Include="src\mira\utils\ini\ini.h" />
-    <ClInclude Include="src\mira\utils\injector.h" />
-    <ClInclude Include="src\mira\utils\miraelf.h" />
+    <None Include="src\crt0.s" />
+    <None Include="src\link.x" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

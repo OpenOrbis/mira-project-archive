@@ -101,7 +101,7 @@ void debugger_readmem_callback(struct ref_t* reference)
 //	if (message->request != 1)
 //		goto cleanup;
 //
-//	int32_t clientSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+//	int32_t clientSocket = pbserver_findSocketFromThread(gFramework->rpcServer, curthread);
 //	if (clientSocket < 0)
 //		goto cleanup;
 //
@@ -205,9 +205,19 @@ void debugger_writemem_callback(struct ref_t* reference)
 //cleanup:
 //	ref_release(reference);
 }
+#include <sys/proc.h>
+
+#define STATIC_ASSERT(expr, msg)   \
+typedef char ______Assertion_Failed_____##msg[1];  __unused \
+typedef char ______Assertion_Failed_____##msg[(expr)?1:2] __unused
 
 void debugger_getprocs_callback(struct ref_t* reference)
 {
+	//struct proc* procc;
+	//struct thread* threa;
+
+	//sizeof(struct thread);
+
 	// TODO: Re-write this using the request/response model
 	return;
 //	int(*_sx_slock)(struct sx *sx, int opts, const char *file, int line) = kdlsym(_sx_slock);

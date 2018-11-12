@@ -1,0 +1,90 @@
+syntax = "proto2";
+
+// To build this file:
+// .\protoc-c --c_out=. <name>.proto
+
+import "nanopb.proto";
+
+message Proc {
+
+}
+
+message Thread {
+    required int32 processId = 1;
+}
+
+message Cred {
+
+}
+
+message Breakpoint {
+    enum BreakpointState {
+        None = 0;
+        Deleted = 1;
+        Disabled = 2;
+        Enabled = 3;
+    }
+
+    enum BreakpointType {
+        None = 0;
+        Code = 1;
+        Data = 2;
+        Special = 3;
+    }
+
+    required BreakpointState state = 1;
+
+    required uint64 hitCount = 2;
+
+    required uint64 threadId = 3;
+
+    required int32 processId = 4;
+}
+message DebuggerProcess {
+    required int32 processId = 1;
+    
+    required string path = 2;
+
+    required string name = 3;
+
+    required uint64 textAddress = 4;
+    required uint64 textSize = 5;
+
+    required uint64 dataAddress = 6;
+    required uint64 dataSize = 7;
+
+    required uint64 virtualSize = 8;
+    required uint64 virtualBase = 9;
+}
+
+message DebuggerReadMemoryRequest {
+    required MessageHeader header = 1;
+    required uint64 address = 3;
+    required uint32 size = 4;
+}
+
+message DebuggerReadMemoryResponse {
+    required MessageHeader header = 1;
+
+    optional bytes data = 2;
+}
+
+message DebuggerWriteMemoryRequest {
+    required MessageHeader header = 1;
+
+    required uint64 address = 2;
+    optional bytes data = 3;
+}
+
+message DebuggerWriteMemoryResponse {
+    required MessageHeader header = 1;
+}
+
+message DebuggerSetBreakpointRequest {
+    required MessageHeader header = 1;
+
+    required uint64 address = 2;
+    
+    required bool hardware = 3;
+}
+
