@@ -15,7 +15,7 @@ typedef struct _ElfLoader_t
 } ElfLoader_t;
 
 uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath);
-uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength);
+uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength, uint8_t isKernel);
 
 Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index);
 
@@ -33,3 +33,6 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader);
 uint8_t elfloader_updateElfProtections(ElfLoader_t* loader);
 
 uint8_t elfloader_isElfValid(ElfLoader_t* loader);
+
+void elfloader_memset(void* address, int32_t val, size_t len);
+int32_t elfloader_strcmp(const char *s1, const char *s2);

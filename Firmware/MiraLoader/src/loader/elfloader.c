@@ -16,14 +16,14 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
+#include <oni/utils/kdlsym.h>
 #include <utils/notify.h>
-#include <utils/utils.h>
 #endif
 
 //
 //	Utility Functions
 //
-
+#define ALLOC_5MB	0x500000
 
 
 uint64_t elfloader_roundUp(uint64_t number, uint64_t multiple)
@@ -104,7 +104,7 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 	return true;
 }
 
-uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength)
+uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength, uint8_t isKernel)
 {
 	if (!loader || !data || dataLength == 0)
 		return false;
@@ -115,7 +115,7 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	loader->elfMain = NULL;
 	loader->elfSize = 0;
 	loader->interpreter = NULL;
-	
+
 	// This is slightly different, we aren't in kernel mode so we need to 
 
 	// Get the elf size
@@ -125,15 +125,28 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	uint64_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
 
 	// Allocate RWX data
-	caddr_t allocationData = _Allocate5MB();
+	caddr_t allocationData = NULL;
+
+	// Allocate user memory
+	if (!isKernel)
+		allocationData = _Allocate5MB();
+	else
+	{
+		// Allocate Kernel Memory
+		vm_map_t map = (vm_map_t)(*(uint64_t *)(kdlsym(kernel_map)));
+		vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
+
+		allocationData = (caddr_t)kmem_alloc(map, ALLOC_5MB);
+	}
+
 	if (!allocationData)
 		return false;
 
 	// TODO: Remove this, temp hack to save the entire 5MB range
-	allocationSize = 0x500000;
+	allocationSize = ALLOC_5MB;
+
 	// Zero out the allocaiton
-	for (size_t i = 0; i < allocationSize; ++i)
-		allocationData[i] = 0;
+	elfloader_memset(allocationData, 0, allocationSize);
 
 	// Copy over the elf data
 	for (size_t i = 0; i < dataLength; ++i)
@@ -175,7 +188,7 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Phdr* programHeader = (Elf64_Phdr*)((dataStart + elfHeader->e_phoff) + (sizeof(Elf64_Phdr) * index));
-	
+
 	if (programHeader->p_offset >= loader->dataSize)
 		return NULL;
 
@@ -211,7 +224,7 @@ Elf64_Shdr* elfloader_getSectionHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Shdr* sectionHeader = (Elf64_Shdr*)((dataStart + elfHeader->e_shoff) + (sizeof(Elf64_Shdr) * index));
-	
+
 	// Validate that the offset is within bounds
 	if (sectionHeader->sh_offset >= loader->dataSize)
 		return NULL;
@@ -230,8 +243,6 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 
 	if (!name)
 		return NULL;
-
-	WriteLizog("gshbn1");
 
 	Elf64_Ehdr* header = (Elf64_Ehdr*)loader->data;
 
@@ -252,22 +263,19 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 		if (!sectionHeader)
 			continue;
 
-		WriteLizog("gshbn2");
-
 		// Bounds check the section header name offset
 		if (sectionHeader->sh_name >= loader->dataSize)
 			continue;
 
-		WriteLizog("gshbn3");
 		// Verify that it is within bounds of the string table size
 		if (sectionHeader->sh_name >= stringTableSize)
 			continue;
 
 		// This is index into string table
-		const char* sectionName = stringTable + sectionHeader->sh_name; 
+		const char* sectionName = stringTable + sectionHeader->sh_name;
 
 		// Compare
-		if (loader_strcmp(name, sectionName) != 0)
+		if (elfloader_strcmp(name, sectionName) != 0)
 			continue;
 
 		// We have a match
@@ -308,7 +316,7 @@ Elf64_Sym* elfloader_getSymbolByIndex(ElfLoader_t* loader, int32_t index)
 		// Verify that we are within bounds
 		if (sectionHeader->sh_offset >= loader->dataSize)
 			continue;
-		
+
 		// Get the symbol count
 		uint64_t symbolCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
 
@@ -349,7 +357,7 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 	// Bounds check the section header offset
 	if (elfHeader->e_shoff >= loader->dataSize)
 	{
-		WriteLizog("section header is outside of bounds");
+		WriteNotificationLog("section header is outside of bounds");
 		return false;
 	}
 
@@ -422,11 +430,11 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 	if (loader->elfMain == NULL)
 	{
 		Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
-		
+
 
 		if (textHeader)
 		{
-			WriteLizog("got .text");
+			WriteNotificationLog("got .text");
 
 			if (textHeader->sh_offset >= loader->dataSize)
 				return false;
@@ -435,10 +443,10 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 
 			loader->elfMain = (void(*)())entryPoint;
 
-			WriteLizog("got entry point");
+			WriteNotificationLog("got entry point");
 		}
 	}
-	
+
 	// Update all of the program headers
 	Elf64_Half programHeaderCount = elfHeader->e_phnum;
 	for (Elf64_Half programIndex = 0; programIndex < programHeaderCount; ++programIndex)
@@ -561,4 +569,18 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 
 	// Good nuff'
 	return true;
+}
+
+void elfloader_memset(void* address, int32_t val, size_t len)
+{
+	for (size_t i = 0; i < len; ++i)
+		*(((uint8_t*)address) + i) = 0;
+}
+
+int32_t elfloader_strcmp(const char *s1, const char *s2)
+{
+	while (*s1 == *s2++)
+		if (*s1++ == '\0')
+			return (0);
+	return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
 }
