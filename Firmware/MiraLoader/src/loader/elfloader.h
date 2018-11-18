@@ -11,11 +11,13 @@ typedef struct _ElfLoader_t
 	uint64_t elfSize;
 	char* interpreter;
 
+	uint8_t isKernel;
+
 	void(*elfMain)();
 } ElfLoader_t;
 
 uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath);
-uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength, uint8_t isKernel);
+uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength);
 
 Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index);
 

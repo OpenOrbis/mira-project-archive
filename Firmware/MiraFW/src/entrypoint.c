@@ -116,6 +116,9 @@ This function handles the kernel (ring-0) mode initialization
 	}
 	logger_init(gLogger);
 
+	kthread_exit();
+	return;
+
 	// Verify that our initialization parameters are correct, this is coming from the kernel copy
 	gInitParams = (struct initparams_t*)args;
 	if (!gInitParams)

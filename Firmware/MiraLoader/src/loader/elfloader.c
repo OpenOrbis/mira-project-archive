@@ -18,6 +18,7 @@
 #include <sys/malloc.h>
 
 #include <oni/utils/kdlsym.h>
+#include <oni/utils/logger.h>
 #include <utils/notify.h>
 #endif
 
@@ -105,9 +106,8 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 	return true;
 }
 
-uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength, uint8_t isKernel)
+uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength)
 {
-	void(*printf)(char *format, ...) = kdlsym(printf);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 
@@ -129,14 +129,14 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	// Round up to the nearest page size
 	uint64_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
 	
-	if (isKernel)
-		printf("allocationSize: %llx\n", allocationSize);
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "allocationSize: %llx\n", allocationSize);
 
 	// Allocate RWX data
 	caddr_t allocationData = NULL;
 
 	// Allocate user memory
-	if (!isKernel)
+	if (!loader->isKernel)
 		allocationData = _Allocate5MB();
 	else
 	{
@@ -148,28 +148,27 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 
 		// Allocate some memory
 		allocationData = contigmalloc(allocationSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
-		printf("allocationData: %p\n", allocationData);
 	}
 
 	if (!allocationData)
 		return false;
 
-	if (isKernel)
-		printf("allocation valid\n");
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "allocationData: %p", allocationData);
 
 	uint8_t* allocationData2 = (uint8_t*)allocationData;
 
 	// Zero out the allocaiton
-	if (isKernel)
+	if (loader->isKernel)
 		memset(allocationData, 0, allocationSize);
 	else
 		elfloader_memset(allocationData2, 0, allocationSize);
 
-	if (isKernel)
-		printf("memset allocation data\n");
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "memset allocation data\n");
 
 	// Copy over the elf data
-	if (isKernel)
+	if (loader->isKernel)
 		memcpy(allocationData, data, dataLength);
 	else
 	{
@@ -177,15 +176,15 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 			allocationData2[i] = data[i];
 	}
 
-	if (isKernel)
-		printf("copied elf data\n");
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "copied elf data\n");
 
 	loader->data = (uint8_t*)allocationData2;
 	loader->dataSize = allocationSize;
 	loader->elfSize = elfSize;
 
-	if (isKernel)
-		printf("loader success\n");
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "loader success\n");
 
 	return true;
 }
@@ -210,6 +209,9 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 	// Get the count of program headers
 	Elf64_Half programHeaderCount = elfHeader->e_phnum;
 
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "dataStart: %p elfHeader: %p programHeaderCount: %d", dataStart, elfHeader, programHeaderCount);
+
 	// Validate the index bounds
 	if (index < 0 || index >= programHeaderCount)
 		return NULL;
@@ -219,6 +221,9 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Phdr* programHeader = (Elf64_Phdr*)((dataStart + elfHeader->e_phoff) + (sizeof(Elf64_Phdr) * index));
+
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "programHeader: %p", programHeader);
 
 	if (programHeader->p_offset >= loader->dataSize)
 		return NULL;
@@ -282,6 +287,9 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 	uint64_t stringTableSize = 0;
 
 	uint8_t hasStringTable = elfloader_internalGetStringTable(loader, &stringTable, &stringTableSize);
+
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "hasStringTable: %s", hasStringTable ? "true" : "false");
 
 	// Check that we have a string table
 	if (!hasStringTable || !stringTable || stringTableSize == 0)
@@ -388,7 +396,11 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 	// Bounds check the section header offset
 	if (elfHeader->e_shoff >= loader->dataSize)
 	{
-		WriteNotificationLog("section header is outside of bounds");
+		if (loader->isKernel)
+			WriteLog(LL_Debug, "section header is outside of bounds have (%llx) want <= (%llx)", elfHeader->e_shoff, loader->dataSize);
+		else
+			WriteNotificationLog("section header is outside of bounds");
+
 		return false;
 	}
 
@@ -465,7 +477,10 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 
 		if (textHeader)
 		{
-			WriteNotificationLog("got .text");
+			if (loader->isKernel)
+				WriteLog(LL_Debug, "got .text section");
+			else
+				WriteNotificationLog("got .text");
 
 			if (textHeader->sh_offset >= loader->dataSize)
 				return false;
@@ -474,7 +489,10 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 
 			loader->elfMain = (void(*)())entryPoint;
 
-			WriteNotificationLog("got entry point");
+			if (loader->isKernel)
+				WriteLog(LL_Debug, "EP: %p", entryPoint);
+			else
+				WriteNotificationLog("got entry point");
 		}
 	}
 

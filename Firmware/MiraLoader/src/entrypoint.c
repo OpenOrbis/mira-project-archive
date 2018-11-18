@@ -123,7 +123,7 @@ void* mira_entry(void* args)
 	serverAddress.sin_family = AF_INET;
 
 	// Create a new socket
-	int32_t serverSocket = sceNetSocket("loader", AF_INET, SOCK_STREAM, 0);
+	int32_t serverSocket = sceNetSocket("miraldr", AF_INET, SOCK_STREAM, 0);
 	if (serverSocket < 0)
 	{
 		WriteNotificationLog("socket error");
@@ -175,7 +175,9 @@ void* mira_entry(void* args)
 
 		// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
 		ElfLoader_t loader;
-		if (!elfloader_initFromMemory(&loader, buffer, currentSize, false))
+		loader.isKernel = false;
+
+		if (!elfloader_initFromMemory(&loader, buffer, currentSize))
 		{
 			WriteNotificationLog("could not init from memory");
 			return NULL;
@@ -267,12 +269,20 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 
 	void (*contigfree)(void *addr, unsigned long size, struct malloc_type *type) = kdlsym(contigfree);
 
+	gLogger = (struct logger_t*)kmem_alloc(map, sizeof(struct logger_t));
+	if (!gLogger)
+	{
+		printf("[-] could not allocate logger\n");
+		return;
+	}
+	logger_init(gLogger);
+
 	// Create launch parameters, this is floating in "free kernel space" so the other process should
 	// be able to grab and use the pointer directly
 	struct initparams_t* initParams = (struct initparams_t*)kmem_alloc(map, sizeof(struct initparams_t));
 	if (!initParams)
 	{
-		printf("[-] could not allocate initialization parameters.\n");
+		WriteLog(LL_Error, "could not allocate initialization parameters.\n");
 		return;
 	}
 	memset(initParams, 0, sizeof(*initParams));
@@ -282,7 +292,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	if (copyResult != 0)
 	{
 		kmem_free(map, initParams, sizeof(*initParams));
-		printf("[-] could not copyin initalization parameters (%d)\n", copyResult);
+		WriteLog(LL_Error, "could not copyin initalization parameters (%d)\n", copyResult);
 		return;
 	}
 
@@ -292,48 +302,41 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 
 	// Allocate some memory
 	uint8_t* kernelElf = contigmalloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
-
-	/*void* kernelElf = malloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO | M_NODUMP);*/
-
-	//uint8_t* kernelElf = (uint8_t*)kmem_alloc(map, payloadSize);
 	if (!kernelElf)
 	{
+		// Free the previously allocated initialization parameters
 		kmem_free(map, initParams, sizeof(*initParams));
-		printf("[-] could not allocate kernel payload.\n");
+		WriteLog(LL_Error, "could not allocate kernel payload.\n");
 		return;
 	}
 	memset(kernelElf, 0, payloadSize);
-
-	printf("[+] Copying payload from user-land\n");
-
-	printf("[*] payloadBase: %p payloadSize: %llx kernelElf: %p\n", payloadBase, payloadSize, kernelElf);
+	WriteLog(LL_Debug, "payloadBase: %p payloadSize: %llx kernelElf: %p\n", payloadBase, payloadSize, kernelElf);
 
 	// Copy the ELF data from userland
 	copyResult = copyin((const void*)payloadBase, kernelElf, payloadSize);
 	if (copyResult != 0)
 	{
 		// Intentionally blow the fuck up
-		printf("fuck, this is bad...\n");
+		WriteLog(LL_Error, "fuck, this is bad...\n");
 		for (;;)
 			__asm__("nop");
 	}
 
-	printf("yup, on my tractor?\n");
+	WriteLog(LL_Debug, "finished allocating and copying ELF from userland");
 
 	// Determine if we launch a elf or a payload
 	uint32_t magic = *(uint32_t*)kernelElf;
 
-	printf("elf header: %X\n", magic);
+	WriteLog(LL_Debug, "elf header: %X\n", magic);
 
 	if (magic != 0x464C457F)
 	{
 		printf("invalid elf header.\n");
 		return;
 	}
-	printf("[!] Finished checking ELF header\n");
-	// Launch ELF
+	WriteLog(LL_Debug, "elf magic validated!");
 
-	// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
+	// Launch ELF
 	ElfLoader_t* loader = malloc(sizeof(ElfLoader_t), M_LINKER, M_WAITOK);
 	if (!loader)
 	{
@@ -342,15 +345,18 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	}
 	elfloader_memset(loader, 0, sizeof(*loader));
 
-	printf("[!] Loader allocated and zeroed\n");
+	// Don't forget to set the kernel flag in the loader
+	loader->isKernel = true;
 
-	if (!elfloader_initFromMemory(loader, kernelElf, payloadSize, true))
+	WriteLog(LL_Debug, "loader allocated and zeroed\n");
+
+	if (!elfloader_initFromMemory(loader, kernelElf, payloadSize))
 	{
-		printf("could not init from memory\n");
+		WriteLog(LL_Error, "could not init from memory\n");
 		return;
 	}
 
-	printf("[!] initialized from memory\n");
+	WriteLog(LL_Debug, "initialized from memory\n");
 
 	if (!elfloader_isElfValid(loader))
 	{
@@ -358,33 +364,33 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		return;
 	}
 
-	printf("[!] elf validated\n");
+	WriteLog(LL_Debug, "elf validated\n");
 
 	// Gets here then just freezes everything. No kernel panic over uart, no shutdown, 100% freeze
 	if (!elfloader_handleRelocations(loader))
 	{
-		printf("could not handle relocation");
+		WriteLog(LL_Error, "could not handle relocation");
 		return;
 	}
 
-	printf("[!] relocations handled\n");
+	WriteLog(LL_Debug, "relocations handled\n");
 
 	if (!loader->elfMain)
 	{
-		printf("could not find main");
+		WriteLog(LL_Error, "could not find main");
 		return;
 	}
 
-	printf("[!] elfMain: %p\n", loader->elfMain);
+	WriteLog(LL_Debug, "elfMain: %p\n", loader->elfMain);
 
 	critical_enter();
-	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "install");
+	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "install2");
 	crtical_exit();
 
 	if (processCreateResult != 0)
-		printf("[-] Failed to create process.\n");
+		WriteLog(LL_Error, "failed to create process.\n");
 	else
-		printf("[+] Kernel process created. Result %d\n", processCreateResult);
+		WriteLog(LL_Debug, "kernel process created. result %d\n", processCreateResult);
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
 	contigfree(kernelElf, payloadSize, M_LINKER);
