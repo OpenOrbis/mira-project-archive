@@ -14,6 +14,7 @@
 #include <oni/utils/cpu.h>
 #include <oni/utils/logger.h>
 
+
 #include <sys/elf64.h>
 #include <sys/socket.h>
 #include <sys/proc.h>
@@ -22,6 +23,7 @@
 #include <sys/kthread.h>
 #include <sys/imgact.h>
 #include <sys/filedesc.h>
+#include <sys/malloc.h>
 #include <vm/vm.h>
 #include <vm/vm_page.h>
 #include <vm/pmap.h>
@@ -101,8 +103,8 @@ void* mira_entry(void* args)
 
 
 	// Allocate a 5MB buffer
-	uint8_t* buffer = (uint8_t*)_Allocate5MB();
-	size_t bufferSize = 0x500000;
+	uint8_t* buffer = (uint8_t*)_Allocate3MB();
+	size_t bufferSize = 0x250000;
 	if (!buffer)
 	{
 		WriteNotificationLog("could not allocate 5MB buffer");
@@ -202,6 +204,7 @@ void* mira_entry(void* args)
 		loader_memset(buf, 0, sizeof(buf));
 
 		snprintf(buf, sizeof(buf), "elf: %p elfSize: %llx", buffer, bufferSize);
+		WriteNotificationLog(buf);
 
 		// Launch kernel
 		uint8_t isKernelElf = true;
@@ -214,6 +217,7 @@ void* mira_entry(void* args)
 			initParams.payloadSize = bufferSize;
 			initParams.process = NULL;
 
+			
 			syscall2(11, miraloader_kernelInitialization, &initParams);
 		}
 		else // Launch userland
@@ -254,6 +258,14 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	int(*copyin)(const void* uaddr, void* kaddr, size_t len) = kdlsym(copyin);
+	void * (*malloc)(unsigned long size, struct malloc_type *type, int flags) = kdlsym(malloc);
+	void* M_LINKER = kdlsym(M_LINKER);
+
+	void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
+			vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
+			vm_paddr_t boundary) = kdlsym(contigmalloc);
+
+	void (*contigfree)(void *addr, unsigned long size, struct malloc_type *type) = kdlsym(contigfree);
 
 	// Create launch parameters, this is floating in "free kernel space" so the other process should
 	// be able to grab and use the pointer directly
@@ -274,11 +286,16 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		return;
 	}
 
+	// initparams are read from the uap in this syscall func
 	uint64_t payloadSize = initParams->payloadSize;
 	uint64_t payloadBase = initParams->payloadBase;
 
 	// Allocate some memory
-	uint8_t* kernelElf = (uint8_t*)kmem_alloc(map, payloadSize);
+	uint8_t* kernelElf = contigmalloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
+
+	/*void* kernelElf = malloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO | M_NODUMP);*/
+
+	//uint8_t* kernelElf = (uint8_t*)kmem_alloc(map, payloadSize);
 	if (!kernelElf)
 	{
 		kmem_free(map, initParams, sizeof(*initParams));
@@ -289,12 +306,10 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 
 	printf("[+] Copying payload from user-land\n");
 
-	printf("[*] payloadBase: %p payloadSize: %llx kernelElf: %p", payloadBase, payloadSize, kernelElf);
+	printf("[*] payloadBase: %p payloadSize: %llx kernelElf: %p\n", payloadBase, payloadSize, kernelElf);
 
-	return;
-
-	// Why does this cause kpanic? is it because we are launching from a different thread? idk
-	copyResult = copyin((void*)payloadBase, kernelElf, payloadSize - 1);
+	// Copy the ELF data from userland
+	copyResult = copyin((const void*)payloadBase, kernelElf, payloadSize);
 	if (copyResult != 0)
 	{
 		// Intentionally blow the fuck up
@@ -303,45 +318,67 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 			__asm__("nop");
 	}
 
+	printf("yup, on my tractor?\n");
+
 	// Determine if we launch a elf or a payload
-	if (kernelElf[0] != ELFMAG0 ||
-		kernelElf[1] != ELFMAG1 ||
-		kernelElf[2] != ELFMAG2 ||
-		kernelElf[3] != ELFMAG3) // 0x7F 'ELF'
+	uint32_t magic = *(uint32_t*)kernelElf;
+
+	printf("elf header: %X\n", magic);
+
+	if (magic != 0x464C457F)
 	{
 		printf("invalid elf header.\n");
 		return;
 	}
+	printf("[!] Finished checking ELF header\n");
 	// Launch ELF
 
 	// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
-	ElfLoader_t loader;
-	if (!elfloader_initFromMemory(&loader, kernelElf, payloadSize, true))
+	ElfLoader_t* loader = malloc(sizeof(ElfLoader_t), M_LINKER, M_WAITOK);
+	if (!loader)
 	{
-		printf("could not init from memory");
+		printf("could not allocate loader\n");
+		return;
+	}
+	elfloader_memset(loader, 0, sizeof(*loader));
+
+	printf("[!] Loader allocated and zeroed\n");
+
+	if (!elfloader_initFromMemory(loader, kernelElf, payloadSize, true))
+	{
+		printf("could not init from memory\n");
 		return;
 	}
 
-	if (!elfloader_isElfValid(&loader))
+	printf("[!] initialized from memory\n");
+
+	if (!elfloader_isElfValid(loader))
 	{
 		printf("elf not valid");
 		return;
 	}
 
-	if (!elfloader_handleRelocations(&loader))
+	printf("[!] elf validated\n");
+
+	// Gets here then just freezes everything. No kernel panic over uart, no shutdown, 100% freeze
+	if (!elfloader_handleRelocations(loader))
 	{
 		printf("could not handle relocation");
 		return;
 	}
 
-	if (!loader.elfMain)
+	printf("[!] relocations handled\n");
+
+	if (!loader->elfMain)
 	{
 		printf("could not find main");
 		return;
 	}
 
+	printf("[!] elfMain: %p\n", loader->elfMain);
+
 	critical_enter();
-	int processCreateResult = kproc_create((void(*)(void*))loader.elfMain, initParams, &initParams->process, 0, 0, "install");
+	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "install");
 	crtical_exit();
 
 	if (processCreateResult != 0)
@@ -350,5 +387,6 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		printf("[+] Kernel process created. Result %d\n", processCreateResult);
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
-	kmem_free(map, kernelElf, payloadSize);
+	contigfree(kernelElf, payloadSize, M_LINKER);
+	kernelElf = NULL;
 }

@@ -15,6 +15,7 @@
 #include <oni/utils/syscall.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/malloc.h>
 
 #include <oni/utils/kdlsym.h>
 #include <utils/notify.h>
@@ -106,6 +107,10 @@ uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath)
 
 uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t dataLength, uint8_t isKernel)
 {
+	void(*printf)(char *format, ...) = kdlsym(printf);
+	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!loader || !data || dataLength == 0)
 		return false;
 
@@ -123,6 +128,9 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 
 	// Round up to the nearest page size
 	uint64_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
+	
+	if (isKernel)
+		printf("allocationSize: %llx\n", allocationSize);
 
 	// Allocate RWX data
 	caddr_t allocationData = NULL;
@@ -132,29 +140,52 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 		allocationData = _Allocate5MB();
 	else
 	{
-		// Allocate Kernel Memory
-		vm_map_t map = (vm_map_t)(*(uint64_t *)(kdlsym(kernel_map)));
-		vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
+		void* M_LINKER = kdlsym(M_LINKER);
 
-		allocationData = (caddr_t)kmem_alloc(map, ALLOC_5MB);
+		void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
+			vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
+			vm_paddr_t boundary) = kdlsym(contigmalloc);
+
+		// Allocate some memory
+		allocationData = contigmalloc(allocationSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
+		printf("allocationData: %p\n", allocationData);
 	}
 
 	if (!allocationData)
 		return false;
 
-	// TODO: Remove this, temp hack to save the entire 5MB range
-	allocationSize = ALLOC_5MB;
+	if (isKernel)
+		printf("allocation valid\n");
+
+	uint8_t* allocationData2 = (uint8_t*)allocationData;
 
 	// Zero out the allocaiton
-	elfloader_memset(allocationData, 0, allocationSize);
+	if (isKernel)
+		memset(allocationData, 0, allocationSize);
+	else
+		elfloader_memset(allocationData2, 0, allocationSize);
+
+	if (isKernel)
+		printf("memset allocation data\n");
 
 	// Copy over the elf data
-	for (size_t i = 0; i < dataLength; ++i)
-		allocationData[i] = data[i];
+	if (isKernel)
+		memcpy(allocationData, data, dataLength);
+	else
+	{
+		for (size_t i = 0; i < dataLength; ++i)
+			allocationData2[i] = data[i];
+	}
 
-	loader->data = (uint8_t*)allocationData;
+	if (isKernel)
+		printf("copied elf data\n");
+
+	loader->data = (uint8_t*)allocationData2;
 	loader->dataSize = allocationSize;
 	loader->elfSize = elfSize;
+
+	if (isKernel)
+		printf("loader success\n");
 
 	return true;
 }
@@ -573,8 +604,10 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 
 void elfloader_memset(void* address, int32_t val, size_t len)
 {
+	volatile uint8_t c = (uint8_t)val;
+
 	for (size_t i = 0; i < len; ++i)
-		*(((uint8_t*)address) + i) = 0;
+		*(((uint8_t*)address) + i) = c;
 }
 
 int32_t elfloader_strcmp(const char *s1, const char *s2)
