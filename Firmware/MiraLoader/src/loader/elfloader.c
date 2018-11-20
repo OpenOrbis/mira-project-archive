@@ -143,37 +143,19 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 		vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
 		vm_map_t map = (vm_map_t)(*(uint64_t *)(kdlsym(kernel_map)));
 
-		/*void* M_LINKER = kdlsym(M_LINKER);
-
-		void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
-			vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
-			vm_paddr_t boundary) = kdlsym(contigmalloc);
-
-		int (*vm_map_protect)(vm_map_t map, vm_offset_t start, vm_offset_t end, vm_prot_t new_prot, boolean_t set_max) = kdlsym(vm_map_protect);*/
-
 		// Allocate some memory
-		allocationData = (caddr_t)kmem_alloc(map, allocationSize); //contigmalloc(allocationSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
-
-		//if (allocationData)
-		//{
-		//	int32_t protectResult = vm_map_protect(curthread->t_proc->p_vmspace->vm_map,)
-		//}
+		allocationData = (caddr_t)kmem_alloc(map, allocationSize);
 	}
 
+	// Validate that we got the allocation data we wanted
 	if (!allocationData)
 		return false;
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "allocationData: %p", allocationData);
 
 	// Zero out the allocaiton
 	if (loader->isKernel)
 		memset(allocationData, 0, allocationSize);
 	else
 		elfloader_memset(allocationData, 0, allocationSize);
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "memset allocation data\n");
 
 	// Copy over the elf data
 	if (loader->isKernel)
@@ -184,15 +166,9 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 			allocationData[i] = data[i];
 	}
 
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "copied elf data\n");
-
 	loader->data = (uint8_t*)allocationData;
 	loader->dataSize = allocationSize;
 	loader->elfSize = elfSize;
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "loader success\n");
 
 	return true;
 }
@@ -217,9 +193,6 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 	// Get the count of program headers
 	Elf64_Half programHeaderCount = elfHeader->e_phnum;
 
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "dataStart: %p elfHeader: %p programHeaderCount: %d", dataStart, elfHeader, programHeaderCount);
-
 	// Validate the index bounds
 	if (index < 0 || index >= programHeaderCount)
 		return NULL;
@@ -229,9 +202,6 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Phdr* programHeader = (Elf64_Phdr*)((dataStart + elfHeader->e_phoff) + (sizeof(Elf64_Phdr) * index));
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "programHeader: %p", programHeader);
 
 	if (programHeader->p_offset >= loader->dataSize)
 		return NULL;
@@ -295,9 +265,6 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 	uint64_t stringTableSize = 0;
 
 	uint8_t hasStringTable = elfloader_internalGetStringTable(loader, &stringTable, &stringTableSize);
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "hasStringTable: %s", hasStringTable ? "true" : "false");
 
 	// Check that we have a string table
 	if (!hasStringTable || !stringTable || stringTableSize == 0)
