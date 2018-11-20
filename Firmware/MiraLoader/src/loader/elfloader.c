@@ -140,14 +140,24 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 		allocationData = _Allocate5MB();
 	else
 	{
-		void* M_LINKER = kdlsym(M_LINKER);
+		vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
+		vm_map_t map = (vm_map_t)(*(uint64_t *)(kdlsym(kernel_map)));
+
+		/*void* M_LINKER = kdlsym(M_LINKER);
 
 		void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
 			vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
 			vm_paddr_t boundary) = kdlsym(contigmalloc);
 
+		int (*vm_map_protect)(vm_map_t map, vm_offset_t start, vm_offset_t end, vm_prot_t new_prot, boolean_t set_max) = kdlsym(vm_map_protect);*/
+
 		// Allocate some memory
-		allocationData = contigmalloc(allocationSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
+		allocationData = (caddr_t)kmem_alloc(map, allocationSize); //contigmalloc(allocationSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
+
+		//if (allocationData)
+		//{
+		//	int32_t protectResult = vm_map_protect(curthread->t_proc->p_vmspace->vm_map,)
+		//}
 	}
 
 	if (!allocationData)
@@ -156,13 +166,11 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	if (loader->isKernel)
 		WriteLog(LL_Debug, "allocationData: %p", allocationData);
 
-	uint8_t* allocationData2 = (uint8_t*)allocationData;
-
 	// Zero out the allocaiton
 	if (loader->isKernel)
 		memset(allocationData, 0, allocationSize);
 	else
-		elfloader_memset(allocationData2, 0, allocationSize);
+		elfloader_memset(allocationData, 0, allocationSize);
 
 	if (loader->isKernel)
 		WriteLog(LL_Debug, "memset allocation data\n");
@@ -173,13 +181,13 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	else
 	{
 		for (size_t i = 0; i < dataLength; ++i)
-			allocationData2[i] = data[i];
+			allocationData[i] = data[i];
 	}
 
 	if (loader->isKernel)
 		WriteLog(LL_Debug, "copied elf data\n");
 
-	loader->data = (uint8_t*)allocationData2;
+	loader->data = (uint8_t*)allocationData;
 	loader->dataSize = allocationSize;
 	loader->elfSize = elfSize;
 

@@ -260,14 +260,14 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	//void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 	int(*copyin)(const void* uaddr, void* kaddr, size_t len) = kdlsym(copyin);
-	void * (*malloc)(unsigned long size, struct malloc_type *type, int flags) = kdlsym(malloc);
-	void* M_LINKER = kdlsym(M_LINKER);
+	/*void * (*malloc)(unsigned long size, struct malloc_type *type, int flags) = kdlsym(malloc);*/
+	/*void* M_LINKER = kdlsym(M_LINKER);*/
 
-	void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
-			vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
-			vm_paddr_t boundary) = kdlsym(contigmalloc);
+	//void * (*contigmalloc)(unsigned long	size, struct malloc_type *type, int flags,
+	//		vm_paddr_t low, vm_paddr_t high, unsigned long	alignment,
+	//		vm_paddr_t boundary) = kdlsym(contigmalloc);
 
-	void (*contigfree)(void *addr, unsigned long size, struct malloc_type *type) = kdlsym(contigfree);
+	//void (*contigfree)(void *addr, unsigned long size, struct malloc_type *type) = kdlsym(contigfree);
 
 	gLogger = (struct logger_t*)kmem_alloc(map, sizeof(struct logger_t));
 	if (!gLogger)
@@ -301,7 +301,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	uint64_t payloadBase = initParams->payloadBase;
 
 	// Allocate some memory
-	uint8_t* kernelElf = contigmalloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
+	uint8_t* kernelElf = (uint8_t*)kmem_alloc(map, payloadSize); //contigmalloc(payloadSize, M_LINKER, M_NOWAIT | M_ZERO, 0, __UINT64_MAX__, PAGE_SIZE, 0);
 	if (!kernelElf)
 	{
 		// Free the previously allocated initialization parameters
@@ -337,7 +337,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	WriteLog(LL_Debug, "elf magic validated!");
 
 	// Launch ELF
-	ElfLoader_t* loader = malloc(sizeof(ElfLoader_t), M_LINKER, M_WAITOK);
+	ElfLoader_t* loader = (ElfLoader_t*)kmem_alloc(map, sizeof(ElfLoader_t)); //malloc(sizeof(ElfLoader_t), M_LINKER, M_WAITOK);
 	if (!loader)
 	{
 		printf("could not allocate loader\n");
@@ -383,6 +383,10 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 
 	WriteLog(LL_Debug, "elfMain: %p\n", loader->elfMain);
 
+	// Update the initialization parameters with the new data
+	initParams->payloadBase = (uint64_t)loader->data;
+	initParams->payloadSize = loader->dataSize;
+
 	critical_enter();
 	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "install2");
 	crtical_exit();
@@ -393,6 +397,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		WriteLog(LL_Debug, "kernel process created. result %d\n", processCreateResult);
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
-	contigfree(kernelElf, payloadSize, M_LINKER);
+	//contigfree(kernelElf, payloadSize, M_LINKER);
+	kmem_free(map, kernelElf, payloadSize);
 	kernelElf = NULL;
 }

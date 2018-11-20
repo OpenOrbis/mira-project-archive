@@ -27,6 +27,7 @@
 #include <oni/utils/logger.h>
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
+#include <oni/utils/kernel.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/dynlib.h>
 #include <oni/utils/escape.h>
@@ -54,6 +55,9 @@ void mira_entry(void* args)
 	args - pointer to struct initparams_t in userland memory
 */
 {
+	for (;;)
+		__asm__("nop");
+
 	// If we have args at all, we will assume that we are running in the kernel context
 	if (args)
 	{
@@ -96,7 +100,9 @@ void oni_kernelInitialization(void* args)
 This function handles the kernel (ring-0) mode initialization
 */
 {
-	
+	// Fill the kernel base address
+	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
+
 	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 	struct vmspace* (*vmspace_alloc)(vm_offset_t min, vm_offset_t max) = kdlsym(vmspace_alloc);
 	void(*pmap_activate)(struct thread *td) = kdlsym(pmap_activate);
