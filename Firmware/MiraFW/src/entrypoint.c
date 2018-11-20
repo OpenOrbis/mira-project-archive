@@ -50,14 +50,11 @@ struct framework_t* gFramework = NULL;
 
 void mira_entry(void* args)
 /*
-	This is the entry point for the userland payload
+	This is the entry point for the userland or kernel payload
 
-	args - pointer to struct initparams_t in userland memory
+	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
 */
 {
-	for (;;)
-		__asm__("nop");
-
 	// If we have args at all, we will assume that we are running in the kernel context
 	if (args)
 	{
@@ -121,9 +118,6 @@ This function handles the kernel (ring-0) mode initialization
 		return;
 	}
 	logger_init(gLogger);
-
-	kthread_exit();
-	return;
 
 	// Verify that our initialization parameters are correct, this is coming from the kernel copy
 	gInitParams = (struct initparams_t*)args;
