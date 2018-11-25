@@ -341,22 +341,22 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginloader_loadPlugins(framework->pluginLoader);
 
 	// Debugger
-	//WriteLog(LL_Debug, "allocating debugger");
+	WriteLog(LL_Debug, "allocating debugger");
 
-	//if (framework->debuggerPlugin)
-	//{
-	//	kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
-	//	framework->debuggerPlugin = NULL;
-	//}
-	//	
-	//framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
-	//if (!framework->debuggerPlugin)
-	//{
-	//	WriteLog(LL_Error, "could not allocate debugger plugin");
-	//	return false;
-	//}
-	//debugger_plugin_init(framework->debuggerPlugin);
-	//pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
+	if (framework->debuggerPlugin)
+	{
+		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
+		framework->debuggerPlugin = NULL;
+	}
+		
+	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
+	if (!framework->debuggerPlugin)
+	{
+		WriteLog(LL_Error, "could not allocate debugger plugin");
+		return false;
+	}
+	debugger_plugin_init(framework->debuggerPlugin);
+	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");

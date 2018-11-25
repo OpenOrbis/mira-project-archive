@@ -55,6 +55,11 @@ void mira_entry(void* args)
 	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
 */
 {
+	for (;;)
+		__asm__("nop");
+
+	return;
+
 	// If we have args at all, we will assume that we are running in the kernel context
 	if (args)
 	{

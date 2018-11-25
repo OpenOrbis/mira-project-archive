@@ -13,6 +13,7 @@
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/cpu.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/sys_wrappers.h>
 
 
 #include <sys/elf64.h>
@@ -30,7 +31,8 @@
 #include <vm/vm_map.h>
 #include <vm/vm_param.h>
 #include <unistd.h>
-
+#include <sys/fcntl.h>
+#include <sys/mman.h>
 #include <netinet/in.h>
 
 struct kexec_uap
@@ -102,9 +104,9 @@ void* mira_entry(void* args)
 
 
 
-	// Allocate a 5MB buffer
-	uint8_t* buffer = (uint8_t*)_Allocate3MB();
-	size_t bufferSize = 0x250000;
+	// Allocate a 3MB buffer
+	size_t bufferSize = ALLOC_5MB;
+	uint8_t* buffer = (uint8_t*)_mmap(NULL, bufferSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (!buffer)
 	{
 		WriteNotificationLog("could not allocate 5MB buffer");
@@ -127,7 +129,7 @@ void* mira_entry(void* args)
 	if (serverSocket < 0)
 	{
 		WriteNotificationLog("socket error");
-		return 0;
+		return NULL;
 	}
 
 	// Bind to localhost
@@ -135,11 +137,16 @@ void* mira_entry(void* args)
 	if (result < 0)
 	{
 		WriteNotificationLog("bind error");
-		return 0;
+		return NULL;
 	}
 
 	// Listen
 	result = sceNetListen(serverSocket, 10);
+	if (result < 0)
+	{
+		WriteNotificationLog("listen error");
+		return NULL;
+	}
 
 	WriteNotificationLog("waiting for clients");
 
@@ -148,7 +155,7 @@ void* mira_entry(void* args)
 	if (clientSocket < 0)
 	{
 		WriteNotificationLog("accept errror");
-		return 0;
+		return NULL;
 	}
 
 	int32_t currentSize = 0;
@@ -162,9 +169,6 @@ void* mira_entry(void* args)
 	sceNetSocketClose(clientSocket);
 	sceNetSocketClose(serverSocket);
 
-	clientSocket = -1;
-	serverSocket = -1;
-
 	// Determine if we launch a elf or a payload
 	if (buffer[0] == ELFMAG0 &&
 		buffer[1] == ELFMAG1 &&
@@ -172,7 +176,6 @@ void* mira_entry(void* args)
 		buffer[3] == ELFMAG3) // 0x7F 'ELF'
 	{
 		// Launch ELF
-
 		// TODO: Check/Add a flag to the elf that determines if this is a kernel or userland elf
 		ElfLoader_t loader;
 		loader.isKernel = false;
@@ -219,7 +222,8 @@ void* mira_entry(void* args)
 			initParams.payloadSize = bufferSize;
 			initParams.process = NULL;
 
-			
+			loader.isKernel = true;
+
 			syscall2(11, miraloader_kernelInitialization, &initParams);
 		}
 		else // Launch userland
@@ -331,7 +335,6 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		printf("could not allocate loader\n");
 		return;
 	}
-	elfloader_memset(loader, 0, sizeof(*loader));
 
 	// Don't forget to set the kernel flag in the loader
 	loader->isKernel = true;
@@ -374,14 +377,39 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	initParams->payloadBase = (uint64_t)loader->data;
 	initParams->payloadSize = loader->dataSize;
 
+#ifndef _DSADASD
+	oni_threadEscape(curthread, NULL);
+
+	int32_t fd = kopen("/mnt/usb0/dump.bin", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	if (fd < 0)
+	{
+		WriteLog(LL_Error, "could not open file for writing (%d).", fd);
+		return;
+	}
+
+	ssize_t bytesWritten = kwrite(fd, loader->data, loader->dataSize);
+	if (bytesWritten < 0)
+	{
+		WriteLog(LL_Error, "could not write to file (%d).", bytesWritten);
+		return;
+	}
+
+	kclose(fd);
+
+	WriteLog(LL_Debug, "elf written to usb");
+	return;
+#endif
+
 	critical_enter();
-	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "install2");
-	crtical_exit();
+	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "miraldr2");
+	
 
 	if (processCreateResult != 0)
 		WriteLog(LL_Error, "failed to create process.\n");
 	else
 		WriteLog(LL_Debug, "kernel process created. result %d\n", processCreateResult);
+
+	crtical_exit();
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
 	kmem_free(map, kernelElf, payloadSize);
