@@ -54,7 +54,7 @@ SFLAGS	:= -fPIC -m64 -nodefaultlibs -nostdlib
 
 # Linker flags
 # -Wl,--build-id=none -T $(SRC_DIR)/link.x --emit-relocs
-LFLAGS	:= -v $(L_DIRS) -nostdlib -entry="mira_entry" -gc-sections -nmagic -shared -fPIC
+LFLAGS	:= --relocatable -v $(L_DIRS) -nostdlib -entry="mira_entry" -gc-sections -nmagic
 
 # Calculate the listing of all file paths
 CFILES	:=	$(wildcard $(SRC_DIR)/*.c)

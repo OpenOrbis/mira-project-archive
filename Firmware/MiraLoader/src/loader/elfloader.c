@@ -780,7 +780,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 		return false;
 
 	// Calculate the entry point by (elf in memory) + (.text section header offset) + (elf entry point offset)
-	uint8_t* calculatedEntryPoint = loader->data + elfHeader->e_entry;
+	uint8_t* calculatedEntryPoint = (textHeader->sh_addr + elfHeader->e_entry);
 
 	// Save the elf's main entry point for later
 	loader->elfMain = (void(*)())calculatedEntryPoint;
@@ -824,7 +824,8 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 
 	// Validate the type is executable or relocatable
 	if (header->e_type != ET_EXEC &&
-		header->e_type != ET_REL)
+		header->e_type != ET_REL &&
+		header->e_type != ET_DYN)
 		return false;
 
 	// Only accept X64 binaries
