@@ -1,4 +1,4 @@
 #pragma once
-#define WriteLizog(fmt) loader_displayNotification(222, fmt)
+#define WriteNotificationLog(fmt) loader_displayNotification(222, fmt)
 
-void loader_displayNotification(int id, char* text, ...);
+void loader_displayNotification(int id, char* text);

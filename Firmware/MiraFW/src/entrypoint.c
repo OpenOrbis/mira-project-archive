@@ -27,6 +27,7 @@
 #include <oni/utils/logger.h>
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
+#include <oni/utils/kernel.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/dynlib.h>
 #include <oni/utils/escape.h>
@@ -47,68 +48,63 @@ struct logger_t* gLogger = NULL;
 struct initparams_t* gInitParams = NULL;
 struct framework_t* gFramework = NULL;
 
-// Forward declarations
-int init_oni(struct initparams_t* userInitParams);
-
-void* mira_entry(void* args)
+void mira_entry(void* args)
 /*
-	This is the entry point for the userland payload
+	This is the entry point for the userland or kernel payload
 
-	args - pointer to struct initparams_t in userland memory
+	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
 */
 {
-	struct initparams_t userParams;
-	userParams.entrypoint = oni_kernelInitialization;
-	userParams.process = NULL;
-	userParams.payloadBase = 0x926200000;
-	userParams.payloadSize = 0x80000;
+	for (;;)
+		__asm__("nop");
 
-	// Initialize the Oni Framework
-	int result = init_oni(&userParams);
-	if (!result)
-		return NULL;
+	return;
 
-	// Prompt the user
-	int moduleId = -1;
-	sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
-
-	// This header doesn't work in > 5.00
-	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
-
-	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
-
-	if (sceSysUtilSendSystemNotificationWithText)
+	// If we have args at all, we will assume that we are running in the kernel context
+	if (args)
 	{
-		char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
-		sceSysUtilSendSystemNotificationWithText(222, initMessage);
+		// Init oni framework in kernel space
+		oni_kernelInitialization(args);
 	}
+	else // Handle userland launching the old fashion way
+	{
+		struct initparams_t userParams;
+		userParams.entrypoint = oni_kernelInitialization;
+		userParams.process = NULL;
+		userParams.payloadBase = 0x926200000;
+		userParams.payloadSize = 0x80000;
 
-	sys_dynlib_unload_prx(moduleId);
+		SelfElevateAndRun(&userParams);
 
-	return NULL;
+		// Prompt the user
+		int moduleId = -1;
+		sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
+
+		// This header doesn't work in > 5.00
+		int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
+
+		sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
+
+		if (sceSysUtilSendSystemNotificationWithText)
+		{
+			char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
+			sceSysUtilSendSystemNotificationWithText(222, initMessage);
+		}
+
+		sys_dynlib_unload_prx(moduleId);
+	}
 }
 
-int init_oni(struct initparams_t* userInitParams)
-/*
-	This is the OniFramework entry where platform specific
-	configurations should be set up and the framework initialized
-*/
-{
-#ifdef _OLD_AND_DEPRECATED
-	// Elevate to kernel
-	SelfElevateAndRun(userInitParams);
-#endif
-
-	return true;
-}
-
-struct hook_t* gHook = NULL;
+#include <sys/mman.h>
 
 void oni_kernelInitialization(void* args)
 /*
-	This function handles the kernel (ring-0) mode initialization
+This function handles the kernel (ring-0) mode initialization
 */
 {
+	// Fill the kernel base address
+	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
+
 	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 	struct vmspace* (*vmspace_alloc)(vm_offset_t min, vm_offset_t max) = kdlsym(vmspace_alloc);
 	void(*pmap_activate)(struct thread *td) = kdlsym(pmap_activate);
@@ -129,7 +125,7 @@ void oni_kernelInitialization(void* args)
 	logger_init(gLogger);
 
 	// Verify that our initialization parameters are correct, this is coming from the kernel copy
-	gInitParams= (struct initparams_t*)args;
+	gInitParams = (struct initparams_t*)args;
 	if (!gInitParams)
 	{
 		WriteLog(LL_Error, "invalid loader init params");

@@ -9,15 +9,44 @@
 #define PROT_EXEC	0x4     /* Page can be executed.  */
 #define PROT_NONE	0x0     /* Page can not be accessed.  */
 
+#define PAGE_SIZE 0x4000
+#define	MAP_ANON	 0x1000	/* allocated from memory, swap space */
+#define	MAP_PRIVATE	0x0002		/* changes are private */
+typedef uint8_t* caddr_t;
+typedef uint64_t off_t;
+
+enum LogLevels
+{
+	LL_None,
+	LL_Info,
+	LL_Warn,
+	LL_Error,
+	LL_Debug,
+	LL_All
+};
+
+#define WriteLog(x, y, ...)
+#define WriteNotificationLog(x)
+
+#ifndef true
+#define true 1
+#endif
+
+#ifndef false
+#define false 0
+#endif
+
 #else
 #include <sys/param.h>
 #include <sys/elf64.h>
 #include <oni/utils/syscall.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/malloc.h>
 
+#include <oni/utils/kdlsym.h>
+#include <oni/utils/logger.h>
 #include <utils/notify.h>
-#include <utils/utils.h>
 #endif
 
 //
@@ -25,6 +54,31 @@
 //
 
 
+#ifdef _WIN32
+void* _Allocate5MB()
+{
+	void* data = malloc(ALLOC_5MB);
+	if (!data)
+		return NULL;
+
+	DWORD oldProtect = 0;
+	VirtualProtect(data, ALLOC_5MB, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+	return data;
+}
+
+caddr_t _mmap(caddr_t addr, size_t len, int prot, int flags, int fd, off_t pos)
+{
+	void* data = malloc(len);
+	if (!data)
+		return NULL;
+
+	DWORD oldProtect = 0;
+	VirtualProtect(data, len, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+	return data;
+}
+#endif
 
 uint64_t elfloader_roundUp(uint64_t number, uint64_t multiple)
 {
@@ -115,7 +169,7 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	loader->elfMain = NULL;
 	loader->elfSize = 0;
 	loader->interpreter = NULL;
-	
+
 	// This is slightly different, we aren't in kernel mode so we need to 
 
 	// Get the elf size
@@ -124,20 +178,24 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	// Round up to the nearest page size
 	uint64_t allocationSize = elfloader_roundUp(elfSize, PAGE_SIZE);
 
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "allocationSize: %llx\n", allocationSize);
+
 	// Allocate RWX data
-	caddr_t allocationData = _Allocate5MB();
+	caddr_t allocationData = NULL;
+
+	// Allocate some memory
+	allocationData = (caddr_t)elfloader_allocate(loader, allocationSize);
+
+	// Validate that we got the allocation data we wanted
 	if (!allocationData)
 		return false;
 
-	// TODO: Remove this, temp hack to save the entire 5MB range
-	allocationSize = 0x500000;
 	// Zero out the allocaiton
-	for (size_t i = 0; i < allocationSize; ++i)
-		allocationData[i] = 0;
+	elfloader_memset(loader, allocationData, 0, allocationSize);
 
 	// Copy over the elf data
-	for (size_t i = 0; i < dataLength; ++i)
-		allocationData[i] = data[i];
+	elfloader_memcpy(loader, (uint8_t*)allocationData, data, dataLength);
 
 	loader->data = (uint8_t*)allocationData;
 	loader->dataSize = allocationSize;
@@ -175,7 +233,7 @@ Elf64_Phdr* elfloader_getProgramHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Phdr* programHeader = (Elf64_Phdr*)((dataStart + elfHeader->e_phoff) + (sizeof(Elf64_Phdr) * index));
-	
+
 	if (programHeader->p_offset >= loader->dataSize)
 		return NULL;
 
@@ -211,7 +269,7 @@ Elf64_Shdr* elfloader_getSectionHeaderByIndex(ElfLoader_t* loader, int32_t index
 		return NULL;
 
 	Elf64_Shdr* sectionHeader = (Elf64_Shdr*)((dataStart + elfHeader->e_shoff) + (sizeof(Elf64_Shdr) * index));
-	
+
 	// Validate that the offset is within bounds
 	if (sectionHeader->sh_offset >= loader->dataSize)
 		return NULL;
@@ -230,8 +288,6 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 
 	if (!name)
 		return NULL;
-
-	WriteLizog("gshbn1");
 
 	Elf64_Ehdr* header = (Elf64_Ehdr*)loader->data;
 
@@ -252,22 +308,19 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 		if (!sectionHeader)
 			continue;
 
-		WriteLizog("gshbn2");
-
 		// Bounds check the section header name offset
 		if (sectionHeader->sh_name >= loader->dataSize)
 			continue;
 
-		WriteLizog("gshbn3");
 		// Verify that it is within bounds of the string table size
 		if (sectionHeader->sh_name >= stringTableSize)
 			continue;
 
 		// This is index into string table
-		const char* sectionName = stringTable + sectionHeader->sh_name; 
+		const char* sectionName = stringTable + sectionHeader->sh_name;
 
 		// Compare
-		if (loader_strcmp(name, sectionName) != 0)
+		if (elfloader_strcmp(name, sectionName) != 0)
 			continue;
 
 		// We have a match
@@ -308,7 +361,7 @@ Elf64_Sym* elfloader_getSymbolByIndex(ElfLoader_t* loader, int32_t index)
 		// Verify that we are within bounds
 		if (sectionHeader->sh_offset >= loader->dataSize)
 			continue;
-		
+
 		// Get the symbol count
 		uint64_t symbolCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
 
@@ -349,7 +402,11 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 	// Bounds check the section header offset
 	if (elfHeader->e_shoff >= loader->dataSize)
 	{
-		WriteLizog("section header is outside of bounds");
+		if (loader->isKernel)
+			WriteLog(LL_Debug, "section header is outside of bounds have (%llx) want <= (%llx)", elfHeader->e_shoff, loader->dataSize);
+		else
+			WriteNotificationLog("section header is outside of bounds");
+
 		return false;
 	}
 
@@ -379,6 +436,61 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 	return false;
 }
 
+uint8_t elfloader_internalGetSymbolTable(ElfLoader_t* loader, uint8_t** outStringTable, uint64_t* outStringTableSize)
+{
+	if (!loader)
+		return false;
+
+	if (!loader->data || loader->dataSize == 0)
+		return false;
+
+	if (outStringTable == NULL)
+		return false;
+
+	*outStringTable = NULL;
+
+	if (outStringTableSize)
+		*outStringTableSize = 0;
+
+	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
+
+	// Bounds check the section header offset
+	if (elfHeader->e_shoff >= loader->dataSize)
+	{
+		if (loader->isKernel)
+			WriteLog(LL_Debug, "section header is outside of bounds have (%llx) want <= (%llx)", elfHeader->e_shoff, loader->dataSize);
+		else
+			WriteNotificationLog("section header is outside of bounds");
+
+		return false;
+	}
+
+	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
+	for (Elf64_Half index = 0; index < sectionHeaderCount; index++)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, index);
+		if (!sectionHeader)
+			continue;
+
+		// We only want the string table offset
+		if (sectionHeader->sh_type != SHT_SYMTAB)
+			continue;
+
+		// Bounds check the section offset
+		if (sectionHeader->sh_offset >= loader->dataSize)
+			continue;
+
+		// Set the output variable if it's set
+		if (outStringTableSize)
+			*outStringTableSize = sectionHeader->sh_size;
+
+		*outStringTable = (uint8_t*)(loader->data + sectionHeader->sh_offset);
+		return true;
+	}
+
+	return false;
+}
+
 uint8_t elfloader_setProtection(ElfLoader_t* loader, uint8_t* data, uint64_t dataSize, int32_t protection)
 {
 	// Validate loader
@@ -400,6 +512,245 @@ uint8_t elfloader_setProtection(ElfLoader_t* loader, uint8_t* data, uint64_t dat
 	return true;
 }
 
+uint8_t do_everything(ElfLoader_t* loader)
+{
+	if (!loader)
+		return false;
+
+	if (!loader->data)
+		return false;
+
+	// Update all of the headers virtual addresses
+	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
+	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
+
+		uint64_t sectionSize = sectionHeader->sh_size;
+
+		// Verify that we are allocation and that the size is valid
+		if ((sectionHeader->sh_flags & SHF_ALLOC) && sectionHeader->sh_size > 0)
+		{
+			// Allocate data
+			uint8_t* sectionData = (uint8_t*)elfloader_allocate(loader, sectionSize);
+			if (!sectionData)
+			{
+				if (loader->isKernel)
+					WriteLog(LL_Error, "could not allocate section data.");
+
+				return false;
+			}
+
+			if (sectionHeader->sh_type == SHT_PROGBITS)
+			{
+				elfloader_memset(loader, sectionData, 0, sectionSize);
+				elfloader_memcpy(loader, sectionData, (loader->data + sectionHeader->sh_offset), sectionSize);
+
+			}
+			else if (sectionHeader->sh_type == SHT_NOBITS)
+			{
+				// Section is empty, fill with zeros
+				elfloader_memset(loader, sectionData, 0, sectionSize);
+			}
+
+			sectionHeader->sh_addr = (Elf64_Addr)sectionData;
+		}
+
+		// Load symbol and string tables from the file
+		if (sectionHeader->sh_type == SHT_SYMTAB || sectionHeader->sh_type == SHT_STRTAB)
+		{
+			Elf64_Sym* table = (Elf64_Sym*)elfloader_allocate(loader, sectionSize);
+			if (!table)
+			{
+				WriteNotificationLog("could not allocate table memory");
+				return false;
+			}
+
+			// Zero and copy out the section
+			elfloader_memset(loader, table, 0, sectionSize);
+			elfloader_memcpy(loader, (uint8_t*)table, (loader->data + sectionHeader->sh_offset), sectionSize);
+
+			// Update the section header address
+			sectionHeader->sh_addr = (Elf64_Addr)table;
+		}
+	}
+
+	Elf64_Half programHeaderCount = elfHeader->e_phnum;
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; ++programHeaderIndex)
+	{
+		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!programHeader)
+			continue;
+
+		programHeader->p_vaddr = (Elf64_Addr)(loader->data + programHeader->p_offset);
+		programHeader->p_paddr = (Elf64_Addr)NULL;
+	}
+
+	// User update
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "applying symbol relocations");
+	else
+		WriteNotificationLog("applying symbol relocations");
+
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
+
+		if (sectionHeader->sh_type != SHT_RELA)
+			continue;
+
+		Elf64_Word infoSectionIndex = sectionHeader->sh_info;
+
+		if (infoSectionIndex >= sectionHeaderCount)
+			continue;
+
+		Elf64_Word linkSectionIndex = sectionHeader->sh_link;
+		if (linkSectionIndex >= sectionHeaderCount)
+			continue;
+
+		// Validate that the Elf64_Rela size is the same
+		uint64_t entrySize = sectionHeader->sh_entsize;
+		if (entrySize != sizeof(Elf64_Rela))
+		{
+			if (loader->isKernel)
+				WriteLog(LL_Error, "Elf64_Rela entry size dont match");
+			else
+				WriteNotificationLog("Elf64_Rela entry size dont match");
+			continue;
+		}
+
+		uint64_t sectionSize = sectionHeader->sh_size;
+		uint64_t entryCount = entrySize / sectionSize;
+
+		// Validate that we got valid memory
+		Elf64_Rela* entries = (Elf64_Rela*)elfloader_allocate(loader, sectionSize);
+		if (!entries)
+		{
+			if (loader->isKernel)
+				WriteLog(LL_Error, "could not allocate entry memory");
+			else
+				WriteNotificationLog("could not allocate entry memory");
+
+			return false;
+		}
+
+		sectionHeader->sh_addr = (Elf64_Addr)entries;
+
+		elfloader_memset(loader, entries, 0, sectionSize);
+		elfloader_memcpy(loader, entries, (loader->data + sectionHeader->sh_offset), sectionSize);
+
+		Elf64_Shdr* relocationSection = elfloader_getSectionHeaderByIndex(loader, infoSectionIndex);
+		if (!relocationSection)
+		{
+			if (loader->isKernel)
+				WriteLog(LL_Error, "could not find relocation section");
+			else
+				WriteNotificationLog("could not find relocation section");
+
+			return false;
+		}
+
+		uint8_t* relocationSectionData = (uint8_t*)relocationSection->sh_addr;
+		if (!relocationSectionData)
+			return false;
+
+		Elf64_Shdr* symbolTableSection = elfloader_getSectionHeaderByIndex(loader, infoSectionIndex);
+		if (!symbolTableSection)
+			return false;
+
+		Elf64_Sym* symbolTable = (Elf64_Sym*)(symbolTableSection->sh_addr);
+
+		Elf64_Shdr* stringTableSection = elfloader_getSectionHeaderByIndex(loader, linkSectionIndex);
+		if (!stringTableSection)
+			return false;
+
+		const char* stringTable = (const char*)(stringTableSection->sh_addr);
+
+		// Relocate all entries
+		for (uint64_t entryIndex = 0; entryIndex < entryCount; ++entryIndex)
+		{
+			Elf64_Rela* entry = (entries + entryIndex);
+
+			// Find the symbol for this current entry
+			int32_t symbolIndex = ELF64_R_SYM(entry->r_info);
+			int32_t symbolType = ELF64_R_TYPE(entry->r_info);
+
+			// TODO: Bounds check symbol index and type
+			Elf64_Sym* symbol = (symbolTable + symbolIndex);
+			const char* symbolName = (stringTable + symbol->st_name);
+
+			// Validate that we have a section header index
+			if (symbol->st_shndx <= 0)
+			{
+				// TODO: Do custom linking or error
+
+				// We error always for now
+				if (loader->isKernel)
+					WriteLog(LL_Debug, "unknown symbol %s.", symbolName);
+
+				return false;
+			}
+
+			// Otherwise we link
+			if (symbol->st_name)
+			{
+				if (loader->isKernel)
+					WriteLog(LL_Debug, "relocating symbol %s.", symbolName);
+			}
+			else
+			{
+				// TODO: Some other shit
+				/*elf64_section_header_t *shstrtab = (elf_section_headers + elf_header->string_table_index);
+				elf64_section_header_t *section = (elf_section_headers + symbol->section);
+				printf("Relocating symbol: %s%+lld\n", ((char *)shstrtab->address) + section->name_index, entry->addend);*/
+
+			}
+
+			uint64_t* location = (uint64_t*)(relocationSectionData + entry->r_offset);
+			Elf64_Shdr* symbolSection = elfloader_getSectionHeaderByIndex(loader, symbol->st_shndx);
+			if (!symbolSection)
+				return false;
+
+			Elf64_Addr symbolSectionAddress = symbolSection->sh_addr;
+
+			switch (symbolType)
+			{
+			case R_X86_64_64:
+				*location = symbolSectionAddress + symbol->st_value + entry->r_addend;
+				break;
+			case R_X86_64_PC32:
+				*location = symbolSectionAddress + entry->r_addend - entry->r_offset;
+				break;
+			case R_X86_64_32:
+				*location = symbolSectionAddress + entry->r_addend;
+				break;
+			case R_X86_64_32S:
+				*location = symbolSectionAddress + entry->r_addend;
+				break;
+			case R_X86_64_NONE:
+				break;
+			default:
+				if (loader->isKernel)
+					WriteLog(LL_Warn, "Unknown relocation!!!!");
+				break;
+			}
+		}
+	}
+
+	// TODO: Fix memory protections
+
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "did everything");
+
+	return true;
+}
+
+
 uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 {
 	if (!loader)
@@ -408,119 +759,40 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 	if (!loader->data || loader->dataSize == 0)
 		return false;
 
+	if (!do_everything(loader))
+		return false;
+
 	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
 
-	uint64_t stringTableSize = 0;
-	const char* stringTable = NULL;
-	if (!elfloader_internalGetStringTable(loader, &stringTable, &stringTableSize))
+	Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
+	if (!textHeader)
 	{
-		//loader_displayNotification(222, "could not find string table");
-		//return false;
+		if (loader->isKernel)
+			WriteLog(LL_Error, "could not get .text section");
+		else
+			WriteNotificationLog("could not get .text section");
+
+		return false;
 	}
 
-	// Check to see if the main has been resolved already
-	if (loader->elfMain == NULL)
-	{
-		Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
-		
+	// Validate that the .text section is within bounds
+	if (textHeader->sh_offset >= loader->dataSize)
+		return false;
 
-		if (textHeader)
-		{
-			WriteLizog("got .text");
+	// Calculate the entry point by (elf in memory) + (.text section header offset) + (elf entry point offset)
+	uint8_t* calculatedEntryPoint = (textHeader->sh_addr + elfHeader->e_entry);
 
-			if (textHeader->sh_offset >= loader->dataSize)
-				return false;
+	// Save the elf's main entry point for later
+	loader->elfMain = (void(*)())calculatedEntryPoint;
 
-			uint8_t* entryPoint = loader->data + textHeader->sh_offset + elfHeader->e_entry;
+	// Updates the elf entry point
+	elfHeader->e_entry = (Elf64_Addr)calculatedEntryPoint;
 
-			loader->elfMain = (void(*)())entryPoint;
-
-			WriteLizog("got entry point");
-		}
-	}
-	
-	// Update all of the program headers
-	Elf64_Half programHeaderCount = elfHeader->e_phnum;
-	for (Elf64_Half programIndex = 0; programIndex < programHeaderCount; ++programIndex)
-	{
-		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programIndex);
-		if (!programHeader)
-			continue;
-
-		programHeader->p_vaddr = ((Elf64_Addr)loader->data + programHeader->p_offset);
-		programHeader->p_memsz = programHeader->p_filesz;
-	}
-
-	// Update all of the section headers
-	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
-	for (Elf64_Half sectionIndex = 0; sectionIndex < sectionHeaderCount; ++sectionIndex)
-	{
-		// Get the section header
-		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionIndex);
-
-		// Update current address
-		sectionHeader->sh_addr = ((Elf64_Addr)loader->data + sectionHeader->sh_offset);
-
-		// If the section header is not a relocatable section skip it
-		if (sectionHeader->sh_type != SHT_RELA)
-			continue;
-
-		// Get the relocation count
-		uint32_t relCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
-
-		// Iterate over all of the relocations
-		for (uint32_t relIndex = 0; relIndex < relCount; ++relIndex)
-		{
-			Elf64_Rela* relocationTab = (Elf64_Rela*)(loader->data + sectionHeader->sh_offset + (sectionHeader->sh_entsize * relIndex));
-
-			Elf64_Shdr* target = elfloader_getSectionHeaderByIndex(loader, sectionHeader->sh_info);
-
-			// Location where the relocation has to happen
-			uint8_t* address = loader->data + target->sh_offset;
-
-			uint8_t** ref = (uint8_t**)(loader->data + relocationTab->r_offset);
-
-			int32_t symbolSectionIndex = ELF64_R_SYM(relocationTab->r_info);
-			if (symbolSectionIndex != SHN_UNDEF && stringTable != NULL && stringTableSize != 0)
-			{
-				//// TODO: Handle symbols
-				//Elf64_Shdr* symbolTableHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeader->sh_info);
-
-				//// TODO: Get symbol entry
-				//if (!symbolTableHeader)
-				//	continue;
-
-				//Elf64_Sym* symbol = (Elf64_Sym*)(loader->data + symbolTableHeader->sh_offset);
-				//if (!symbol)
-				//	continue;
-
-				//
-				///*if (symbol->st_name >= stringTableSize)
-				//	continue;*/
-
-				//const char* symbolName = stringTable + symbol->st_name;
-
-				//printf("got symbol %s\n", symbolName);
-			}
-
-			// No idea if this is correct or not, seems so
-			int32_t relocationType = ELF64_R_TYPE(relocationTab->r_info);
-			switch (relocationType)
-			{
-			case R_X86_64_64:
-				*ref = address + relocationTab->r_addend;
-				break;
-			}
-		}
-	}
-
-#ifdef _WIN32
-	// Debugging code to dump the elf back to file so we can inspect it in IDA
-	FILE* file = NULL;
-	errno_t error = fopen_s(&file, "dump.elf", "wb");
-	fwrite(loader->data, sizeof(uint8_t), loader->elfSize, file);
-	fclose(file);
-#endif
+	// Write out our progress to the user
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "EP: %p", calculatedEntryPoint);
+	else
+		WriteNotificationLog("got entry point");
 
 	return elfloader_updateElfProtections(loader);
 }
@@ -552,7 +824,8 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 
 	// Validate the type is executable or relocatable
 	if (header->e_type != ET_EXEC &&
-		header->e_type != ET_REL)
+		header->e_type != ET_REL &&
+		header->e_type != ET_DYN)
 		return false;
 
 	// Only accept X64 binaries
@@ -561,4 +834,77 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 
 	// Good nuff'
 	return true;
+}
+
+void elfloader_memset(ElfLoader_t* loader, void* address, int32_t val, size_t len)
+{
+	if (!loader)
+		return;
+
+	if (loader->isKernel)
+	{
+#ifndef _WIN32
+		void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+		memset(address, val, len);
+#endif
+	}
+	else
+	{
+		volatile uint8_t c = (uint8_t)val;
+
+		for (size_t i = 0; i < len; ++i)
+			*(((uint8_t*)address) + i) = c;
+	}
+}
+
+void elfloader_memcpy(ElfLoader_t* loader, void* dst, void* src, size_t cnt)
+{
+	if (!loader)
+		return;
+
+	if (loader->isKernel)
+	{
+#ifndef _WIN32
+		void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+		memcpy(dst, src, cnt);
+#endif
+	}
+	else
+	{
+		for (size_t i = 0; i < cnt; ++i)
+			((uint8_t*)dst)[i] = ((uint8_t*)src)[i];
+	}
+}
+
+int32_t elfloader_strcmp(const char *s1, const char *s2)
+{
+	while (*s1 == *s2++)
+		if (*s1++ == '\0')
+			return (0);
+	return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
+}
+
+void* elfloader_allocate(ElfLoader_t* loader, uint64_t size)
+{
+	if (!loader)
+		return NULL;
+
+	if (size == 0)
+		return NULL;
+
+	void* allocationData = NULL;
+
+	if (loader->isKernel)
+	{
+#ifndef _WIN32
+		vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
+		vm_map_t map = (vm_map_t)(*(uint64_t *)(kdlsym(kernel_map)));
+
+		allocationData = (void*)kmem_alloc(map, size);
+#endif
+	}
+	else
+		allocationData = (Elf64_Rela*)_mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	return allocationData;
 }
