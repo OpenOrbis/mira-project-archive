@@ -187,6 +187,9 @@ uint8_t elfloader_initFromMemory(ElfLoader_t* loader, uint8_t* data, uint64_t da
 	// Allocate some memory
 	allocationData = (caddr_t)elfloader_allocate(loader, allocationSize);
 
+	//if (loader->isKernel)
+	//	WriteLog(LL_Debug, "allocationAddress: %p");
+
 	// Validate that we got the allocation data we wanted
 	if (!allocationData)
 		return false;
@@ -578,16 +581,17 @@ uint8_t do_everything(ElfLoader_t* loader)
 		}
 	}
 
-	Elf64_Half programHeaderCount = elfHeader->e_phnum;
-	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; ++programHeaderIndex)
-	{
-		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
-		if (!programHeader)
-			continue;
+	// TODO: Remove commented block below, --relocatable removes all program headers
+	//Elf64_Half programHeaderCount = elfHeader->e_phnum;
+	//for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; ++programHeaderIndex)
+	//{
+	//	Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+	//	if (!programHeader)
+	//		continue;
 
-		programHeader->p_vaddr = (Elf64_Addr)(loader->data + programHeader->p_offset);
-		programHeader->p_paddr = (Elf64_Addr)NULL;
-	}
+	//	programHeader->p_vaddr = (Elf64_Addr)(loader->data + programHeader->p_offset);
+	//	programHeader->p_paddr = (Elf64_Addr)NULL;
+	//}
 
 	// User update
 	if (loader->isKernel)
@@ -780,7 +784,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 		return false;
 
 	// Calculate the entry point by (elf in memory) + (.text section header offset) + (elf entry point offset)
-	uint8_t* calculatedEntryPoint = (textHeader->sh_addr + elfHeader->e_entry);
+	uint8_t* calculatedEntryPoint = ((uint8_t*)textHeader->sh_addr) + elfHeader->e_entry;
 
 	// Save the elf's main entry point for later
 	loader->elfMain = (void(*)())calculatedEntryPoint;

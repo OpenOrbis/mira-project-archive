@@ -377,7 +377,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	initParams->payloadBase = (uint64_t)loader->data;
 	initParams->payloadSize = loader->dataSize;
 
-#ifndef _DSADASD
+#ifdef _DSADASD
 	oni_threadEscape(curthread, NULL);
 
 	int32_t fd = kopen("/mnt/usb0/dump.bin", O_WRONLY | O_CREAT | O_TRUNC, 0777);
