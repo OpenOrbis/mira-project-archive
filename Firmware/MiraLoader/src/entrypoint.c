@@ -227,7 +227,7 @@ void* mira_entry(void* args)
 			syscall2(11, miraloader_kernelInitialization, &initParams);
 		}
 		else // Launch userland
-			loader.elfMain();
+			loader.elfMain(NULL);
 	}
 	else
 	{

@@ -21,7 +21,7 @@ typedef struct _ElfLoader_t
 
 	uint8_t isKernel;
 
-	void(*elfMain)();
+	void(*elfMain)(void*);
 } ElfLoader_t;
 
 uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath);

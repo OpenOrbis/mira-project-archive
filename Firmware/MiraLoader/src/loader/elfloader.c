@@ -643,10 +643,10 @@ uint8_t do_everything(ElfLoader_t* loader)
 			return false;
 		}
 
-		sectionHeader->sh_addr = (Elf64_Addr)entries;
-
 		elfloader_memset(loader, entries, 0, sectionSize);
 		elfloader_memcpy(loader, entries, (loader->data + sectionHeader->sh_offset), sectionSize);
+
+		sectionHeader->sh_addr = (Elf64_Addr)entries;
 
 		Elf64_Shdr* relocationSection = elfloader_getSectionHeaderByIndex(loader, infoSectionIndex);
 		if (!relocationSection)
@@ -787,7 +787,7 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 	uint8_t* calculatedEntryPoint = ((uint8_t*)textHeader->sh_addr) + elfHeader->e_entry;
 
 	// Save the elf's main entry point for later
-	loader->elfMain = (void(*)())calculatedEntryPoint;
+	loader->elfMain = (void(*)(void*))calculatedEntryPoint;
 
 	// Updates the elf entry point
 	elfHeader->e_entry = (Elf64_Addr)calculatedEntryPoint;
@@ -826,9 +826,8 @@ uint8_t elfloader_isElfValid(ElfLoader_t* loader)
 		header->e_ident[EI_MAG3] != ELFMAG3)
 		return false;
 
-	// Validate the type is executable or relocatable
-	if (header->e_type != ET_EXEC &&
-		header->e_type != ET_REL &&
+	// Validate the type is dynamic lib or relocatable
+	if (header->e_type != ET_REL &&
 		header->e_type != ET_DYN)
 		return false;
 

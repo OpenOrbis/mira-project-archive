@@ -55,6 +55,7 @@ void mira_entry(void* args)
 	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
 */
 {
+
 	// If we have args at all, we will assume that we are running in the kernel context
 	if (args)
 	{
@@ -108,6 +109,9 @@ This function handles the kernel (ring-0) mode initialization
 
 	// Let'em know we made it
 	printf("[+] mira has reached stage 2\n");
+
+	for (;;)
+		__asm__("nop");
 
 	printf("[+] starting logging\n");
 	gLogger = (struct logger_t*)kmalloc(sizeof(struct logger_t));
