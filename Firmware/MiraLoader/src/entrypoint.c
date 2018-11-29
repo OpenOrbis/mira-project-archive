@@ -401,14 +401,14 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 #endif
 
 	critical_enter();
-	int processCreateResult = kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "miraldr2");
+	/*int processCreateResult = */(void)kproc_create((void(*)(void*))loader->elfMain, initParams, &initParams->process, 0, 0, "miraldr2");
 	
 
-	if (processCreateResult != 0)
+	/*if (processCreateResult != 0)
 		WriteLog(LL_Error, "failed to create process.\n");
 	else
 		WriteLog(LL_Debug, "kernel process created. result %d\n", processCreateResult);
-
+*/
 	crtical_exit();
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
