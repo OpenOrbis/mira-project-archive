@@ -34,6 +34,8 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 
 Elf64_Sym* elfloader_getSymbolByIndex(ElfLoader_t* loader, int32_t index);
 
+uint8_t elfloader_getSymbolAddress(ElfLoader_t* loader, const char* symbolLookup, void** outAddress);
+
 uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outStringTable, uint64_t* outStringTableSize);
 
 uint8_t elfloader_setProtection(ElfLoader_t* loader, uint8_t* data, uint64_t dataSize, int32_t protection);

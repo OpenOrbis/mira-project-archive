@@ -754,6 +754,94 @@ uint8_t do_everything(ElfLoader_t* loader)
 	return true;
 }
 
+uint8_t elfloader_getSymbolAddress(ElfLoader_t* loader, const char* symbolLookup, void** outAddress)
+{
+	if (!loader)
+		return false;
+
+	if (!loader->data || loader->dataSize == 0)
+		return false;
+
+	if (!symbolLookup)
+		return false;
+
+	if (!outAddress)
+		return false;
+
+	// Set our output address to null
+	*outAddress = NULL;
+
+	Elf64_Ehdr* header = (Elf64_Ehdr*)loader->data;
+
+	// Get the string tbale
+	const char* stringTable = NULL;
+	uint64_t stringTableSize = 0;
+	if (!elfloader_internalGetStringTable(loader, &stringTable, &stringTableSize))
+	{
+		if (loader->isKernel)
+			WriteLog(LL_Debug, "could not get string table");
+		else
+			WriteNotificationLog("could not get string table");
+
+		return false;
+	}
+
+	// Iterate through all of the section headers
+	Elf64_Half sectionCount = header->e_shnum;
+	for (Elf64_Half sectionIndex = 0; sectionIndex < sectionCount; ++sectionIndex)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionIndex);
+		if (!sectionHeader)
+			continue;
+
+		// We only want the symbol table
+		if (sectionHeader->sh_type != SHT_SYMTAB)
+			continue;
+
+		// Get the symbol table in memory
+		Elf64_Sym* symbolTable = (Elf64_Sym*)sectionHeader->sh_addr;
+		if (!symbolTable)
+			continue;
+
+		// Iterate through all of the symbols
+		Elf64_Xword symbolCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
+		for (Elf64_Xword symbolIndex = 0; symbolIndex < symbolCount; ++symbolIndex)
+		{
+			// Get symbol
+			Elf64_Sym* symbol = elfloader_getSymbolByIndex(loader, (int32_t)symbolIndex);
+			if (!symbol)
+				continue;
+
+			Elf64_Shdr* stringTableHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeader->sh_link);
+			if (!stringTableHeader)
+				continue;
+
+			// TODO: Bounds check the st_name offset
+			const char* symbolName = (((const char*)stringTableHeader->sh_addr) + symbol->st_name);
+
+			// Compare the symbol name to the one we are looking for
+			if (elfloader_strcmp(symbolLookup, symbolName) != 0)
+				continue;
+
+			// Get the section header by index
+			Elf64_Shdr* symbolSectionHeader = elfloader_getSectionHeaderByIndex(loader, symbol->st_shndx);
+			if (!symbolSectionHeader)
+				continue;
+
+			// Assign the symbol value
+			*outAddress = (void*)(((uint8_t*)symbolSectionHeader->sh_addr) + symbol->st_value);
+			return true;
+		}
+	}
+
+	if (loader->isKernel)
+		WriteLog(LL_Debug, "didn't find anything");
+	else
+		WriteNotificationLog("didn't find anything");
+
+	// We didn't find anything :(
+	return false;
+}
 
 uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 {
