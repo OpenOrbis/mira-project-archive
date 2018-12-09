@@ -51,3 +51,5 @@ void elfloader_memset(ElfLoader_t* loader, void* address, int32_t val, size_t le
 int32_t elfloader_strcmp(const char *s1, const char *s2);
 
 void* elfloader_allocate(ElfLoader_t* loader, uint64_t size);
+
+uint8_t elfloader_dumpElf(ElfLoader_t* loader);

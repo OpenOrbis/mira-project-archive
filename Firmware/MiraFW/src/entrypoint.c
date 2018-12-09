@@ -58,7 +58,6 @@ void mira_entry(void* args)
 	if (!args)
 		return;
 
-
 	struct initparams_t* initParams = (struct initparams_t*)args;
 
 	gInitParams = initParams;

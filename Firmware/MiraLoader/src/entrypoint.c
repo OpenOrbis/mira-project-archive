@@ -260,8 +260,8 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 
 	// Fill the kernel base address
 	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
-	void(*critical_enter)(void) = kdlsym(critical_enter);
-	void(*crtical_exit)(void) = kdlsym(critical_exit);
+	//void(*critical_enter)(void) = kdlsym(critical_enter);
+	//void(*crtical_exit)(void) = kdlsym(critical_exit);
 	vm_offset_t(*kmem_alloc)(vm_map_t map, vm_size_t size) = kdlsym(kmem_alloc);
 	void(*kmem_free)(void* map, void* addr, size_t size) = kdlsym(kmem_free);
 	void(*printf)(char *format, ...) = kdlsym(printf);
@@ -373,11 +373,14 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	WriteLog(LL_Debug, "relocations handled\n");
 
 	void(*entryPoint)(void*) = NULL;
-	if (!elfloader_getSymbolAddress(loader, "mira_entry", (void**)&entryPoint))
+	if (!elfloader_getSymbolAddress(loader, "oni_kernelInitialization", (void**)&entryPoint))
 	{
 		WriteNotificationLog("could not find mira_entry");
 		return;
 	}
+
+	Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
+	WriteLog(LL_Debug, "text header start: %p", textHeader->sh_addr);
 
 	// Get the main entry point
 	if (!entryPoint)
@@ -417,14 +420,14 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	return;
 #endif
 
-	critical_enter();
-	int processCreateResult = kproc_create(entryPoint, initParams, &initParams->process, 0, 0, "miraldr2");
+	//critical_enter();
+	/*int processCreateResult = */(void)kproc_create(entryPoint, initParams, &initParams->process, 0, 0, "miraldr2");
 	
-	if (processCreateResult != 0)
+	/*if (processCreateResult != 0)
 		WriteLog(LL_Error, "failed to create process.\n");
 	else
 		WriteLog(LL_Debug, "kernel process created. result %d\n", processCreateResult);
-	crtical_exit();
+	crtical_exit();*/
 
 	// Since the ELF loader allocates it's own buffer, we can free our temp one
 	kmem_free(map, kernelElf, payloadSize);

@@ -25,7 +25,7 @@ enum LogLevels
 	LL_All
 };
 
-#define WriteLog(x, y, ...)
+#define WriteLog(x, y, ...) fprintf((x == LL_Error) ? stderr : stdout, y, __VA_ARGS__)
 #define WriteNotificationLog(x)
 
 #ifndef true
@@ -43,6 +43,7 @@ enum LogLevels
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/malloc.h>
+#include <sys/fcntl.h>
 
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
@@ -691,13 +692,13 @@ uint8_t do_everything(ElfLoader_t* loader)
 			// Validate that we have a section header index
 			if (symbol->st_shndx <= 0)
 			{
-				// TODO: Do custom linking or error
+				//// TODO: Do custom linking or error
 
-				// We error always for now
-				if (loader->isKernel)
-					WriteLog(LL_Debug, "unknown symbol %s.", symbolName);
+				//// We error always for now
+				//if (loader->isKernel)
+				//	WriteLog(LL_Debug, "unknown symbol %s.", symbolName);
 
-				return false;
+				continue;
 			}
 
 			// Otherwise we link
@@ -998,4 +999,35 @@ void* elfloader_allocate(ElfLoader_t* loader, uint64_t size)
 		allocationData = (Elf64_Rela*)_mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 
 	return allocationData;
+}
+
+uint8_t elfloader_dumpElf(ElfLoader_t* loader)
+{
+	if (!loader)
+		return false;
+
+	if (!loader->data || loader->dataSize == 0)
+		return false;
+
+	//oni_threadEscape(curthread, NULL);
+
+	//int32_t fd = kopen("/mnt/usb0/elfloader.elf", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	//if (fd < 0)
+	//{
+	//	WriteLog(LL_Error, "could not open file for writing (%d).", fd);
+	//	return false;
+	//}
+
+	//ssize_t bytesWritten = kwrite(fd, loader->data, loader->dataSize);
+	//if (bytesWritten < 0)
+	//{
+	//	WriteLog(LL_Error, "could not write to file (%d).", bytesWritten);
+	//	return false;
+	//}
+
+	//kclose(fd);
+
+	//WriteLog(LL_Debug, "elf written to usb");
+
+	return false;
 }
