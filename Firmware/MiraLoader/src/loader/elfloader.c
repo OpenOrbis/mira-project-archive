@@ -45,6 +45,8 @@ enum LogLevels
 #include <sys/malloc.h>
 #include <sys/fcntl.h>
 
+#include <oni/utils/sys_wrappers.h>
+#include <oni/utils/escape.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
 #include <utils/notify.h>
@@ -1001,7 +1003,7 @@ void* elfloader_allocate(ElfLoader_t* loader, uint64_t size)
 	return allocationData;
 }
 
-uint8_t elfloader_dumpElf(ElfLoader_t* loader)
+uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 {
 	if (!loader)
 		return false;
@@ -1009,25 +1011,173 @@ uint8_t elfloader_dumpElf(ElfLoader_t* loader)
 	if (!loader->data || loader->dataSize == 0)
 		return false;
 
-	//oni_threadEscape(curthread, NULL);
+	uint8_t dumpSuccessful = false;
 
-	//int32_t fd = kopen("/mnt/usb0/elfloader.elf", O_WRONLY | O_CREAT | O_TRUNC, 0777);
-	//if (fd < 0)
-	//{
-	//	WriteLog(LL_Error, "could not open file for writing (%d).", fd);
-	//	return false;
-	//}
+	// Escape the thread
+	struct thread_info_t threadInfo;
+	elfloader_memset(loader, &threadInfo, 0, sizeof(threadInfo));
+	oni_threadEscape(curthread, &threadInfo);
 
-	//ssize_t bytesWritten = kwrite(fd, loader->data, loader->dataSize);
-	//if (bytesWritten < 0)
-	//{
-	//	WriteLog(LL_Error, "could not write to file (%d).", bytesWritten);
-	//	return false;
-	//}
+	// Open up the file for writing
+	int32_t fd = kopen(filePath, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	if (fd < 0)
+	{
+		WriteLog(LL_Error, "could not open file for writing (%d).", fd);
+		dumpSuccessful = false;
+		goto error;
+	}
 
-	//kclose(fd);
+	// TODO: Make this not modify shit, right now it will clobber the original shit, but shouldn't matter for the purpose of this
+	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
 
-	//WriteLog(LL_Debug, "elf written to usb");
+	// We start at the end of the elf header offset
+	uint64_t fileOffset = sizeof(Elf64_Ehdr);
 
-	return false;
+	// Update where we are starting our program headers in file
+	uint64_t fileProgramHeaderCount = 0;
+	uint64_t fileSectionHeaderCount = 0;
+
+	// Iterate through all of the program headers and update the offsets
+	Elf64_Half programHeaderCount = elfHeader->e_phnum;
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; programHeaderIndex++)
+	{
+		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!programHeader)
+			continue;
+
+		Elf64_Addr programHeaderAddress = programHeader->p_vaddr;
+		if (!programHeaderAddress)
+			continue;
+
+		Elf64_Xword programHeaderSize = programHeader->p_memsz;
+		if (programHeaderSize == 0)
+			continue;
+
+		// Validate that the old program header was in-bounds
+		if (programHeader->p_offset > loader->dataSize)
+			continue;
+
+		fileProgramHeaderCount++;
+
+		//// Update the program header with the new in-file offset
+		//programHeader->p_offset = fileOffset;
+
+		// Update the file offset with the memory size of this
+		fileOffset += programHeaderSize;
+	}
+
+	// Iterate through the section headers
+	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; sectionHeaderIndex++)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
+
+		Elf64_Addr sectionHeaderAddress = sectionHeader->sh_addr;
+		if (!sectionHeaderAddress)
+			continue;
+
+		Elf64_Xword sectionHeaderSize = sectionHeader->sh_size;
+		if (sectionHeaderSize == 0)
+			continue;
+
+		// Bounds check the old offset before we update it
+		if (sectionHeader->sh_offset > loader->dataSize)
+			continue;
+
+		fileSectionHeaderCount++;
+
+		// Update the section header
+		sectionHeader->sh_offset = fileOffset;
+
+		// Update the file offset
+		fileOffset += sectionHeaderSize;
+	}
+
+	// ===================================================================
+	// DO THE WRITES
+	// ===================================================================
+	//uint64_t fileProgramHeaderSize = fileProgramHeaderCount * sizeof(Elf64_Phdr);
+	//uint64_t fileSectionHeaderSize = fileSectionHeaderCount * sizeof(Elf64_Shdr);
+
+	elfHeader->e_phoff = fileOffset;
+
+	// Update the section header start offset
+	elfHeader->e_shoff = fileOffset;
+
+	uint8_t* currentAddress = loader->data;
+
+	// Write out the elf header
+	if (kwrite(fd, currentAddress, sizeof(Elf64_Ehdr)) < 0)
+	{
+		if (loader->isKernel)
+			WriteLog(LL_Error, "could not write elf header to file");
+
+		dumpSuccessful = false;
+		goto error;
+	}
+
+	// Iterate and write all program headers
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; programHeaderIndex++)
+	{
+		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!programHeader)
+			continue;
+
+		Elf64_Addr programHeaderAddress = programHeader->p_vaddr;
+		if (!programHeaderAddress)
+			continue;
+
+		Elf64_Xword programHeaderSize = programHeader->p_memsz;
+		if (programHeaderSize == 0)
+			continue;
+
+		if (kwrite(fd, (const void*)programHeaderAddress, programHeaderSize) < 0)
+		{
+			if (loader->isKernel)
+				WriteLog(LL_Error, "could not write program header index (%d).", programHeaderIndex);
+
+			dumpSuccessful = false;
+			goto error;
+		}
+
+		// Update the file offset with the memory size of this
+		fileOffset += programHeaderSize;
+	}
+
+	// Update the section header start offset
+	elfHeader->e_shoff = fileOffset;
+
+	// Iterate through the section headers
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; sectionHeaderIndex++)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
+
+		Elf64_Addr sectionHeaderAddress = sectionHeader->sh_addr;
+		if (!sectionHeaderAddress)
+			continue;
+
+		Elf64_Xword sectionHeaderSize = sectionHeader->sh_size;
+		if (sectionHeaderSize == 0)
+			continue;
+
+		// Update the section header
+		sectionHeader->sh_offset = fileOffset;
+
+		// Update the file offset
+		fileOffset += sectionHeaderSize;
+	}
+
+	dumpSuccessful = true;
+
+error:
+	if (fd > 0)
+		kclose(fd);
+
+	oni_threadRestore(curthread, &threadInfo);
+
+	return dumpSuccessful;
 }
