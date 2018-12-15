@@ -198,18 +198,11 @@ void* mira_entry(void* args)
 			return NULL;
 		}
 
-		void(*entryPoint)(void*) = NULL;
-		if (!elfloader_getSymbolAddress(&loader, "mira_entry", (void**)&entryPoint))
+		if (!loader.elfMain)
 		{
-			WriteNotificationLog("could not find mira_entry");
+			WriteNotificationLog("could not find main");
 			return NULL;
 		}
-
-		//if (!loader.elfMain)
-		//{
-		//	WriteNotificationLog("could not find main");
-		//	return NULL;
-		//}
 
 		// TODO: Check for custom Mira elf section to determine launch type
 		char buf[64];
@@ -223,7 +216,6 @@ void* mira_entry(void* args)
 		if (isKernelElf)
 		{
 			struct initparams_t initParams;
-			initParams.entrypoint = NULL;
 			initParams.isElf = true;
 			initParams.payloadBase = (uint64_t)buffer;
 			initParams.payloadSize = bufferSize;
@@ -234,7 +226,7 @@ void* mira_entry(void* args)
 			syscall2(11, miraloader_kernelInitialization, &initParams);
 		}
 		else // Launch userland
-			entryPoint(NULL);
+			loader.elfMain(NULL);
 	}
 	else
 	{
@@ -342,6 +334,7 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 		printf("could not allocate loader\n");
 		return;
 	}
+	elfloader_memset(loader, loader, 0, sizeof(loader));
 
 	// Don't forget to set the kernel flag in the loader
 	loader->isKernel = true;
@@ -372,26 +365,28 @@ void miraloader_kernelInitialization(struct thread* td, struct kexec_uap* uap)
 	}
 	WriteLog(LL_Debug, "relocations handled\n");
 
-	void(*entryPoint)(void*) = NULL;
-	if (!elfloader_getSymbolAddress(loader, "oni_kernelInitialization", (void**)&entryPoint))
-	{
-		WriteNotificationLog("could not find mira_entry");
-		return;
-	}
+	//void(*entryPoint)(void*) = NULL;
+	//if (!elfloader_getSymbolAddress(loader, "oni_kernelInitialization", (void**)&entryPoint))
+	//{
+	//	WriteLog(LL_Error, "could not find mira_entry");
+	//	return;
+	//}
 
-	Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
-	WriteLog(LL_Debug, "text header start: %p", textHeader->sh_addr);
+	//Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
+	//WriteLog(LL_Debug, "text header start: %p", textHeader->sh_addr);
 
-	// Get the main entry point
-	if (!entryPoint)
-	{
-		WriteLog(LL_Error, "could not find main");
-		return;
-	}
+	//// Get the main entry point
+	//if (!entryPoint)
+	//{
+	//	WriteLog(LL_Error, "could not find main");
+	//	return;
+	//}
+	void(*entryPoint)(void*) = loader->elfMain;
 	WriteLog(LL_Debug, "elfMain: %p\n", entryPoint);
 
 	// Update the initialization parameters with the new data
 	initParams->process = NULL;
+	initParams->entrypoint = NULL;
 	initParams->payloadBase = (uint64_t)loader->data;
 	initParams->payloadSize = loader->dataSize;
 	initParams->isElf = true;

@@ -105,8 +105,6 @@ void oni_kernelInitialization(void* args)
 This function handles the kernel (ring-0) mode initialization
 */
 {
-	for (;;)
-		__asm__("nop");
 
 	// Fill the kernel base address
 	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
@@ -119,9 +117,6 @@ This function handles the kernel (ring-0) mode initialization
 
 	// Let'em know we made it
 	printf("[+] mira has reached stage 2\n");
-
-	for (;;)
-		__asm__("nop");
 
 	printf("[+] starting logging\n");
 	gLogger = (struct logger_t*)kmalloc(sizeof(struct logger_t));

@@ -26,7 +26,7 @@ enum LogLevels
 };
 
 #define WriteLog(x, y, ...) fprintf((x == LL_Error) ? stderr : stdout, y, __VA_ARGS__)
-#define WriteNotificationLog(x)
+#define WriteNotificationLog(x) fprintf(stdout, x)
 
 #ifndef true
 #define true 1
@@ -44,6 +44,7 @@ enum LogLevels
 #include <sys/mman.h>
 #include <sys/malloc.h>
 #include <sys/fcntl.h>
+#include <sys/unistd.h>
 
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/escape.h>
@@ -314,6 +315,9 @@ Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* na
 		if (!sectionHeader)
 			continue;
 
+		if (sectionHeader->sh_type == SHN_UNDEF)
+			continue;
+
 		// Bounds check the section header name offset
 		if (sectionHeader->sh_name >= loader->dataSize)
 			continue;
@@ -405,41 +409,22 @@ uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outSt
 
 	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
 
-	// Bounds check the section header offset
-	if (elfHeader->e_shoff >= loader->dataSize)
-	{
-		if (loader->isKernel)
-			WriteLog(LL_Debug, "section header is outside of bounds have (%llx) want <= (%llx)", elfHeader->e_shoff, loader->dataSize);
-		else
-			WriteNotificationLog("section header is outside of bounds");
-
+	// Get the string header index, and bounds check it
+	Elf64_Half stringHeaderIndex = elfHeader->e_shstrndx;
+	if (stringHeaderIndex > elfHeader->e_shnum)
 		return false;
-	}
 
-	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
-	for (Elf64_Half index = 0; index < sectionHeaderCount; index++)
-	{
-		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, index);
-		if (!sectionHeader)
-			continue;
+	Elf64_Shdr* stringTableHeader = elfloader_getSectionHeaderByIndex(loader, stringHeaderIndex);
+	if (!stringTableHeader)
+		return false;
 
-		// We only want the string table offset
-		if (sectionHeader->sh_type != SHT_STRTAB)
-			continue;
+	// Set the output variable if it's set
+	if (outStringTableSize)
+		*outStringTableSize = stringTableHeader->sh_size;
 
-		// Bounds check the section offset
-		if (sectionHeader->sh_offset >= loader->dataSize)
-			continue;
+	*outStringTable = (const char*)(loader->data + stringTableHeader->sh_offset);
 
-		// Set the output variable if it's set
-		if (outStringTableSize)
-			*outStringTableSize = sectionHeader->sh_size;
-
-		*outStringTable = (const char*)(loader->data + sectionHeader->sh_offset);
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 uint8_t elfloader_internalGetSymbolTable(ElfLoader_t* loader, uint8_t** outStringTable, uint64_t* outStringTableSize)
@@ -518,243 +503,27 @@ uint8_t elfloader_setProtection(ElfLoader_t* loader, uint8_t* data, uint64_t dat
 	return true;
 }
 
-uint8_t do_everything(ElfLoader_t* loader)
+Elf64_Phdr* elfloader_getProgramHeaderByVirtualAddress(ElfLoader_t* loader, Elf64_Addr p_VirtualAddress)
 {
 	if (!loader)
-		return false;
+		return NULL;
 
-	if (!loader->data)
-		return false;
+	if (!loader->data || loader->dataSize == 0)
+		return NULL;
 
-	// Update all of the headers virtual addresses
 	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
-	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
-	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
+	Elf64_Half programHeaderCount = elfHeader->e_phnum;
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; ++programHeaderIndex)
 	{
-		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
-		if (!sectionHeader)
+		Elf64_Phdr* header = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!header)
 			continue;
 
-		uint64_t sectionSize = sectionHeader->sh_size;
-
-		// Verify that we are allocation and that the size is valid
-		if ((sectionHeader->sh_flags & SHF_ALLOC) && sectionHeader->sh_size > 0)
-		{
-			// Allocate data
-			uint8_t* sectionData = (uint8_t*)elfloader_allocate(loader, sectionSize);
-			if (!sectionData)
-			{
-				if (loader->isKernel)
-					WriteLog(LL_Error, "could not allocate section data.");
-
-				return false;
-			}
-
-			if (sectionHeader->sh_type == SHT_PROGBITS)
-			{
-				elfloader_memset(loader, sectionData, 0, sectionSize);
-				elfloader_memcpy(loader, sectionData, (loader->data + sectionHeader->sh_offset), sectionSize);
-
-			}
-			else if (sectionHeader->sh_type == SHT_NOBITS)
-			{
-				// Section is empty, fill with zeros
-				elfloader_memset(loader, sectionData, 0, sectionSize);
-			}
-
-			sectionHeader->sh_addr = (Elf64_Addr)sectionData;
-		}
-
-		// Load symbol and string tables from the file
-		if (sectionHeader->sh_type == SHT_SYMTAB || sectionHeader->sh_type == SHT_STRTAB)
-		{
-			Elf64_Sym* table = (Elf64_Sym*)elfloader_allocate(loader, sectionSize);
-			if (!table)
-			{
-				WriteNotificationLog("could not allocate table memory");
-				return false;
-			}
-
-			// Zero and copy out the section
-			elfloader_memset(loader, table, 0, sectionSize);
-			elfloader_memcpy(loader, (uint8_t*)table, (loader->data + sectionHeader->sh_offset), sectionSize);
-
-			// Update the section header address
-			sectionHeader->sh_addr = (Elf64_Addr)table;
-		}
+		if (p_VirtualAddress >= header->p_paddr && p_VirtualAddress < header->p_paddr + header->p_memsz)
+			return header;
 	}
 
-	// TODO: Remove commented block below, --relocatable removes all program headers
-	//Elf64_Half programHeaderCount = elfHeader->e_phnum;
-	//for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; ++programHeaderIndex)
-	//{
-	//	Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
-	//	if (!programHeader)
-	//		continue;
-
-	//	programHeader->p_vaddr = (Elf64_Addr)(loader->data + programHeader->p_offset);
-	//	programHeader->p_paddr = (Elf64_Addr)NULL;
-	//}
-
-	// User update
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "applying symbol relocations");
-	else
-		WriteNotificationLog("applying symbol relocations");
-
-	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
-	{
-		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
-		if (!sectionHeader)
-			continue;
-
-		if (sectionHeader->sh_type != SHT_RELA)
-			continue;
-
-		Elf64_Word infoSectionIndex = sectionHeader->sh_info;
-
-		if (infoSectionIndex >= sectionHeaderCount)
-			continue;
-
-		Elf64_Word linkSectionIndex = sectionHeader->sh_link;
-		if (linkSectionIndex >= sectionHeaderCount)
-			continue;
-
-		// Validate that the Elf64_Rela size is the same
-		uint64_t entrySize = sectionHeader->sh_entsize;
-		if (entrySize != sizeof(Elf64_Rela))
-		{
-			if (loader->isKernel)
-				WriteLog(LL_Error, "Elf64_Rela entry size dont match");
-			else
-				WriteNotificationLog("Elf64_Rela entry size dont match");
-			continue;
-		}
-
-		uint64_t sectionSize = sectionHeader->sh_size;
-		uint64_t entryCount = entrySize / sectionSize;
-
-		// Validate that we got valid memory
-		Elf64_Rela* entries = (Elf64_Rela*)elfloader_allocate(loader, sectionSize);
-		if (!entries)
-		{
-			if (loader->isKernel)
-				WriteLog(LL_Error, "could not allocate entry memory");
-			else
-				WriteNotificationLog("could not allocate entry memory");
-
-			return false;
-		}
-
-		elfloader_memset(loader, entries, 0, sectionSize);
-		elfloader_memcpy(loader, entries, (loader->data + sectionHeader->sh_offset), sectionSize);
-
-		sectionHeader->sh_addr = (Elf64_Addr)entries;
-
-		Elf64_Shdr* relocationSection = elfloader_getSectionHeaderByIndex(loader, infoSectionIndex);
-		if (!relocationSection)
-		{
-			if (loader->isKernel)
-				WriteLog(LL_Error, "could not find relocation section");
-			else
-				WriteNotificationLog("could not find relocation section");
-
-			return false;
-		}
-
-		uint8_t* relocationSectionData = (uint8_t*)relocationSection->sh_addr;
-		if (!relocationSectionData)
-			return false;
-
-		Elf64_Shdr* symbolTableSection = elfloader_getSectionHeaderByIndex(loader, infoSectionIndex);
-		if (!symbolTableSection)
-			return false;
-
-		Elf64_Sym* symbolTable = (Elf64_Sym*)(symbolTableSection->sh_addr);
-
-		Elf64_Shdr* stringTableSection = elfloader_getSectionHeaderByIndex(loader, linkSectionIndex);
-		if (!stringTableSection)
-			return false;
-
-		const char* stringTable = (const char*)(stringTableSection->sh_addr);
-
-		// Relocate all entries
-		for (uint64_t entryIndex = 0; entryIndex < entryCount; ++entryIndex)
-		{
-			Elf64_Rela* entry = (entries + entryIndex);
-
-			// Find the symbol for this current entry
-			int32_t symbolIndex = ELF64_R_SYM(entry->r_info);
-			int32_t symbolType = ELF64_R_TYPE(entry->r_info);
-
-			// TODO: Bounds check symbol index and type
-			Elf64_Sym* symbol = (symbolTable + symbolIndex);
-			const char* symbolName = (stringTable + symbol->st_name);
-
-			// Validate that we have a section header index
-			if (symbol->st_shndx <= 0)
-			{
-				//// TODO: Do custom linking or error
-
-				//// We error always for now
-				//if (loader->isKernel)
-				//	WriteLog(LL_Debug, "unknown symbol %s.", symbolName);
-
-				continue;
-			}
-
-			// Otherwise we link
-			if (symbol->st_name)
-			{
-				if (loader->isKernel)
-					WriteLog(LL_Debug, "relocating symbol %s.", symbolName);
-			}
-			else
-			{
-				// TODO: Some other shit
-				/*elf64_section_header_t *shstrtab = (elf_section_headers + elf_header->string_table_index);
-				elf64_section_header_t *section = (elf_section_headers + symbol->section);
-				printf("Relocating symbol: %s%+lld\n", ((char *)shstrtab->address) + section->name_index, entry->addend);*/
-
-			}
-
-			uint64_t* location = (uint64_t*)(relocationSectionData + entry->r_offset);
-			Elf64_Shdr* symbolSection = elfloader_getSectionHeaderByIndex(loader, symbol->st_shndx);
-			if (!symbolSection)
-				return false;
-
-			Elf64_Addr symbolSectionAddress = symbolSection->sh_addr;
-
-			switch (symbolType)
-			{
-			case R_X86_64_64:
-				*location = symbolSectionAddress + symbol->st_value + entry->r_addend;
-				break;
-			case R_X86_64_PC32:
-				*location = symbolSectionAddress + entry->r_addend - entry->r_offset;
-				break;
-			case R_X86_64_32:
-				*location = symbolSectionAddress + entry->r_addend;
-				break;
-			case R_X86_64_32S:
-				*location = symbolSectionAddress + entry->r_addend;
-				break;
-			case R_X86_64_NONE:
-				break;
-			default:
-				if (loader->isKernel)
-					WriteLog(LL_Warn, "Unknown relocation!!!!");
-				break;
-			}
-		}
-	}
-
-	// TODO: Fix memory protections
-
-	if (loader->isKernel)
-		WriteLog(LL_Debug, "did everything");
-
-	return true;
+	return NULL;
 }
 
 uint8_t elfloader_getSymbolAddress(ElfLoader_t* loader, const char* symbolLookup, void** outAddress)
@@ -846,6 +615,84 @@ uint8_t elfloader_getSymbolAddress(ElfLoader_t* loader, const char* symbolLookup
 	return false;
 }
 
+void* elfloader_resolve(ElfLoader_t* loader, const char* symbol)
+{
+	// We do not support resolving of kernel
+	if (loader->isKernel)
+		return NULL;
+
+	// TODO: Load sce modules and dlsym against them
+	return NULL;
+}
+
+void elfloader_relocate(ElfLoader_t* loader, Elf64_Shdr* sectionHeader, const Elf64_Sym* symbols, const char* strings, const uint8_t* source, uint8_t* destination)
+{
+	if (!loader)
+		return;
+
+	if (!loader->data || loader->dataSize == 0)
+		return;
+
+	Elf64_Rela* rela = (Elf64_Rela*)(source + sectionHeader->sh_offset);
+
+	if (sectionHeader->sh_entsize != sizeof(Elf64_Rela))
+		return;
+
+	Elf64_Xword entryCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
+	for (Elf64_Xword entryIndex = 0; entryIndex < entryCount; ++entryIndex)
+	{
+		Elf64_Word symbolIndex = ELF64_R_SYM(rela[entryIndex].r_info);
+		Elf64_Word symbolType = ELF64_R_TYPE(rela[entryIndex].r_info);
+
+		Elf64_Sym* symbol = &symbols[symbolIndex];
+
+		const char* symbolName = strings + symbol->st_name;
+
+		switch (symbolType)
+		{
+		//case R_X86_64_64:
+		//	*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = symbolSectionAddress + symbol->st_value + entry->r_addend;
+		//	break;
+		//case R_X86_64_PC32:
+		//	*location = symbolSectionAddress + entry->r_addend - entry->r_offset;
+		//	break;
+		//case R_X86_64_32:
+		//	*location = symbolSectionAddress + entry->r_addend;
+		//	break;
+		//case R_X86_64_32S:
+		//	*location = symbolSectionAddress + entry->r_addend;
+		//	break;
+		case R_X86_64_JMP_SLOT:
+		case R_X86_64_GLOB_DAT:
+			*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = (Elf64_Addr)elfloader_resolve(loader, symbolName);
+			break;
+		case R_X86_64_RELATIVE:
+			*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = (Elf64_Addr)(destination + rela[entryIndex].r_addend);
+			break;
+		}
+	}
+}
+
+void* elfloader_findSymbol(const char* name, Elf64_Shdr* sectionHeader, const char* strings, uint8_t* source, uint8_t* destination)
+{
+	Elf64_Sym* symbols = (Elf64_Sym*)(source + sectionHeader->sh_offset);
+
+	Elf64_Xword entrySize = sectionHeader->sh_entsize;
+
+	if (entrySize != sizeof(Elf64_Rela))
+		return NULL;
+
+	Elf64_Xword symbolCount = sectionHeader->sh_size / entrySize;
+	for (uint32_t symbolIndex = 0; symbolIndex < symbolCount; ++symbolIndex)
+	{
+		const char* symbolName = strings + symbols[symbolIndex].st_name;
+		if (elfloader_strcmp(name, symbolName) == 0)
+			return destination + symbols[symbolIndex].st_value;
+	}
+
+	return NULL;
+}
+
 uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 {
 	if (!loader)
@@ -854,40 +701,125 @@ uint8_t elfloader_handleRelocations(ElfLoader_t* loader)
 	if (!loader->data || loader->dataSize == 0)
 		return false;
 
-	if (!do_everything(loader))
-		return false;
-
 	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
 
-	Elf64_Shdr* textHeader = elfloader_getSectionHeaderByName(loader, ".text");
-	if (!textHeader)
-	{
-		if (loader->isKernel)
-			WriteLog(LL_Error, "could not get .text section");
-		else
-			WriteNotificationLog("could not get .text section");
-
+	// Bounds check the program header list offset
+	if (elfHeader->e_phoff >= loader->dataSize)
 		return false;
+
+	uint64_t dataSize = loader->dataSize;
+	uint8_t* exec = elfloader_allocate(loader, ALLOC_5MB);
+	if (!exec)
+		return false;
+
+	elfloader_memset(loader, exec, 0, dataSize);
+
+	// Iterate through all of the program headers and allocate new data for them
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < elfHeader->e_phnum; ++programHeaderIndex)
+	{
+		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!programHeader)
+			continue;
+
+		// We only want to allocate memory for loadable segments
+		if (programHeader->p_type != PT_LOAD)
+			continue;
+
+		// The memory size should always be >= file size
+		if (programHeader->p_filesz > programHeader->p_memsz)
+			continue;
+
+		// If there is nothing to be allocated, skip
+		if (programHeader->p_filesz == 0)
+			continue;
+
+		// Bounds check the program header offset
+		if (programHeader->p_offset >= loader->dataSize)
+			continue;
+
+		uint8_t* fileDataStart = loader->data + programHeader->p_offset;
+		Elf64_Xword fileDataSize = programHeader->p_filesz;
+
+		Elf64_Xword dataMemorySize = programHeader->p_memsz;
+
+		uint8_t* execDataOffset = programHeader->p_vaddr + exec;
+
+		elfloader_memcpy(loader, execDataOffset, fileDataStart, fileDataSize);
+
+		// Calculate data protection starting from ---
+		int32_t dataProtection = 0;
+
+		if (programHeader->p_flags & PF_R)
+			dataProtection |= PF_R;
+		if (programHeader->p_flags & PF_W)
+			dataProtection |= PF_W;
+		if (programHeader->p_flags & PF_X)
+			dataProtection |= PF_X;
+
+		// Update the protection on this crap
+		if (!elfloader_setProtection(loader, execDataOffset, dataMemorySize, dataProtection))
+		{
+			if (loader->isKernel)
+				WriteLog(LL_Error, "could not set protection");
+			else
+				WriteNotificationLog("could not set protection");
+		}
 	}
 
-	// Validate that the .text section is within bounds
-	if (textHeader->sh_offset >= loader->dataSize)
-		return false;
+	Elf64_Sym* symbolTable = NULL;
+	const char* stringTable = NULL;
+	//int(*_main)(int argc, char* argv[], char* env[]) = NULL;
+	void(*_main)(void* args) = NULL;
 
-	// Calculate the entry point by (elf in memory) + (.text section header offset) + (elf entry point offset)
-	uint8_t* calculatedEntryPoint = ((uint8_t*)textHeader->sh_addr) + elfHeader->e_entry;
+	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
 
-	// Save the elf's main entry point for later
-	loader->elfMain = (void(*)(void*))calculatedEntryPoint;
+		if (sectionHeader->sh_offset >= loader->dataSize)
+			continue;
 
-	// Updates the elf entry point
-	elfHeader->e_entry = (Elf64_Addr)calculatedEntryPoint;
+		if (sectionHeader->sh_type != SHT_SYMTAB)
+			continue;
+
+		symbolTable = (Elf64_Sym*)(loader->data + sectionHeader->sh_offset);
+
+		Elf64_Word stringSectionIndex = sectionHeader->sh_link;
+		if (stringSectionIndex > sectionHeaderCount)
+			continue;
+
+		Elf64_Shdr* stringTableHeader = elfloader_getSectionHeaderByIndex(loader, stringSectionIndex);
+		if (!stringTableHeader)
+			continue;
+
+		stringTable = (const char*)(loader->data + stringTableHeader->sh_offset);
+
+		_main = elfloader_findSymbol("mira_entry", sectionHeader, stringTable, loader->data, exec);
+		if (_main != NULL)
+			break;
+	}
+
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; ++sectionHeaderIndex)
+	{
+		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
+		if (!sectionHeader)
+			continue;
+
+		if (sectionHeader->sh_type != SHT_RELA)
+			continue;
+
+		elfloader_relocate(loader, sectionHeader, symbolTable, stringTable, loader->data, exec);
+	}
 
 	// Write out our progress to the user
 	if (loader->isKernel)
-		WriteLog(LL_Debug, "EP: %p", calculatedEntryPoint);
+		WriteLog(LL_Debug, "EP: %p", _main);
 	else
 		WriteNotificationLog("got entry point");
+
+	loader->elfMain = _main;
 
 	return elfloader_updateElfProtections(loader);
 }
@@ -1003,8 +935,59 @@ void* elfloader_allocate(ElfLoader_t* loader, uint64_t size)
 	return allocationData;
 }
 
+uint8_t elfloader_isProgramCool(ElfLoader_t* loader, int32_t index)
+{
+	if (index < 0)
+		return false;
+
+	Elf64_Phdr* header = elfloader_getProgramHeaderByIndex(loader, index);
+	if (!header)
+		return false;
+
+	Elf64_Addr programHeaderAddress = header->p_vaddr;
+	if (!programHeaderAddress)
+		return false;
+
+	Elf64_Xword programHeaderSize = header->p_memsz;
+	if (programHeaderSize == 0)
+		return false;
+
+	// Validate that the old program header was in-bounds
+	if (header->p_offset > loader->dataSize)
+		return false;
+
+	return true;
+}
+
+uint8_t elfloader_isSectionCool(ElfLoader_t* loader, int32_t index)
+{
+	if (index < 0)
+		return false;
+
+	Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, index);
+	if (!sectionHeader)
+		return false;
+
+	Elf64_Addr sectionHeaderAddress = sectionHeader->sh_addr;
+	if (!sectionHeaderAddress)
+		return false;
+
+	Elf64_Xword sectionHeaderSize = sectionHeader->sh_size;
+	if (sectionHeaderSize == 0)
+		return false;
+
+	// Bounds check the old offset before we update it
+	if (sectionHeader->sh_offset > loader->dataSize)
+		return false;
+
+	return true;
+}
+
 uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 {
+#ifdef _WIN32
+	return false;
+#else
 	if (!loader)
 		return false;
 
@@ -1031,68 +1014,83 @@ uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 	Elf64_Ehdr* elfHeader = (Elf64_Ehdr*)loader->data;
 
 	// We start at the end of the elf header offset
-	uint64_t fileOffset = sizeof(Elf64_Ehdr);
+	uint64_t programHeaderStart = sizeof(Elf64_Ehdr);
 
 	// Update where we are starting our program headers in file
 	uint64_t fileProgramHeaderCount = 0;
 	uint64_t fileSectionHeaderCount = 0;
 
-	// Iterate through all of the program headers and update the offsets
+	// Count how many program headers that we have to write out (filtered)
 	Elf64_Half programHeaderCount = elfHeader->e_phnum;
 	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; programHeaderIndex++)
 	{
-		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
-		if (!programHeader)
-			continue;
-
-		Elf64_Addr programHeaderAddress = programHeader->p_vaddr;
-		if (!programHeaderAddress)
-			continue;
-
-		Elf64_Xword programHeaderSize = programHeader->p_memsz;
-		if (programHeaderSize == 0)
-			continue;
-
-		// Validate that the old program header was in-bounds
-		if (programHeader->p_offset > loader->dataSize)
+		// Skip uncool programs
+		if (!elfloader_isProgramCool(loader, programHeaderIndex))
 			continue;
 
 		fileProgramHeaderCount++;
-
-		//// Update the program header with the new in-file offset
-		//programHeader->p_offset = fileOffset;
-
-		// Update the file offset with the memory size of this
-		fileOffset += programHeaderSize;
 	}
 
 	// Iterate through the section headers
 	Elf64_Half sectionHeaderCount = elfHeader->e_shnum;
 	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; sectionHeaderIndex++)
 	{
+		// Skip uncool sections
+		if (!elfloader_isSectionCool(loader, sectionHeaderIndex))
+			continue;
+
+		fileSectionHeaderCount++;
+	}
+
+	// Calculate the total size of the headers part
+	uint64_t programHeadersSize = sizeof(Elf64_Phdr) * fileProgramHeaderCount;
+	uint64_t sectionHeadersSize = sizeof(Elf64_Shdr) * fileSectionHeaderCount;
+
+	// Calculate the program header data start, after the Program Headers + Section Headers
+	uint64_t programDataStart = programHeaderStart + programHeadersSize + sectionHeadersSize;
+	uint64_t programDataSize = 0;
+
+	// Go through all of the program headers again and write all of the program headers while updating them
+	for (Elf64_Half programHeaderIndex = 0; programHeaderIndex < programHeaderCount; programHeaderIndex++)
+	{
+		if (!elfloader_isProgramCool(loader, programHeaderIndex))
+			continue;
+
+		Elf64_Phdr* programHeader = elfloader_getProgramHeaderByIndex(loader, programHeaderIndex);
+		if (!programHeader)
+			continue;
+
+		// Update the program header with the new in-file offset
+		programHeader->p_offset = programDataStart + programDataSize;
+
+		// Write out the program header
+		if (kwrite(fd, (const void*)programHeader, sizeof(*programHeader)) < 0)
+		{
+			WriteLog(LL_Error, "could not write program header");
+			goto error;
+		}
+
+		programDataSize += programHeader->p_memsz;
+	}
+
+	uint64_t sectionDataStart = programDataStart + programDataSize;
+	uint64_t sectionDataSize = 0;
+
+	// Iterate through the section headers
+	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; sectionHeaderIndex++)
+	{
+		if (!elfloader_isSectionCool(loader, sectionHeaderIndex))
+			continue;
+
 		Elf64_Shdr* sectionHeader = elfloader_getSectionHeaderByIndex(loader, sectionHeaderIndex);
 		if (!sectionHeader)
 			continue;
 
-		Elf64_Addr sectionHeaderAddress = sectionHeader->sh_addr;
-		if (!sectionHeaderAddress)
-			continue;
-
-		Elf64_Xword sectionHeaderSize = sectionHeader->sh_size;
-		if (sectionHeaderSize == 0)
-			continue;
-
-		// Bounds check the old offset before we update it
-		if (sectionHeader->sh_offset > loader->dataSize)
-			continue;
-
-		fileSectionHeaderCount++;
-
 		// Update the section header
-		sectionHeader->sh_offset = fileOffset;
+		sectionHeader->sh_offset = sectionDataStart + sectionDataSize;
 
 		// Update the file offset
-		fileOffset += sectionHeaderSize;
+		sectionDataSize += sectionHeader->sh_size;
 	}
 
 	// ===================================================================
@@ -1101,10 +1099,10 @@ uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 	//uint64_t fileProgramHeaderSize = fileProgramHeaderCount * sizeof(Elf64_Phdr);
 	//uint64_t fileSectionHeaderSize = fileSectionHeaderCount * sizeof(Elf64_Shdr);
 
-	elfHeader->e_phoff = fileOffset;
+	elfHeader->e_phoff = programHeaderStart;
 
 	// Update the section header start offset
-	elfHeader->e_shoff = fileOffset;
+	elfHeader->e_shoff = programHeaderStart;
 
 	uint8_t* currentAddress = loader->data;
 
@@ -1143,11 +1141,11 @@ uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 		}
 
 		// Update the file offset with the memory size of this
-		fileOffset += programHeaderSize;
+		programHeaderStart += programHeaderSize;
 	}
 
 	// Update the section header start offset
-	elfHeader->e_shoff = fileOffset;
+	elfHeader->e_shoff = programHeaderStart;
 
 	// Iterate through the section headers
 	for (Elf64_Half sectionHeaderIndex = 0; sectionHeaderIndex < sectionHeaderCount; sectionHeaderIndex++)
@@ -1165,10 +1163,10 @@ uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath)
 			continue;
 
 		// Update the section header
-		sectionHeader->sh_offset = fileOffset;
+		sectionHeader->sh_offset = programHeaderStart;
 
 		// Update the file offset
-		fileOffset += sectionHeaderSize;
+		programHeaderStart += sectionHeaderSize;
 	}
 
 	dumpSuccessful = true;
@@ -1180,4 +1178,5 @@ error:
 	oni_threadRestore(curthread, &threadInfo);
 
 	return dumpSuccessful;
+#endif
 }
