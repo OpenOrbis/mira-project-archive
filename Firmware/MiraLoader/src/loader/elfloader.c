@@ -644,7 +644,7 @@ void elfloader_relocate(ElfLoader_t* loader, Elf64_Shdr* sectionHeader, const El
 		Elf64_Word symbolIndex = ELF64_R_SYM(rela[entryIndex].r_info);
 		Elf64_Word symbolType = ELF64_R_TYPE(rela[entryIndex].r_info);
 
-		Elf64_Sym* symbol = &symbols[symbolIndex];
+		const Elf64_Sym* symbol = &symbols[symbolIndex];
 
 		const char* symbolName = strings + symbol->st_name;
 
