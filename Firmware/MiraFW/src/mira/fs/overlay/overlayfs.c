@@ -167,7 +167,7 @@ static int mount_unionfs(struct thread* td, char* fspath, char* from, char* prot
 int overlayfs_onExecNewVmspace(struct image_params* imgp, struct sysentvec* sv);
 int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap);
 
-int (*_rmdir)(struct thread* td, struct rmdir_args* uap) = NULL;
+
 
 void overlayfs_init(struct overlayfs_t* fs)
 {
@@ -182,7 +182,7 @@ void overlayfs_init(struct overlayfs_t* fs)
 	fs->execNewVmspaceHook = hook_create(kdlsym(exec_new_vmspace), overlayfs_onExecNewVmspace);
 	
 	// Hook the syscall rmdir
-	_rmdir = (void*)sysents[137].sy_call;
+	int(*_rmdir)(struct thread* td, struct rmdir_args* uap) = (void*)sysents[137].sy_call;
 
 	critical_enter();	
 	cpu_disable_wp();
@@ -224,6 +224,9 @@ int overlayfs_rmdirHook(struct thread* td, struct rmdir_args* uap)
 	void* (*memset)(void *b, int c, size_t len) = kdlsym(memset);
 	void* (*memcpy)(void *restrict dst, const void *restrict src, size_t n) = kdlsym(memcpy);
 	int (*snprintf)(char * restrict str, size_t size, const char * restrict format, ...) = kdlsym(snprintf);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*_rmdir)(struct thread* td, struct rmdir_args* uap) = (void*)sysents[137].sy_call;
 
 	struct proc* p = td->td_proc;
 

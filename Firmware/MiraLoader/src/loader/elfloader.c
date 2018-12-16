@@ -641,33 +641,44 @@ void elfloader_relocate(ElfLoader_t* loader, Elf64_Shdr* sectionHeader, const El
 	Elf64_Xword entryCount = sectionHeader->sh_size / sectionHeader->sh_entsize;
 	for (Elf64_Xword entryIndex = 0; entryIndex < entryCount; ++entryIndex)
 	{
-		Elf64_Word symbolIndex = ELF64_R_SYM(rela[entryIndex].r_info);
-		Elf64_Word symbolType = ELF64_R_TYPE(rela[entryIndex].r_info);
+		Elf64_Rela* entry = &rela[entryIndex];
+
+		Elf64_Word symbolIndex = ELF64_R_SYM(entry->r_info);
+		Elf64_Word symbolType = ELF64_R_TYPE(entry->r_info);
 
 		const Elf64_Sym* symbol = &symbols[symbolIndex];
 
 		const char* symbolName = strings + symbol->st_name;
 
+		Elf64_Addr* location = (Elf64_Addr*)(destination + entry->r_offset);
+
+		Elf64_Shdr* symbolSection = elfloader_getSectionHeaderByIndex(loader, symbol->st_shndx);
+		Elf64_Addr symbolSectionAddress = symbolSection->sh_addr;
+
 		switch (symbolType)
 		{
-		//case R_X86_64_64:
-		//	*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = symbolSectionAddress + symbol->st_value + entry->r_addend;
-		//	break;
-		//case R_X86_64_PC32:
-		//	*location = symbolSectionAddress + entry->r_addend - entry->r_offset;
-		//	break;
-		//case R_X86_64_32:
-		//	*location = symbolSectionAddress + entry->r_addend;
-		//	break;
-		//case R_X86_64_32S:
-		//	*location = symbolSectionAddress + entry->r_addend;
-		//	break;
+		case R_X86_64_64:
+			if (symbolSection)
+				*(Elf64_Addr*)(destination + entry->r_offset) = symbolSectionAddress + symbol->st_value + entry->r_addend;
+			break;
+		case R_X86_64_PC32:
+			if (symbolSection)
+				*location = symbolSectionAddress + entry->r_addend - entry->r_offset;
+			break;
+		case R_X86_64_32:
+			if (symbolSection)
+				*location = symbolSectionAddress + entry->r_addend;
+			break;
+		case R_X86_64_32S:
+			if (symbolSection)
+				*location = symbolSectionAddress + entry->r_addend;
+			break;
 		case R_X86_64_JMP_SLOT:
 		case R_X86_64_GLOB_DAT:
-			*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = (Elf64_Addr)elfloader_resolve(loader, symbolName);
+			*(Elf64_Addr*)(destination + entry->r_offset) = (Elf64_Addr)elfloader_resolve(loader, symbolName);
 			break;
 		case R_X86_64_RELATIVE:
-			*(Elf64_Addr*)(destination + rela[entryIndex].r_offset) = (Elf64_Addr)(destination + rela[entryIndex].r_addend);
+			*(Elf64_Addr*)(destination + entry->r_offset) = (Elf64_Addr)(destination + entry->r_addend);
 			break;
 		}
 	}

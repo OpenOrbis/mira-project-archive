@@ -42,8 +42,8 @@
 #include <sys/eventhandler.h>
 #include <sys/proc.h>					// proc
 #include <sys/sysent.h>
-#include <string.h> // memmove, memcpy
-#include <stdlib.h> // malloc, free
+//#include <string.h> // memmove, memcpy
+//#include <stdlib.h> // malloc, free
 #include <assert.h>
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
@@ -97,35 +97,12 @@ struct miraframework_t* mira_getFramework()
 	return (struct miraframework_t*)gFramework;
 }
 
-void mira_assert(const char * a, const char * b, int c, const char * d)
-{
-
-}
-
-#include <protobuf-c/protobuf-c.h>
-
-ProtobufCAllocator protobuf_c__allocator = {
-.alloc = NULL,
-.free = NULL,
-.allocator_data = NULL,
-};
-
 uint8_t miraframework_initialize(struct miraframework_t* framework)
 {
+	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!framework)
 		return false;
-
-	// This is required for the operation of protobuf-c
-	__assert = (void*)mira_assert;
-	strcmp = kdlsym(strcmp);
-	strlen = kdlsym(strlen);
-	memset = kdlsym(memset);
-	memmove = kdlsym(memmove);
-	memcpy = kdlsym(memcpy);
-	malloc = k_malloc;
-	free = k_free;
-	protobuf_c__allocator.alloc = (void*(*)(void*, size_t))malloc;
-	protobuf_c__allocator.free = (void(*)(void*, void*))free;
 	
 	// Zero initialize everything
 	memset(framework, 0, sizeof(*framework));
@@ -276,11 +253,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	//	Initialize the orbis utilities plugin
 	//
 	WriteLog(LL_Info, "allocating orbis utilities");
-	if (framework->orbisUtilsPlugin)
-	{
-		kfree(framework->orbisUtilsPlugin, sizeof(*framework->orbisUtilsPlugin));
-		framework->orbisUtilsPlugin = NULL;
-	}
 	framework->orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
 	if (!framework->orbisUtilsPlugin)
 	{
@@ -292,12 +264,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
-	if (framework->fileTransferPlugin)
-	{
-		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
-		framework->fileTransferPlugin = NULL;
-	}
-	
 	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
 	if (!framework->fileTransferPlugin)
 	{
@@ -308,12 +274,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
 	WriteLog(LL_Info, "allocating logserver");
-	if (framework->logServerPlugin)
-	{
-		kfree(framework->logServerPlugin, sizeof(*framework->logServerPlugin));
-		framework->logServerPlugin = NULL;
-	}
-		
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
 	if (!framework->logServerPlugin)
 	{
@@ -325,12 +285,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	// Initialize the plugin loader to read from file
 	WriteLog(LL_Info, "allocating pluginloader");
-	if (framework->pluginLoader)
-	{
-		kfree(framework->pluginLoader, sizeof(*framework->pluginLoader));
-		framework->pluginLoader = NULL;
-	}
-
 	framework->pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
 	if (!framework->pluginLoader)
 	{
@@ -341,14 +295,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginloader_loadPlugins(framework->pluginLoader);
 
 	// Debugger
-	WriteLog(LL_Debug, "allocating debugger");
-
-	if (framework->debuggerPlugin)
-	{
-		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
-		framework->debuggerPlugin = NULL;
-	}
-		
+	WriteLog(LL_Debug, "allocating debugger");		
 	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
 	if (!framework->debuggerPlugin)
 	{
