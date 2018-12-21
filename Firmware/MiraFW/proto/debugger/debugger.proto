@@ -1,14 +1,17 @@
 syntax = "proto2";
 
 // To build this file:
-// .\protoc-c --c_out=. <name>.proto
+// protoc -I=. --c_out=. ./<filename>.proto
+// NOTE: Will need https://github.com/protobuf-c/protobuf-c/pull/342
+// Currently compile from source with above fix, and you gucci
 
 message Proc {
 
 }
 
 message Thread {
-    required int32 processId = 1;
+	required uint64 process = 1;
+
 }
 
 message Cred {

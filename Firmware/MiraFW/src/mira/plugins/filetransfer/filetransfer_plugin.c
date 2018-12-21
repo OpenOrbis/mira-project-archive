@@ -85,23 +85,6 @@ uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 	return true;
 }
 
-//#define FUCK_YOU(container, typeName, capsType, lowerType) \
-//{\
-//	pbcontainer_acquire(container); \
-//	PbMessage* _message = container->message; \
-//	if (!_message) \
-//		goto cleanup; \
-//	size_t _innerDataSize = _message->data.len; \
-//	uint8_t* _innerData = _message->data.data; \
-//	if (!_innerData || _innerDataSize == 0) \
-//		goto cleanup; \
-//	typeName* _newMsg = lowerType##__unpack(NULL, _innerDataSize, _innerData); \
-//	if (!_newMsg) \
-//		goto cleanup; \
-//	
-//}
-
-
 void filetransfer_open_callback(PbContainer* reference)
 {
 	if (!reference || !reference->message)

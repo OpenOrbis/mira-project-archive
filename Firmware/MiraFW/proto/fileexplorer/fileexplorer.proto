@@ -1,7 +1,10 @@
-syntax = "proto2";
+syntax = "proto3";
 
 // To build this file:
-// .\protoc-c --c_out=. <name>.proto
+// protoc -I=. --c_out=. ./<filename>.proto
+// NOTE: Will need https://github.com/protobuf-c/protobuf-c/pull/342
+// Currently compile from source with above fix, and you gucci
+
 enum FileTransferCommands {
 	Open = 1;
 	Close = 2;
@@ -27,174 +30,174 @@ message DirEnt {
         DT_SOCK = 12;
         DT_WHT = 14;
     }
-    required uint32 fileno = 1;
-    required uint32 reclen = 2;
-    required DirectoryType type = 3;
-    required string name = 4;
+    uint32 fileno = 1;
+    uint32 reclen = 2;
+    DirectoryType type = 3;
+    string name = 4;
 }
 
 // open
 message OpenRequest {
-    required string path = 1;
-    required int32 flags = 2;
-    required int32 mode = 3;
+    string path = 1;
+    int32 flags = 2;
+    int32 mode = 3;
 }
 
 message OpenResponse {
-    required int32 error = 1;
+    int32 error = 1;
 
-	optional int32 handle = 2;
+	int32 handle = 2;
 }
 
 // close
 message CloseRequest {
     // Handle of the file to close
-    required int32 handle = 1;
+    int32 handle = 1;
 }
 
 message CloseResponse {
-    required int32 error = 1;
+    int32 error = 1;
 }
 
 // read
 message ReadRequest {
-    required int32 handle = 1;
+    int32 handle = 1;
 
-    required uint64 offset = 2;
+    uint64 offset = 2;
 
-    required uint64 size = 3;
+    uint64 size = 3;
 }
 
 message ReadResponse {
-    required int32 error = 1;
+    int32 error = 1;
 
-	optional bytes data = 2;
+	bytes data = 2;
 }
 
 // write
 message WriteRequest {
-	required int32 handle = 1;
+	int32 handle = 1;
 
-	required uint64 offset = 2;
+	uint64 offset = 2;
 
-	required uint64 size = 3;
+	uint64 size = 3;
 }
 
 message WriteResponse {
-	required int32 error = 1;
+	int32 error = 1;
 }
 
 // mkdir
 message MakeDirectoryRequest {
-    required string path = 1;
+    string path = 1;
 
-    required int32 mode = 2;
+    int32 mode = 2;
 }
 
 message MakeDirectoryResponse {
-    required int32 error = 1;
+    int32 error = 1;
 }
 
 // rmdir
 message RemoveDirectoryRequest {
 	// Path to remove
-    required string path = 1;
+    string path = 1;
 
 	// Recursively delete all files + folders in this directory
-	required int32 recursive = 2; 
+	int32 recursive = 2; 
 }
 
 message RemoveDirectoryResponse {
-    required int32 error = 1;
+    int32 error = 1;
 }
 
 // unlink
 message UnlinkRequest {
-    required string path = 1;
+    string path = 1;
 }
 
 message UnlinkResponse {
-    required int32 error = 1;
+    int32 error = 1;
 }
 
 // stats
 message TimeSpec {
-    required int64 sec = 1;
-    required uint64 nsec = 2;
+    int64 sec = 1;
+    uint64 nsec = 2;
 }
 
 message StatRequest {
 	// Will allow to stat a handle, if -1 then will use path
-	optional int32 handle = 1;
+	int32 handle = 1;
 
-    optional string path = 2;
+    string path = 2;
 }
 
 message StatResponse {
-    required int32 error = 1;
+    int32 error = 1;
 
-    optional string path = 2;
+    string path = 2;
 
     // device
-    optional uint32 dev = 3;
+    uint32 dev = 3;
 
     // inode
-    optional uint32 ino = 4;
+    uint32 ino = 4;
 
     // protection mode, uint16
-    optional uint32 mode = 5;
+    uint32 mode = 5;
 
     // number of hard links, uint16
-    optional uint32 nlink = 6;
+    uint32 nlink = 6;
 
     // user id
-    optional uint32 uid = 7;
+    uint32 uid = 7;
 
     // group id
-    optional uint32 gid = 8;
+    uint32 gid = 8;
 
     // device type
-    optional uint32 rdev = 9;
+    uint32 rdev = 9;
 
     // time of last access
-    optional TimeSpec atim = 10;
+    TimeSpec atim = 10;
     
     // time of last modification
-    optional TimeSpec mtim = 11;
+    TimeSpec mtim = 11;
 
     // time of last file status change
-    optional TimeSpec ctim = 12;
+    TimeSpec ctim = 12;
 
     // file size, in blocks
-    optional int64 size = 13;
+    int64 size = 13;
 
     // blocks allocated for file
-    optional int64 blocks = 14;
+    int64 blocks = 14;
 
     // optimal blocksize for i/o
-    optional uint32 blksize = 15;
+    uint32 blksize = 15;
 
     // user defined flags
-    optional uint32 flags = 16;
+    uint32 flags = 16;
 
     // file generation number
-    optional uint32 gen = 17;
+    uint32 gen = 17;
 
-    optional int32 lspare = 18;
+    int32 lspare = 18;
 
     // time of creation
-   optional TimeSpec birthtim = 19;
+   TimeSpec birthtim = 19;
 }
 
 // getdents
 message GetDentsRequest {
-    required string path = 2;
+    string path = 2;
 }
 
 message GetDentsResponse {
-    required int32 error = 1;
+    int32 error = 1;
 
-    optional uint64 entriesLeft = 2;
+    uint64 entriesLeft = 2;
 
     repeated DirEnt entries = 3;
 }

@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 // To build this file:
 // .\protoc-c --c_out=. <name>.proto
@@ -29,11 +29,11 @@ enum MessageCategory {
 
 message PbMessage {
 	// The category of each message
-	required MessageCategory category = 1;
+	MessageCategory category = 1;
 
 	// The message type (CRC32(<Message Type Name>))
-	required uint32 type = 2;
+	uint32 type = 2;
 
 	// The self contained protobuf message
-	required bytes data = 3;
+	bytes data = 3;
 }
