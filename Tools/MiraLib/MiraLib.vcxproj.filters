@@ -4,9 +4,14 @@
     <ClCompile Include="src\mirabuiltin.pb-c.c" />
     <ClCompile Include="src\protobuf-c.c" />
     <ClCompile Include="src\Source.c" />
+    <ClCompile Include="src\messagetest.pb-c.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\protobuf-c.h" />
     <ClInclude Include="src\mirabuiltin.pb-c.h" />
+    <ClInclude Include="src\messagetest.pb-c.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\messagetest.proto" />
   </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 
-typedef struct _MessageHeader MessageHeader;
+typedef struct _PbMessage PbMessage;
 
 
 /* --- enums --- */
@@ -57,10 +57,7 @@ typedef enum _MessageCategory {
 
 /* --- messages --- */
 
-/*
- * The header of each message
- */
-struct  _MessageHeader
+struct  _PbMessage
 {
   ProtobufCMessage base;
   /*
@@ -75,35 +72,39 @@ struct  _MessageHeader
    * The error code, 0 on success
    */
   int32_t error;
+  /*
+   * The self contained protobuf message
+   */
+  ProtobufCBinaryData data;
 };
-#define MESSAGE_HEADER__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&message_header__descriptor) \
-    , 0, 0, 0 }
+#define PB_MESSAGE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&pb_message__descriptor) \
+    , 0, 0, 0, {0,NULL} }
 
 
-/* MessageHeader methods */
-void   message_header__init
-                     (MessageHeader         *message);
-size_t message_header__get_packed_size
-                     (const MessageHeader   *message);
-size_t message_header__pack
-                     (const MessageHeader   *message,
+/* PbMessage methods */
+void   pb_message__init
+                     (PbMessage         *message);
+size_t pb_message__get_packed_size
+                     (const PbMessage   *message);
+size_t pb_message__pack
+                     (const PbMessage   *message,
                       uint8_t             *out);
-size_t message_header__pack_to_buffer
-                     (const MessageHeader   *message,
+size_t pb_message__pack_to_buffer
+                     (const PbMessage   *message,
                       ProtobufCBuffer     *buffer);
-MessageHeader *
-       message_header__unpack
+PbMessage *
+       pb_message__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data);
-void   message_header__free_unpacked
-                     (MessageHeader *message,
+void   pb_message__free_unpacked
+                     (PbMessage *message,
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
-typedef void (*MessageHeader_Closure)
-                 (const MessageHeader *message,
+typedef void (*PbMessage_Closure)
+                 (const PbMessage *message,
                   void *closure_data);
 
 /* --- services --- */
@@ -112,7 +113,7 @@ typedef void (*MessageHeader_Closure)
 /* --- descriptors --- */
 
 extern const ProtobufCEnumDescriptor    message_category__descriptor;
-extern const ProtobufCMessageDescriptor message_header__descriptor;
+extern const ProtobufCMessageDescriptor pb_message__descriptor;
 
 PROTOBUF_C__END_DECLS
 

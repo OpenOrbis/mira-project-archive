@@ -1,29 +1,33 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "mirabuiltin.pb-c.h"
+#include "messagetest.pb-c.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define PAGE_SIZE 0x4000
 
 
 int main()
 {
-	MessageHeader header = MESSAGE_HEADER__INIT;
+	PbMessage message = PB_MESSAGE__INIT;
 
-	header.category = MESSAGE_CATEGORY__CMD;
-	header.error = 0;
-	header.type = 1337;
+	message.data.data = (uint8_t*)malloc(10);
+	message.data.len = 10;
 
-	size_t size = message_header__get_packed_size(&header);
+	size_t size = pb_message__get_packed_size(&message);
 
-	uint8_t* buf = malloc(size);
-	if (!buf)
+	uint8_t* serializedData = (uint8_t*)malloc(size);
+	if (!serializedData)
 	{
-		fprintf(stderr, "could not allocate buffer size (%llx)\r\n", size);
+		fprintf(stderr, "could not allocate data\n");
 		return -1;
 	}
-	message_header__pack(&header, buf);
+	memset(serializedData, 0, size);
+
+	size_t packedSize = pb_message__pack(&message, serializedData);
+
 
 	FILE* file = fopen("dump.bin", "wb");
 	if (!file)
@@ -32,7 +36,7 @@ int main()
 		return -1;
 	}
 
-	fwrite(buf, size, 1, file);
+	fwrite(serializedData, size, 1, file);
 	fclose(file);
 	file = NULL;
 
@@ -41,8 +45,8 @@ int main()
 
 
 	// Free the serialized buffer
-	free(buf);
-	buf = NULL;
+	/*free(buf);
+	buf = NULL;*/
 
 	return 0;
 }

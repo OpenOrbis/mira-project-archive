@@ -7,51 +7,50 @@
 #endif
 
 #include "mirabuiltin.pb-c.h"
-
-void   message_header__init
-                     (MessageHeader         *message)
+void   pb_message__init
+                     (PbMessage         *message)
 {
-  static MessageHeader init_value = MESSAGE_HEADER__INIT;
+  static PbMessage init_value = PB_MESSAGE__INIT;
   *message = init_value;
 }
-size_t message_header__get_packed_size
-                     (const MessageHeader *message)
+size_t pb_message__get_packed_size
+                     (const PbMessage *message)
 {
-  assert(message->base.descriptor == &message_header__descriptor);
+  assert(message->base.descriptor == &pb_message__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t message_header__pack
-                     (const MessageHeader *message,
+size_t pb_message__pack
+                     (const PbMessage *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &message_header__descriptor);
+  assert(message->base.descriptor == &pb_message__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t message_header__pack_to_buffer
-                     (const MessageHeader *message,
+size_t pb_message__pack_to_buffer
+                     (const PbMessage *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &message_header__descriptor);
+  assert(message->base.descriptor == &pb_message__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-MessageHeader *
-       message_header__unpack
+PbMessage *
+       pb_message__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (MessageHeader *)
-     protobuf_c_message_unpack (&message_header__descriptor,
+  return (PbMessage *)
+     protobuf_c_message_unpack (&pb_message__descriptor,
                                 allocator, len, data);
 }
-void   message_header__free_unpacked
-                     (MessageHeader *message,
+void   pb_message__free_unpacked
+                     (PbMessage *message,
                       ProtobufCAllocator *allocator)
 {
-  assert(message->base.descriptor == &message_header__descriptor);
+  assert(message->base.descriptor == &pb_message__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
+static const ProtobufCFieldDescriptor pb_message__field_descriptors[4] =
 {
   {
     "category",
@@ -59,7 +58,7 @@ static const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_ENUM,
     0,   /* quantifier_offset */
-    offsetof(MessageHeader, category),
+    offsetof(PbMessage, category),
     &message_category__descriptor,
     NULL,
     0,             /* flags */
@@ -71,7 +70,7 @@ static const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_UINT32,
     0,   /* quantifier_offset */
-    offsetof(MessageHeader, type),
+    offsetof(PbMessage, type),
     NULL,
     NULL,
     0,             /* flags */
@@ -83,36 +82,49 @@ static const ProtobufCFieldDescriptor message_header__field_descriptors[3] =
     PROTOBUF_C_LABEL_REQUIRED,
     PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
-    offsetof(MessageHeader, error),
+    offsetof(PbMessage, error),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "data",
+    4,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_BYTES,
+    0,   /* quantifier_offset */
+    offsetof(PbMessage, data),
     NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned message_header__field_indices_by_name[] = {
+static const unsigned pb_message__field_indices_by_name[] = {
   0,   /* field[0] = category */
+  3,   /* field[3] = data */
   2,   /* field[2] = error */
   1,   /* field[1] = type */
 };
-static const ProtobufCIntRange message_header__number_ranges[1 + 1] =
+static const ProtobufCIntRange pb_message__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 4 }
 };
-const ProtobufCMessageDescriptor message_header__descriptor =
+const ProtobufCMessageDescriptor pb_message__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "MessageHeader",
-  "MessageHeader",
-  "MessageHeader",
+  "PbMessage",
+  "PbMessage",
+  "PbMessage",
   "",
-  sizeof(MessageHeader),
-  3,
-  message_header__field_descriptors,
-  message_header__field_indices_by_name,
-  1,  message_header__number_ranges,
-  (ProtobufCMessageInit) message_header__init,
+  sizeof(PbMessage),
+  4,
+  pb_message__field_descriptors,
+  pb_message__field_indices_by_name,
+  1,  pb_message__number_ranges,
+  (ProtobufCMessageInit) pb_message__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
 static const ProtobufCEnumValue message_category__enum_values_by_number[7] =

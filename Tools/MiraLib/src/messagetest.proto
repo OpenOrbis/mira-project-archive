@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+message MyHeader {
+	required uint32 category = 1;
+
+	required uint32 type = 2;
+
+	required int32 error = 3;
+
+}
+
+message MyOtherMessage {
+	required MyHeader header = 1;
+
+	required uint32 yamsayin = 2;
+}

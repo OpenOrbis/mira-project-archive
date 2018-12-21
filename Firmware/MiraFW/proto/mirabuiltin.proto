@@ -27,14 +27,13 @@ enum MessageCategory {
     MAX = 6;
 }
 
-// The header of each message
-message MessageHeader {
-    // The category of each message
-    required MessageCategory category = 1;
+message PbMessage {
+	// The category of each message
+	required MessageCategory category = 1;
 
-    // The message type (CRC32(<Message Type Name>))
-    required uint32 type = 2;
+	// The message type (CRC32(<Message Type Name>))
+	required uint32 type = 2;
 
-    // The error code, 0 on success
-    required int32 error = 3; 
+	// The self contained protobuf message
+	required bytes data = 3;
 }
