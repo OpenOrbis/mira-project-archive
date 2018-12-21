@@ -6,6 +6,7 @@ syntax = "proto3";
 // Currently compile from source with above fix, and you gucci
 
 enum FileTransferCommands {
+	Echo = 0;
 	Open = 1;
 	Close = 2;
 	GetDents = 3;
@@ -34,6 +35,15 @@ message DirEnt {
     uint32 reclen = 2;
     DirectoryType type = 3;
     string name = 4;
+}
+
+// echo
+message EchoRequest {
+	string message = 1;
+}
+
+message EchoResponse {
+	int32 error = 1;
 }
 
 // open

@@ -37,6 +37,8 @@ void filetransfer_mkdir_callback(PbContainer* reference);
 void filetransfer_rmdir_callback(PbContainer* reference);
 void filetransfer_unlink_callback(PbContainer* reference);
 
+void filetransfer_echo_callback(PbContainer* container);
+
 extern struct logger_t* gLogger;
 
 void filetransfer_plugin_init(struct filetransfer_plugin_t* plugin)
@@ -64,7 +66,8 @@ uint8_t filetransfer_load(struct filetransfer_plugin_t* plugin)
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, filetransfer_delete_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, filetransfer_stat_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, filetransfer_mkdir_callback);
-
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, filetransfer_echo_callback);
+	
 	return true;
 }
 
@@ -81,8 +84,83 @@ uint8_t filetransfer_unload(struct filetransfer_plugin_t* plugin)
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, filetransfer_delete_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, filetransfer_stat_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, filetransfer_mkdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, filetransfer_echo_callback);
 
 	return true;
+}
+
+void filetransfer_echo_callback(PbContainer* container)
+{
+	if (!container || !container->message)
+		return;
+
+	// Hold the incoming request
+	EchoRequest* request = NULL;
+
+	// Acquire a reference before we touch anything in this structure
+	pbcontainer_acquire(container);
+
+	// Get the outer message that is already parsed
+	PbMessage* outerMessage = container->message;
+	if (!outerMessage)
+		goto cleanup;
+
+	// Get the inner (OpenRequest) message data and size
+	size_t innerDataSize = outerMessage->data.len;
+	uint8_t* innerData = outerMessage->data.data;
+	if (!innerData || innerDataSize == 0)
+		goto cleanup;
+
+	// Unpack the inner message
+	request = echo_request__unpack(NULL, innerDataSize, innerData);
+	if (!request)
+		goto cleanup;
+
+	WriteLog(LL_Warn, "echo: %s", request->message);
+
+	EchoResponse response = ECHO_RESPONSE__INIT;
+	response.error = 0;
+
+	// Calculate the packed size
+	size_t responseSize = echo_response__get_packed_size(&response);
+
+	// Allocate the response data
+	uint8_t* responseData = k_malloc(responseSize);
+	if (!responseData)
+	{
+		WriteLog(LL_Error, "could not allocate response data");
+		goto cleanup;
+	}
+	(void)memset(responseData, 0, responseSize);
+
+	// Pack the data into the newly allocated buffer
+	size_t responsePackedSize = echo_response__pack(&response, responseData);
+	if (responseSize != responsePackedSize)
+	{
+		WriteLog(LL_Error, "responseSize (%llx) != responsePackedSize (%llx)", responseSize, responsePackedSize);
+		k_free(responseData);
+		goto cleanup;
+	}
+
+	// Create a pbcontainer for ref counting
+	PbContainer* responseContainer = pbcontainer_create2(outerMessage->category, outerMessage->type, responseData, responseSize);
+	if (!responseContainer)
+	{
+		WriteLog(LL_Error, "could not allocate response container");
+		k_free(responseData);
+		goto cleanup;
+	}
+
+	// Send the response back to PC
+	messagemanager_sendResponse(responseContainer);
+
+	// Release (which should destroy the response container)
+	pbcontainer_release(responseContainer);
+cleanup:
+	if (request)
+		echo_request__free_unpacked(request, NULL);
+
+	pbcontainer_release(container);
 }
 
 void filetransfer_open_callback(PbContainer* reference)
@@ -123,13 +201,11 @@ void filetransfer_open_callback(PbContainer* reference)
 	if (result < 0)
 	{
 		// Handle error case
-		response.has_handle = false;
 		response.error = result;
 	}
 	else
 	{
 		// No error, return handle
-		response.has_handle = true;
 		response.handle = result;
 		response.error = 0;
 	}
