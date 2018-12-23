@@ -55,39 +55,47 @@ void mira_entry(void* args)
 	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
 */
 {
+	if (!args)
+		return;
+
+	struct initparams_t* initParams = (struct initparams_t*)args;
+
+	gInitParams = initParams;
+
+	oni_kernelInitialization(args);
 	// If we have args at all, we will assume that we are running in the kernel context
-	if (args)
-	{
-		// Init oni framework in kernel space
-		oni_kernelInitialization(args);
-	}
-	else // Handle userland launching the old fashion way
-	{
-		struct initparams_t userParams;
-		userParams.entrypoint = oni_kernelInitialization;
-		userParams.process = NULL;
-		userParams.payloadBase = 0x926200000;
-		userParams.payloadSize = 0x80000;
+	//if (args)
+	//{
+	//	// Init oni framework in kernel space
+	//	
+	//}
+	//else // Handle userland launching the old fashion way
+	//{
+	//	//struct initparams_t userParams;
+	//	//userParams.entrypoint = oni_kernelInitialization;
+	//	//userParams.process = NULL;
+	//	//userParams.payloadBase = 0x926200000;
+	//	//userParams.payloadSize = 0x80000;
 
-		SelfElevateAndRun(&userParams);
+	//	//SelfElevateAndRun(&userParams);
 
-		// Prompt the user
-		int moduleId = -1;
-		sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
+	//	//// Prompt the user
+	//	//int moduleId = -1;
+	//	//sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
 
-		// This header doesn't work in > 5.00
-		int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
+	//	//// This header doesn't work in > 5.00
+	//	//int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
 
-		sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
+	//	//sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
 
-		if (sceSysUtilSendSystemNotificationWithText)
-		{
-			char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
-			sceSysUtilSendSystemNotificationWithText(222, initMessage);
-		}
+	//	//if (sceSysUtilSendSystemNotificationWithText)
+	//	//{
+	//	//	char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
+	//	//	sceSysUtilSendSystemNotificationWithText(222, initMessage);
+	//	//}
 
-		sys_dynlib_unload_prx(moduleId);
-	}
+	//	//sys_dynlib_unload_prx(moduleId);
+	//}
 }
 
 #include <sys/mman.h>
@@ -97,6 +105,7 @@ void oni_kernelInitialization(void* args)
 This function handles the kernel (ring-0) mode initialization
 */
 {
+
 	// Fill the kernel base address
 	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
 

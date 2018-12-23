@@ -21,7 +21,7 @@ typedef struct _ElfLoader_t
 
 	uint8_t isKernel;
 
-	void(*elfMain)();
+	void(*elfMain)(void*);
 } ElfLoader_t;
 
 uint8_t elfloader_initFromFile(ElfLoader_t* loader, const char* filePath);
@@ -33,6 +33,8 @@ Elf64_Shdr* elfloader_getSectionHeaderByIndex(ElfLoader_t* loader, int32_t index
 Elf64_Shdr* elfloader_getSectionHeaderByName(ElfLoader_t* loader, const char* name);
 
 Elf64_Sym* elfloader_getSymbolByIndex(ElfLoader_t* loader, int32_t index);
+
+uint8_t elfloader_getSymbolAddress(ElfLoader_t* loader, const char* symbolLookup, void** outAddress);
 
 uint8_t elfloader_internalGetStringTable(ElfLoader_t* loader, const char** outStringTable, uint64_t* outStringTableSize);
 
@@ -49,3 +51,5 @@ void elfloader_memset(ElfLoader_t* loader, void* address, int32_t val, size_t le
 int32_t elfloader_strcmp(const char *s1, const char *s2);
 
 void* elfloader_allocate(ElfLoader_t* loader, uint64_t size);
+
+uint8_t elfloader_dumpElf(ElfLoader_t* loader, char* filePath);

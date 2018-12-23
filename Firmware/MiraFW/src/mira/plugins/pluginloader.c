@@ -28,6 +28,7 @@ void pluginloader_init(struct pluginloader_t* loader)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	size_t(*strlen)(const char *str) = kdlsym(strlen);
 
 	if (!loader)
 		return;
@@ -195,6 +196,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	size_t(*strlen)(const char *str) = kdlsym(strlen);
 
 	if (!loader || !pluginPath)
 		return NULL;
@@ -266,6 +268,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 void pluginloader_loadPlugins(struct pluginloader_t* loader)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	int(*strcmp)(const char *str1, const char* str2) = kdlsym(strcmp);
 
 	// Verify that the loader is valid
 	if (!loader)

@@ -1,7 +1,6 @@
 #include "debugger_plugin.h"
 #include <oni/framework.h>
 #include <oni/utils/kdlsym.h>
-#include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 #include <oni/utils/logger.h>
 #include <oni/utils/hook.h>

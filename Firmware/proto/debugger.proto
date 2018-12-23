@@ -1,16 +1,17 @@
 syntax = "proto2";
 
 // To build this file:
-// .\protoc-c --c_out=. <name>.proto
-
-import "nanopb.proto";
+// protoc -I=. --c_out=. ./<filename>.proto
+// NOTE: Will need https://github.com/protobuf-c/protobuf-c/pull/342
+// Currently compile from source with above fix, and you gucci
 
 message Proc {
 
 }
 
 message Thread {
-    required int32 processId = 1;
+	required uint64 process = 1;
+
 }
 
 message Cred {
@@ -58,33 +59,27 @@ message DebuggerProcess {
 }
 
 message DebuggerReadMemoryRequest {
-    required MessageHeader header = 1;
-    required uint64 address = 3;
-    required uint32 size = 4;
+    required uint64 address = 1;
+    required uint32 size = 2;
 }
 
 message DebuggerReadMemoryResponse {
-    required MessageHeader header = 1;
-
+	required int32 error = 1;
     optional bytes data = 2;
 }
 
 message DebuggerWriteMemoryRequest {
-    required MessageHeader header = 1;
-
-    required uint64 address = 2;
-    optional bytes data = 3;
+    required uint64 address = 1;
+    optional bytes data = 2;
 }
 
 message DebuggerWriteMemoryResponse {
-    required MessageHeader header = 1;
+	required int32 error = 1;
 }
 
 message DebuggerSetBreakpointRequest {
-    required MessageHeader header = 1;
-
-    required uint64 address = 2;
+    required uint64 address = 1;
     
-    required bool hardware = 3;
+    required bool hardware = 2;
 }
 
