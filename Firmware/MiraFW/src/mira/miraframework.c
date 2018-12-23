@@ -12,7 +12,7 @@
 //	Built-in plugins
 //
 #include <oni/plugins/pluginmanager.h>
-#include <mira/plugins/filetransfer/filetransfer_plugin.h>
+#include <mira/plugins/fileexplorer/fileexplorer_plugin.h>
 #include <mira/plugins/logserver/logserver_plugin.h>
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
@@ -264,13 +264,13 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
-	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
+	framework->fileTransferPlugin = (struct fileexplorer_plugin_t*)kmalloc(sizeof(struct fileexplorer_plugin_t));
 	if (!framework->fileTransferPlugin)
 	{
 		WriteLog(LL_Error, "error allocating file transfer plugin");
 		return false;
 	}
-	filetransfer_plugin_init(framework->fileTransferPlugin);
+	fileexplorer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
 	WriteLog(LL_Info, "allocating logserver");

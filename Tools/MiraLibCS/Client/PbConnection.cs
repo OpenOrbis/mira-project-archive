@@ -124,7 +124,7 @@ namespace MiraLibCS
             {
                 Category = p_Category,
                 Type = p_Type,
-                Data = p_RequestBytes
+                Data = p_RequestBytes,
             };
 
             return s_Message;

@@ -2,7 +2,6 @@
 #define LOCK_PROFILING
 #include <oni/framework.h>
 
-#include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 
 #include <oni/utils/logger.h>

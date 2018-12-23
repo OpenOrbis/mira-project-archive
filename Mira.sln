@@ -60,6 +60,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraLoader", "Firmware\Mira
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraLibCS", "Tools\MiraLibCS\MiraLibCS.csproj", "{DAFDD659-C983-4A48-97CB-75D60E062AF6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "proto", "proto", "{645E2BA5-2D9D-4290-9053-56CEF4582EDD}"
+	ProjectSection(SolutionItems) = preProject
+		Firmware\proto\debugger.proto = Firmware\proto\debugger.proto
+		Firmware\proto\fileexplorer.proto = Firmware\proto\fileexplorer.proto
+		Firmware\proto\mirabuiltin.proto = Firmware\proto\mirabuiltin.proto
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -205,6 +212,7 @@ Global
 		{78AFEB15-B4CA-4A56-987E-DAE7ED529BAE} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
 		{B5C14A31-FF3D-4536-AD0A-2743A17D27FE} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 		{DAFDD659-C983-4A48-97CB-75D60E062AF6} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
+		{645E2BA5-2D9D-4290-9053-56CEF4582EDD} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6AF288B-CD5B-480E-A2E9-FF6B003EFBCC}

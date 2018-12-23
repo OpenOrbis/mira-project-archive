@@ -1,7 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "protobuf-c.h"
+#include "fileexplorer.pb-c.h"
 #include "mirabuiltin.pb-c.h"
-#include "messagetest.pb-c.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,8 +14,15 @@ int main()
 {
 	PbMessage message = PB_MESSAGE__INIT;
 
-	message.data.data = (uint8_t*)malloc(10);
-	message.data.len = 10;
+	EchoResponse response = ECHO_RESPONSE__INIT;
+	IntValue error = INT_VALUE__INIT;
+	error.value = ERRORS__EOK;
+
+	response.error = &error;
+	size_t size2 = echo_response__get_packed_size(&response);
+
+	message.data.data = (uint8_t*)malloc(size2);
+	message.data.len = size2;
 
 	size_t size = pb_message__get_packed_size(&message);
 

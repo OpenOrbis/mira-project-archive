@@ -3,7 +3,6 @@
 // Oni-Framework includes
 //
 #include <oni/config.h>
-#include <oni/messaging/message.h>
 #include <oni/messaging/messagemanager.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>

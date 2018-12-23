@@ -3,7 +3,7 @@
 
 struct cheat_plugin_t;
 struct debugger_plugin_t;
-struct filetransfer_plugin_t;
+struct fileexplorer_plugin_t;
 struct logserver_plugin_t;
 struct orbisutils_plugin_t;
 struct pluginloader_t;
@@ -22,7 +22,7 @@ struct miraframework_t
 	// Hold references to our internal plugins
 	struct debugger_plugin_t* debuggerPlugin;
 	struct logserver_plugin_t* logServerPlugin;
-	struct filetransfer_plugin_t* fileTransferPlugin;
+	struct fileexplorer_plugin_t* fileTransferPlugin;
 	struct orbisutils_plugin_t* orbisUtilsPlugin;
 	struct cheat_plugin_t* cheatPlugin;
 

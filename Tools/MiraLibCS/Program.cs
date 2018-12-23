@@ -23,7 +23,7 @@ namespace MiraLibCS
 
             var s_RequestMessage = PbConnection.CreateMessage(MessageCategory.File, (uint)FileTransferCommands.Echo, new EchoRequest
             {
-                Message = "Hello World"
+                Message = "Hello World",
             }.ToByteString());
 
             if (!s_Connection.SendMessage(s_RequestMessage))
