@@ -104,12 +104,6 @@ uint8_t fileexplorer_unload(struct fileexplorer_plugin_t* plugin)
 		} name = lowerRequestType##__unpack(NULL, innerDataSize, innerData); \
 	}
 
-#define CLEANUP_REQUEST(lowerRequestType, name, container) \
-	cleanup: \
-		if (name) \
-			lowerRequestType##__free_unpacked(name, NULL); \
-		pbcontainer_release(container);
-
 #define PACK_RESPONSE(response, lowerResponseType, requestContainer, name) \
 	PbContainer* name = NULL; \
 	{	\
@@ -146,34 +140,91 @@ void fileexplorer_echo_callback(PbContainer* container)
 
 	// Update our error code
 	IntValue* error = k_malloc(sizeof(*error));
+	static IntValue error_init_value = INT_VALUE__INIT;
 	if (!error)
 	{
 		WriteLog(LL_Error, "could not allocate error code.");
 		goto cleanup;
 	}
-	(void)memset(error, 0, sizeof(*error));
+	*error = error_init_value;
 	error->value = ERRORS__EOK;
 
+	// Create the response
+	static EchoResponse echo_init_value = ECHO_RESPONSE__INIT;
 	EchoResponse* response = k_malloc(sizeof(EchoResponse));
 	if (!response)
 	{
 		WriteLog(LL_Error, "could not allocate response");
 		goto cleanup;
 	}
-	(void)memset(response, 0, sizeof(*response));
-
+	*response = echo_init_value;
 	response->error = error;
 
-	
-	PACK_RESPONSE(response, echo_response, container, responseContainer);
+	// Serialize the response
+	size_t responseSize = echo_response__get_packed_size(response);
+	if (responseSize == 0)
+	{
+		WriteLog(LL_Warn, "got message size of 0");
+		goto cleanup;
+	}
+
+	// These 2 below are what we serialize out
+	uint8_t* responseData = k_malloc(responseSize);
+	if (responseData)
+	{
+		WriteLog(LL_Error, "could not allocate response data");
+		goto cleanup;
+	}
+
+	size_t responsePackedSize = echo_response__pack(response, responseData);
+	if (responsePackedSize != responseSize)
+	{
+		WriteLog(LL_Error, "responsePackedSize (%llx) != packedSize (%llx).", responsePackedSize, responseSize);
+		goto cleanup;
+	}
+
+	// We no longer need the response, free it
+	echo_response__free_unpacked(response, NULL);
+	response = NULL;
+
+	// Create the pbmessage for this data
+	static PbMessage pbMessageInitValue = PB_MESSAGE__INIT;
+	PbMessage* responseMessage = k_malloc(sizeof(*responseMessage));
+	if (!responseMessage)
+	{
+		WriteLog(LL_Error, "could not allocate memory for response message");
+		goto cleanup;
+	}
+	*responseMessage = pbMessageInitValue;
+
+	// Update our fields, we no longer need to track this for freeing (I think, could bite me in the ass later)
+	responseMessage->data.data = responseData;
+	responseMessage->data.len = responsePackedSize;
+	responseMessage->category = container->message->category;
+	responseMessage->type = container->message->category;
+
+	PbContainer* responseContainer = pbcontainer_create(responseMessage);
+	if (responseContainer)
+	{
+		WriteLog(LL_Error, "could not create response container");
+		goto cleanup;
+	}
+
+	//PACK_RESPONSE(response, echo_response, container, responseContainer);
+	WriteLog(LL_Warn, "here");
 
 	// Send the response back to PC
 	messagemanager_sendResponse(responseContainer);
 
+	WriteLog(LL_Warn, "here");
+
 	// Release (which should destroy the response container)
 	pbcontainer_release(responseContainer);
 
-	CLEANUP_REQUEST(echo_request, request, container);
+	WriteLog(LL_Warn, "here");
+
+cleanup:
+	pbcontainer_release(container);
 }
 
 void fileexplorer_open_callback(PbContainer* reference)
