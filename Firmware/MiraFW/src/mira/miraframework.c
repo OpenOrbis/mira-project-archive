@@ -30,6 +30,7 @@
 #include <oni/utils/hook.h>
 
 #include <mira/utils/injector.h>
+#include <mira/utils/pl_ini.h>
 
 //
 //	Filesystems
@@ -194,6 +195,35 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 	if (!framework || !iniPath)
 		return false;
 
+	WriteLog(LL_Info, "Writting test settings ...");
+
+	pl_ini_file write_file;
+	pl_ini_create(&write_file);
+
+	pl_ini_set_int(&write_file, "global", "devbuild", 1);
+	pl_ini_set_int(&write_file, "global", "debug", 1);
+	pl_ini_set_string(&write_file, "global", "codebuild", "MiraVnext");
+	pl_ini_set_string(&write_file, "ofs", "mount_to", "/dev");
+
+	pl_ini_save(&write_file, "/data/mira_config.ini");
+	pl_ini_destroy(&write_file);
+
+	WriteLog(LL_Info, "Done writting, trying to load & read ...");
+
+	pl_ini_file read_file;
+	pl_ini_load(&read_file, "/data/mira_config.ini");
+
+	char codebuild[50];
+	pl_ini_get_string(&read_file, "global", "codebuild", "FAIL", codebuild, 50);
+	WriteLog(LL_Info, "Read codebuild: %s", codebuild);
+
+	int is_debug = pl_ini_get_int(&read_file, "global", "debug", 0);
+	WriteLog(LL_Info, "Read debug: %i", is_debug);
+
+	pl_ini_destroy(&read_file);
+
+	WriteLog(LL_Info, "Done !");
+	
 	// TODO: Load the home directory
 	framework->framework.homePath = "";
 
@@ -252,6 +282,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	//
 	//	Initialize the orbis utilities plugin
 	//
+	/*
 	WriteLog(LL_Info, "allocating orbis utilities");
 	framework->orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
 	if (!framework->orbisUtilsPlugin)
@@ -272,6 +303,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	fileexplorer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
+	*/
 
 	WriteLog(LL_Info, "allocating logserver");
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
