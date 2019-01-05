@@ -38,7 +38,7 @@ namespace MiraLibCS.Client.Extensions
             {
                 Category = MessageCategory.File,
                 Type = (uint)FileTransferCommands.Open,
-                Data = s_Request.ToByteString()
+                Payload = s_Request.ToByteString()
             };
 
             if (!p_Connection.SendMessage(s_Message))
@@ -48,7 +48,7 @@ namespace MiraLibCS.Client.Extensions
             if (s_ResponseMessage == null)
                 return -1;
 
-            var s_Response = OpenResponse.Parser.ParseFrom(s_ResponseMessage.Data);
+            var s_Response = OpenResponse.Parser.ParseFrom(s_ResponseMessage.Payload);
             if (s_Response.Error < 0)
             {
                 Console.WriteLine($"could not open {p_FileName} returned error {s_Response.Error}");
@@ -78,7 +78,7 @@ namespace MiraLibCS.Client.Extensions
             {
                 Category = MessageCategory.File,
                 Type = (uint)FileTransferCommands.Echo,
-                Data = s_Request.ToByteString()
+                Payload = s_Request.ToByteString()
             };
 
             if (!p_Connection.SendMessage(s_Message))

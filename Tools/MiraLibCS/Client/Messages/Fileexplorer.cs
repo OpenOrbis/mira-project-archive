@@ -22,45 +22,45 @@ public static partial class FileexplorerReflection {
   static FileexplorerReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "ChJmaWxlZXhwbG9yZXIucHJvdG8aEW1pcmFidWlsdGluLnByb3RvIt8BCgZE",
-          "aXJFbnQSDgoGZmlsZW5vGAEgASgNEg4KBnJlY2xlbhgCIAEoDRIjCgR0eXBl",
-          "GAMgASgOMhUuRGlyRW50LkRpcmVjdG9yeVR5cGUSDAoEbmFtZRgEIAEoCSKB",
-          "AQoNRGlyZWN0b3J5VHlwZRIOCgpEVF9VTktOT1dOEAASCwoHRFRfRklGTxAB",
-          "EgoKBkRUX0NIUhACEgoKBkRUX0RJUhAEEgoKBkRUX0JMSxAGEgoKBkRUX1JF",
-          "RxAIEgoKBkRUX0xOSxAKEgsKB0RUX1NPQ0sQDBIKCgZEVF9XSFQQDiIeCgtF",
-          "Y2hvUmVxdWVzdBIPCgdtZXNzYWdlGAEgASgJIigKDEVjaG9SZXNwb25zZRIY",
-          "CgVlcnJvchgBIAEoCzIJLkludFZhbHVlIjgKC09wZW5SZXF1ZXN0EgwKBHBh",
-          "dGgYASABKAkSDQoFZmxhZ3MYAiABKAUSDAoEbW9kZRgDIAEoBSItCgxPcGVu",
-          "UmVzcG9uc2USDQoFZXJyb3IYASABKAUSDgoGaGFuZGxlGAIgASgFIh4KDENs",
-          "b3NlUmVxdWVzdBIOCgZoYW5kbGUYASABKAUiHgoNQ2xvc2VSZXNwb25zZRIN",
-          "CgVlcnJvchgBIAEoBSI7CgtSZWFkUmVxdWVzdBIOCgZoYW5kbGUYASABKAUS",
-          "DgoGb2Zmc2V0GAIgASgEEgwKBHNpemUYAyABKAQiKwoMUmVhZFJlc3BvbnNl",
-          "Eg0KBWVycm9yGAEgASgFEgwKBGRhdGEYAiABKAwiPAoMV3JpdGVSZXF1ZXN0",
-          "Eg4KBmhhbmRsZRgBIAEoBRIOCgZvZmZzZXQYAiABKAQSDAoEc2l6ZRgDIAEo",
-          "BCIeCg1Xcml0ZVJlc3BvbnNlEg0KBWVycm9yGAEgASgFIjIKFE1ha2VEaXJl",
-          "Y3RvcnlSZXF1ZXN0EgwKBHBhdGgYASABKAkSDAoEbW9kZRgCIAEoBSImChVN",
-          "YWtlRGlyZWN0b3J5UmVzcG9uc2USDQoFZXJyb3IYASABKAUiOQoWUmVtb3Zl",
-          "RGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJEhEKCXJlY3Vyc2l2ZRgC",
-          "IAEoBSIoChdSZW1vdmVEaXJlY3RvcnlSZXNwb25zZRINCgVlcnJvchgBIAEo",
-          "BSIdCg1VbmxpbmtSZXF1ZXN0EgwKBHBhdGgYASABKAkiHwoOVW5saW5rUmVz",
-          "cG9uc2USDQoFZXJyb3IYASABKAUiJQoIVGltZVNwZWMSCwoDc2VjGAEgASgD",
-          "EgwKBG5zZWMYAiABKAQiKwoLU3RhdFJlcXVlc3QSDgoGaGFuZGxlGAEgASgF",
-          "EgwKBHBhdGgYAiABKAkizQIKDFN0YXRSZXNwb25zZRINCgVlcnJvchgBIAEo",
-          "BRIMCgRwYXRoGAIgASgJEgsKA2RldhgDIAEoDRILCgNpbm8YBCABKA0SDAoE",
-          "bW9kZRgFIAEoDRINCgVubGluaxgGIAEoDRILCgN1aWQYByABKA0SCwoDZ2lk",
-          "GAggASgNEgwKBHJkZXYYCSABKA0SFwoEYXRpbRgKIAEoCzIJLlRpbWVTcGVj",
-          "EhcKBG10aW0YCyABKAsyCS5UaW1lU3BlYxIXCgRjdGltGAwgASgLMgkuVGlt",
-          "ZVNwZWMSDAoEc2l6ZRgNIAEoAxIOCgZibG9ja3MYDiABKAMSDwoHYmxrc2l6",
-          "ZRgPIAEoDRINCgVmbGFncxgQIAEoDRILCgNnZW4YESABKA0SDgoGbHNwYXJl",
-          "GBIgASgFEhsKCGJpcnRodGltGBMgASgLMgkuVGltZVNwZWMiHwoPR2V0RGVu",
-          "dHNSZXF1ZXN0EgwKBHBhdGgYAiABKAkiUAoQR2V0RGVudHNSZXNwb25zZRIN",
-          "CgVlcnJvchgBIAEoBRITCgtlbnRyaWVzTGVmdBgCIAEoBBIYCgdlbnRyaWVz",
-          "GAMgAygLMgcuRGlyRW50Ko4BChRGaWxlVHJhbnNmZXJDb21tYW5kcxIICgRF",
-          "Y2hvEAASCAoET3BlbhABEgkKBUNsb3NlEAISDAoIR2V0RGVudHMQAxIICgRS",
-          "ZWFkEAQSCQoFV3JpdGUQBRIKCgZVbmxpbmsQBhIICgRNb3ZlEAcSCAoEU3Rh",
-          "dBAIEgkKBU1rRGlyEAkSCQoFUm1EaXIQCmIGcHJvdG8z"));
+          "ChJmaWxlZXhwbG9yZXIucHJvdG8i3wEKBkRpckVudBIOCgZmaWxlbm8YASAB",
+          "KA0SDgoGcmVjbGVuGAIgASgNEiMKBHR5cGUYAyABKA4yFS5EaXJFbnQuRGly",
+          "ZWN0b3J5VHlwZRIMCgRuYW1lGAQgASgJIoEBCg1EaXJlY3RvcnlUeXBlEg4K",
+          "CkRUX1VOS05PV04QABILCgdEVF9GSUZPEAESCgoGRFRfQ0hSEAISCgoGRFRf",
+          "RElSEAQSCgoGRFRfQkxLEAYSCgoGRFRfUkVHEAgSCgoGRFRfTE5LEAoSCwoH",
+          "RFRfU09DSxAMEgoKBkRUX1dIVBAOIh4KC0VjaG9SZXF1ZXN0Eg8KB21lc3Nh",
+          "Z2UYASABKAkiHQoMRWNob1Jlc3BvbnNlEg0KBWVycm9yGAEgASgFIjgKC09w",
+          "ZW5SZXF1ZXN0EgwKBHBhdGgYASABKAkSDQoFZmxhZ3MYAiABKAUSDAoEbW9k",
+          "ZRgDIAEoBSItCgxPcGVuUmVzcG9uc2USDQoFZXJyb3IYASABKAUSDgoGaGFu",
+          "ZGxlGAIgASgFIh4KDENsb3NlUmVxdWVzdBIOCgZoYW5kbGUYASABKAUiHgoN",
+          "Q2xvc2VSZXNwb25zZRINCgVlcnJvchgBIAEoBSI7CgtSZWFkUmVxdWVzdBIO",
+          "CgZoYW5kbGUYASABKAUSDgoGb2Zmc2V0GAIgASgEEgwKBHNpemUYAyABKAQi",
+          "KwoMUmVhZFJlc3BvbnNlEg0KBWVycm9yGAEgASgFEgwKBGRhdGEYAiABKAwi",
+          "PAoMV3JpdGVSZXF1ZXN0Eg4KBmhhbmRsZRgBIAEoBRIOCgZvZmZzZXQYAiAB",
+          "KAQSDAoEc2l6ZRgDIAEoBCIeCg1Xcml0ZVJlc3BvbnNlEg0KBWVycm9yGAEg",
+          "ASgFIjIKFE1ha2VEaXJlY3RvcnlSZXF1ZXN0EgwKBHBhdGgYASABKAkSDAoE",
+          "bW9kZRgCIAEoBSImChVNYWtlRGlyZWN0b3J5UmVzcG9uc2USDQoFZXJyb3IY",
+          "ASABKAUiOQoWUmVtb3ZlRGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJ",
+          "EhEKCXJlY3Vyc2l2ZRgCIAEoBSIoChdSZW1vdmVEaXJlY3RvcnlSZXNwb25z",
+          "ZRINCgVlcnJvchgBIAEoBSIdCg1VbmxpbmtSZXF1ZXN0EgwKBHBhdGgYASAB",
+          "KAkiHwoOVW5saW5rUmVzcG9uc2USDQoFZXJyb3IYASABKAUiJQoIVGltZVNw",
+          "ZWMSCwoDc2VjGAEgASgDEgwKBG5zZWMYAiABKAQiKwoLU3RhdFJlcXVlc3QS",
+          "DgoGaGFuZGxlGAEgASgFEgwKBHBhdGgYAiABKAkizQIKDFN0YXRSZXNwb25z",
+          "ZRINCgVlcnJvchgBIAEoBRIMCgRwYXRoGAIgASgJEgsKA2RldhgDIAEoDRIL",
+          "CgNpbm8YBCABKA0SDAoEbW9kZRgFIAEoDRINCgVubGluaxgGIAEoDRILCgN1",
+          "aWQYByABKA0SCwoDZ2lkGAggASgNEgwKBHJkZXYYCSABKA0SFwoEYXRpbRgK",
+          "IAEoCzIJLlRpbWVTcGVjEhcKBG10aW0YCyABKAsyCS5UaW1lU3BlYxIXCgRj",
+          "dGltGAwgASgLMgkuVGltZVNwZWMSDAoEc2l6ZRgNIAEoAxIOCgZibG9ja3MY",
+          "DiABKAMSDwoHYmxrc2l6ZRgPIAEoDRINCgVmbGFncxgQIAEoDRILCgNnZW4Y",
+          "ESABKA0SDgoGbHNwYXJlGBIgASgFEhsKCGJpcnRodGltGBMgASgLMgkuVGlt",
+          "ZVNwZWMiHwoPR2V0RGVudHNSZXF1ZXN0EgwKBHBhdGgYAiABKAkiUAoQR2V0",
+          "RGVudHNSZXNwb25zZRINCgVlcnJvchgBIAEoBRITCgtlbnRyaWVzTGVmdBgC",
+          "IAEoBBIYCgdlbnRyaWVzGAMgAygLMgcuRGlyRW50Ko4BChRGaWxlVHJhbnNm",
+          "ZXJDb21tYW5kcxIICgRFY2hvEAASCAoET3BlbhABEgkKBUNsb3NlEAISDAoI",
+          "R2V0RGVudHMQAxIICgRSZWFkEAQSCQoFV3JpdGUQBRIKCgZVbmxpbmsQBhII",
+          "CgRNb3ZlEAcSCAoEU3RhdBAIEgkKBU1rRGlyEAkSCQoFUm1EaXIQCmIGcHJv",
+          "dG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-        new pbr::FileDescriptor[] { global::MirabuiltinReflection.Descriptor, },
+        new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(new[] {typeof(global::FileTransferCommands), }, new pbr::GeneratedClrTypeInfo[] {
           new pbr::GeneratedClrTypeInfo(typeof(global::DirEnt), global::DirEnt.Parser, new[]{ "Fileno", "Reclen", "Type", "Name" }, null, new[]{ typeof(global::DirEnt.Types.DirectoryType) }, null),
           new pbr::GeneratedClrTypeInfo(typeof(global::EchoRequest), global::EchoRequest.Parser, new[]{ "Message" }, null, null, null),
@@ -496,7 +496,7 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public EchoResponse(EchoResponse other) : this() {
-    error_ = other.error_ != null ? other.error_.Clone() : null;
+    error_ = other.error_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -507,9 +507,9 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
 
   /// <summary>Field number for the "error" field.</summary>
   public const int ErrorFieldNumber = 1;
-  private global::IntValue error_;
+  private int error_;
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public global::IntValue Error {
+  public int Error {
     get { return error_; }
     set {
       error_ = value;
@@ -529,14 +529,14 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
     if (ReferenceEquals(other, this)) {
       return true;
     }
-    if (!object.Equals(Error, other.Error)) return false;
+    if (Error != other.Error) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public override int GetHashCode() {
     int hash = 1;
-    if (error_ != null) hash ^= Error.GetHashCode();
+    if (Error != 0) hash ^= Error.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -550,9 +550,9 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
 
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public void WriteTo(pb::CodedOutputStream output) {
-    if (error_ != null) {
-      output.WriteRawTag(10);
-      output.WriteMessage(Error);
+    if (Error != 0) {
+      output.WriteRawTag(8);
+      output.WriteInt32(Error);
     }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
@@ -562,8 +562,8 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public int CalculateSize() {
     int size = 0;
-    if (error_ != null) {
-      size += 1 + pb::CodedOutputStream.ComputeMessageSize(Error);
+    if (Error != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeInt32Size(Error);
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -576,11 +576,8 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
     if (other == null) {
       return;
     }
-    if (other.error_ != null) {
-      if (error_ == null) {
-        Error = new global::IntValue();
-      }
-      Error.MergeFrom(other.Error);
+    if (other.Error != 0) {
+      Error = other.Error;
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -593,11 +590,8 @@ public sealed partial class EchoResponse : pb::IMessage<EchoResponse> {
         default:
           _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
           break;
-        case 10: {
-          if (error_ == null) {
-            Error = new global::IntValue();
-          }
-          input.ReadMessage(Error);
+        case 8: {
+          Error = input.ReadInt32();
           break;
         }
       }

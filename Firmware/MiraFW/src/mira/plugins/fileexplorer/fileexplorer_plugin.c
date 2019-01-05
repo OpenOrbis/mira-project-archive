@@ -14,6 +14,7 @@
 #include <oni/rpc/pbserver.h>
 #include <oni/utils/escape.h>
 
+
 #include <string.h>
 
 #include <protobuf-c/mirabuiltin.pb-c.h>
@@ -89,142 +90,79 @@ uint8_t fileexplorer_unload(struct fileexplorer_plugin_t* plugin)
 	return true;
 }
 
-#define UNPACK_REQUEST(requestType, lowerRequestType, name, container) \
-	requestType* name = NULL; \
-	pbcontainer_acquire(container); \
-	{ \
-		PbMessage* outerMessage = container->message;	\
-		if (!outerMessage)	\
-		{WriteLog(LL_Error, "could not get outer message");	\
-			goto cleanup; }	size_t innerDataSize = outerMessage->data.len; \
-		uint8_t* innerData = outerMessage->data.data; \
-		if (!innerData || innerDataSize == 0) \
-		{ WriteLog(LL_Error, "innerData (%p) or innerDataSize (%llx) is invalid", innerData, innerDataSize); \
-			goto cleanup; \
-		} name = lowerRequestType##__unpack(NULL, innerDataSize, innerData); \
-	}
+#define PB_DECODE(containerObject, capitalType, lowerType, variableName) \
+	pbcontainer_acquire(containerObject); \
+	capitalType* variableName = NULL; { \
+	PbMessage* outerMessage = containerObject->message; \
+	if (!outerMessage) { \
+		WriteLog(LL_Error, "could not get the outer message"); \
+		goto cleanup;	} \
+	size_t innerDataSize = outerMessage->payload.len; \
+	uint8_t* innerData = outerMessage->payload.data; \
+	if (!innerData || innerDataSize == 0) { \
+		WriteLog(LL_Error, "could not get the inner data"); \
+		goto cleanup; } variableName = lowerType ## __unpack(NULL, innerDataSize, innerData); }
 
-#define PACK_RESPONSE(response, lowerResponseType, requestContainer, name) \
-	PbContainer* name = NULL; \
-	{	\
-		size_t responseSize = lowerResponseType##__get_packed_size(response); \
-		if (responseSize == 0) \
-		{ WriteLog(LL_Error, "responseSize == 0"); \
-			goto cleanup; \
-		} uint8_t* responseData = k_malloc(responseSize); \
-		if (!responseData) \
+#define PB_ENCODE(fromContainer, message, messageCategory, messageCommand, lowerType, outputContainerName) \
+	PbContainer* outputContainerName = NULL; \
+	{ size_t packedSize = lowerType ## __get_packed_size(&message); \
+		uint8_t* responseData = k_malloc(packedSize); \
+		if (responseData == NULL) \
 		{ WriteLog(LL_Error, "could not allocate response data"); \
 			goto cleanup; \
-		} (void)memset(responseData, 0, responseSize); \
-		size_t responsePackedSize = lowerResponseType##__pack(response, responseData); \
-		if (responseSize != responsePackedSize) \
-		{ WriteLog(LL_Error, "responseSize (%llx) != responsePackedSize (%llx)", responseSize, responsePackedSize); \
-			k_free(responseData); \
+		} (void) lowerType ## __pack(&message, responseData); \
+		PbMessage* responseMessage = k_malloc(sizeof(PbMessage)); \
+		if (responseMessage == NULL) \
+		{ WriteLog(LL_Error, "could not allocate response message"); \
 			goto cleanup; \
-		} name = pbcontainer_create2(container->message->category, container->message->type, responseData, responseSize); \
-		if (!name) \
-		{ WriteLog(LL_Error, "could not allocate response container"); \
-			k_free(responseData); \
-			goto cleanup; } \
-	} 
+		} static PbMessage pb_message_init = PB_MESSAGE__INIT; \
+		*responseMessage = pb_message_init; \
+		responseMessage->category = messageCategory; \
+		responseMessage->type = messageCommand; \
+		responseMessage->payload.data = responseData; \
+		responseMessage->payload.len = packedSize; \
+		outputContainerName = pbcontainer_create(responseMessage, true); \
+		if (outputContainerName == NULL) \
+		{	k_free(responseData); \
+			responseData = NULL; \
+			k_free(responseMessage); \
+			responseMessage = NULL; \
+			WriteLog(LL_Error, "could not allocate response container"); \
+			goto cleanup; \
+		}	}
 
+#define PB_RELEASE(containerObject) \
+	cleanup: \
+		pbcontainer_release(containerObject);
 
 void fileexplorer_echo_callback(PbContainer* container)
 {
-	if (!container || !container->message)
+	if (container == NULL || container->message == NULL)
 		return;
 
-	UNPACK_REQUEST(EchoRequest, echo_request, request, container);
+	PB_DECODE(container, EchoRequest, echo_request, request);
+	if (!request)
+	{
+		WriteLog(LL_Error, "could not decode incoming request.");
+		goto cleanup;
+	}
 
+	// Start our custom code
 	WriteLog(LL_Warn, "echo: %s", request->message);
+	// End our custom code
 
-	// Update our error code
-	IntValue* error = k_malloc(sizeof(*error));
-	static IntValue error_init_value = INT_VALUE__INIT;
-	if (!error)
-	{
-		WriteLog(LL_Error, "could not allocate error code.");
-		goto cleanup;
-	}
-	*error = error_init_value;
-	error->value = ERRORS__EOK;
+	// Initialize a response
+	EchoResponse response = ECHO_RESPONSE__INIT;
+	response.error = ERRORS__EOK;
 
-	// Create the response
-	static EchoResponse echo_init_value = ECHO_RESPONSE__INIT;
-	EchoResponse* response = k_malloc(sizeof(EchoResponse));
-	if (!response)
-	{
-		WriteLog(LL_Error, "could not allocate response");
-		goto cleanup;
-	}
-	*response = echo_init_value;
-	response->error = error;
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, echo_response, responseContainer);
 
-	// Serialize the response
-	size_t responseSize = echo_response__get_packed_size(response);
-	if (responseSize == 0)
-	{
-		WriteLog(LL_Warn, "got message size of 0");
-		goto cleanup;
-	}
-
-	// These 2 below are what we serialize out
-	uint8_t* responseData = k_malloc(responseSize);
-	if (responseData)
-	{
-		WriteLog(LL_Error, "could not allocate response data");
-		goto cleanup;
-	}
-
-	size_t responsePackedSize = echo_response__pack(response, responseData);
-	if (responsePackedSize != responseSize)
-	{
-		WriteLog(LL_Error, "responsePackedSize (%llx) != packedSize (%llx).", responsePackedSize, responseSize);
-		goto cleanup;
-	}
-
-	// We no longer need the response, free it
-	echo_response__free_unpacked(response, NULL);
-	response = NULL;
-
-	// Create the pbmessage for this data
-	static PbMessage pbMessageInitValue = PB_MESSAGE__INIT;
-	PbMessage* responseMessage = k_malloc(sizeof(*responseMessage));
-	if (!responseMessage)
-	{
-		WriteLog(LL_Error, "could not allocate memory for response message");
-		goto cleanup;
-	}
-	*responseMessage = pbMessageInitValue;
-
-	// Update our fields, we no longer need to track this for freeing (I think, could bite me in the ass later)
-	responseMessage->data.data = responseData;
-	responseMessage->data.len = responsePackedSize;
-	responseMessage->category = container->message->category;
-	responseMessage->type = container->message->category;
-
-	PbContainer* responseContainer = pbcontainer_create(responseMessage);
-	if (responseContainer)
-	{
-		WriteLog(LL_Error, "could not create response container");
-		goto cleanup;
-	}
-
-	//PACK_RESPONSE(response, echo_response, container, responseContainer);
-	WriteLog(LL_Warn, "here");
-
-	// Send the response back to PC
+	// Send the response back and release this pbcontainer which should free
 	messagemanager_sendResponse(responseContainer);
-
-	WriteLog(LL_Warn, "here");
-
-	// Release (which should destroy the response container)
 	pbcontainer_release(responseContainer);
 
-	WriteLog(LL_Warn, "here");
-
-cleanup:
-	pbcontainer_release(container);
+	// release the container reference
+	PB_RELEASE(container);
 }
 
 void fileexplorer_open_callback(PbContainer* reference)
@@ -244,8 +182,8 @@ void fileexplorer_open_callback(PbContainer* reference)
 		goto cleanup;
 
 	// Get the inner (OpenRequest) message data and size
-	size_t innerDataSize = outerMessage->data.len;
-	uint8_t* innerData = outerMessage->data.data;
+	size_t innerDataSize = outerMessage->payload.len;
+	uint8_t* innerData = outerMessage->payload.data;
 	if (!innerData || innerDataSize == 0)
 		goto cleanup;
 
@@ -296,7 +234,7 @@ void fileexplorer_open_callback(PbContainer* reference)
 	}
 
 	// Create a pbcontainer for ref counting
-	PbContainer* responseContainer = pbcontainer_create2(outerMessage->category, outerMessage->type, responseData, responseSize);
+	PbContainer* responseContainer = pbcontainer_createNew(outerMessage->category, outerMessage->type, responseData, responseSize);
 	if (!responseContainer)
 	{
 		WriteLog(LL_Error, "could not allocate response container");

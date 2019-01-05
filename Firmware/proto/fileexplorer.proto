@@ -5,8 +5,6 @@ syntax = "proto3";
 // NOTE: Will need https://github.com/protobuf-c/protobuf-c/pull/342
 // Currently compile from source with above fix, and you gucci
 
-import "mirabuiltin.proto";
-
 enum FileTransferCommands {
 	Echo = 0;
 	Open = 1;
@@ -45,7 +43,7 @@ message EchoRequest {
 }
 
 message EchoResponse {
-	IntValue error = 1;
+	int32 error = 1;
 }
 
 // open

@@ -1160,10 +1160,10 @@ static const ProtobufCFieldDescriptor echo_response__field_descriptors[1] =
     "error",
     1,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_MESSAGE,
+    PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
     offsetof(EchoResponse, error),
-    &int_value__descriptor,
+    NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */

@@ -143,10 +143,6 @@ enum Errors {
 	ELAST		=94	;	/* Must be equal largest errno */
 }
 
-message IntValue {
-	int32 value = 1;
-}
-
 message PbMessage {
 	// The category of each message
 	MessageCategory category = 1;
@@ -155,5 +151,5 @@ message PbMessage {
 	uint32 type = 2;
 
 	// The self contained protobuf message
-	bytes data = 3;
+	bytes payload = 3;
 }
