@@ -90,5 +90,41 @@ namespace MiraLibCS.Client.Extensions
 
             return true;
         }
+
+        public static List<DirEnt> GetDirEnts(this PbConnection p_Connection, string p_Path)
+        {
+            var s_Entries = new List<DirEnt>();
+
+            if (p_Connection == null)
+                return s_Entries;
+
+            if (string.IsNullOrWhiteSpace(p_Path))
+                return s_Entries;
+
+            var s_Request = new GetDentsRequest
+            {
+                Path = p_Path
+            };
+
+            var s_Message = new PbMessage
+            {
+                Category = MessageCategory.File,
+                Type = (uint)FileTransferCommands.GetDents,
+                Payload = s_Request.ToByteString()
+            };
+
+            if (!p_Connection.SendMessage(s_Message))
+                return s_Entries;
+
+            var s_ResposeMessage = p_Connection.ReceiveResponse();
+            if (s_ResposeMessage == null)
+                return s_Entries;
+
+            var s_Response = GetDentsResponse.Parser.ParseFrom(s_ResposeMessage.Payload);
+            if (s_Response == null)
+                return s_Entries;
+
+            return s_Response.Entries.ToList();
+        }
     }
 }

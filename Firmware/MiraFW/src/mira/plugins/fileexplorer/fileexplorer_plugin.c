@@ -14,6 +14,8 @@
 #include <oni/rpc/pbserver.h>
 #include <oni/utils/escape.h>
 
+#include <mira/utils/flat_vector.h>
+#include <mira/utils/vector.h>
 
 #include <string.h>
 
@@ -28,11 +30,8 @@
 void fileexplorer_open_callback(PbContainer* reference);
 void fileexplorer_close_callback(PbContainer* reference);
 void fileexplorer_read_callback(PbContainer* reference);
-void fileexplorer_readfile_callback(PbContainer* reference);
 void fileexplorer_write_callback(PbContainer* reference);
-void fileexplorer_writefile_callback(PbContainer* reference);
 void fileexplorer_getdents_callback(PbContainer* reference);
-void fileexplorer_delete_callback(PbContainer* reference);
 void fileexplorer_stat_callback(PbContainer* reference);
 void fileexplorer_mkdir_callback(PbContainer* reference);
 void fileexplorer_rmdir_callback(PbContainer* reference);
@@ -58,15 +57,12 @@ uint8_t fileexplorer_load(struct fileexplorer_plugin_t* plugin)
 {
 	// Register all of the callbacks
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Open, fileexplorer_open_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_read_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Read, fileexplorer_readfile_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Unlink, fileexplorer_writefile_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Move, fileexplorer_getdents_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_delete_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_stat_callback);
-	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_mkdir_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_getdents_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);
+	/*messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_mkdir_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);*/
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_stat_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, fileexplorer_echo_callback);
 	
 	return true;
@@ -76,64 +72,16 @@ uint8_t fileexplorer_unload(struct fileexplorer_plugin_t* plugin)
 {
 	// Unregister all of the callbacks
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Open, fileexplorer_open_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_read_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Read, fileexplorer_readfile_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Unlink, fileexplorer_writefile_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Move, fileexplorer_getdents_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_delete_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_stat_callback);
-	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_mkdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_getdents_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);;
+	/*messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_mkdir_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);*/
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_stat_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, fileexplorer_echo_callback);
 
 	return true;
 }
-
-#define PB_DECODE(containerObject, capitalType, lowerType, variableName) \
-	pbcontainer_acquire(containerObject); \
-	capitalType* variableName = NULL; { \
-	PbMessage* outerMessage = containerObject->message; \
-	if (!outerMessage) { \
-		WriteLog(LL_Error, "could not get the outer message"); \
-		goto cleanup;	} \
-	size_t innerDataSize = outerMessage->payload.len; \
-	uint8_t* innerData = outerMessage->payload.data; \
-	if (!innerData || innerDataSize == 0) { \
-		WriteLog(LL_Error, "could not get the inner data"); \
-		goto cleanup; } variableName = lowerType ## __unpack(NULL, innerDataSize, innerData); }
-
-#define PB_ENCODE(fromContainer, message, messageCategory, messageCommand, lowerType, outputContainerName) \
-	PbContainer* outputContainerName = NULL; \
-	{ size_t packedSize = lowerType ## __get_packed_size(&message); \
-		uint8_t* responseData = k_malloc(packedSize); \
-		if (responseData == NULL) \
-		{ WriteLog(LL_Error, "could not allocate response data"); \
-			goto cleanup; \
-		} (void) lowerType ## __pack(&message, responseData); \
-		PbMessage* responseMessage = k_malloc(sizeof(PbMessage)); \
-		if (responseMessage == NULL) \
-		{ WriteLog(LL_Error, "could not allocate response message"); \
-			goto cleanup; \
-		} static PbMessage pb_message_init = PB_MESSAGE__INIT; \
-		*responseMessage = pb_message_init; \
-		responseMessage->category = messageCategory; \
-		responseMessage->type = messageCommand; \
-		responseMessage->payload.data = responseData; \
-		responseMessage->payload.len = packedSize; \
-		outputContainerName = pbcontainer_create(responseMessage, true); \
-		if (outputContainerName == NULL) \
-		{	k_free(responseData); \
-			responseData = NULL; \
-			k_free(responseMessage); \
-			responseMessage = NULL; \
-			WriteLog(LL_Error, "could not allocate response container"); \
-			goto cleanup; \
-		}	}
-
-#define PB_RELEASE(containerObject) \
-	cleanup: \
-		pbcontainer_release(containerObject);
 
 void fileexplorer_echo_callback(PbContainer* container)
 {
@@ -141,11 +89,6 @@ void fileexplorer_echo_callback(PbContainer* container)
 		return;
 
 	PB_DECODE(container, EchoRequest, echo_request, request);
-	if (!request)
-	{
-		WriteLog(LL_Error, "could not decode incoming request.");
-		goto cleanup;
-	}
 
 	// Start our custom code
 	WriteLog(LL_Warn, "echo: %s", request->message);
@@ -165,114 +108,408 @@ void fileexplorer_echo_callback(PbContainer* container)
 	PB_RELEASE(container);
 }
 
-void fileexplorer_open_callback(PbContainer* reference)
+void fileexplorer_open_callback(PbContainer* container)
 {
-	if (!reference || !reference->message)
+	if (container == NULL || container->message == NULL)
 		return;
 
-	// Hold the incoming request
-	OpenRequest* request = NULL;
+	PB_DECODE(container, OpenRequest, open_request, request);
 
-	// Acquire a reference before we touch anything in this structure
-	pbcontainer_acquire(reference);
+	WriteLog(LL_Debug, "open: p(%s) f(%d) m(%d)", request->path, request->flags, request->mode);
 
-	// Get the outer message that is already parsed
-	PbMessage* outerMessage = reference->message;
-	if (!outerMessage)
-		goto cleanup;
-
-	// Get the inner (OpenRequest) message data and size
-	size_t innerDataSize = outerMessage->payload.len;
-	uint8_t* innerData = outerMessage->payload.data;
-	if (!innerData || innerDataSize == 0)
-		goto cleanup;
-
-	// Unpack the inner message
-	request = open_request__unpack(NULL, innerDataSize, innerData);
-	if (!request)
-		goto cleanup;
-
-	// Do the needful
 	struct thread_info_t threadInfo;
 	oni_threadEscape(curthread, &threadInfo);
-	int32_t result = kopen(request->path, request->flags, request->mode);
+
+	int32_t ret = kopen(request->path, request->flags, request->mode);
+
 	oni_threadRestore(curthread, &threadInfo);
 
-	// Create the response
 	OpenResponse response = OPEN_RESPONSE__INIT;
-	if (result < 0)
-	{
-		// Handle error case
-		response.error = result;
-	}
-	else
-	{
-		// No error, return handle
-		response.handle = result;
-		response.error = 0;
-	}
+	response.error = (ret < 0 ? ret : 0);
+	response.handle = (ret < 0 ? -1 : ret);
 
-	// Calculate the packed size
-	size_t responseSize = open_response__get_packed_size(&response);
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Open, open_response, responseContainer);
 
-	// Allocate the response data
-	uint8_t* responseData = k_malloc(responseSize);
-	if (!responseData)
-	{
-		WriteLog(LL_Error, "could not allocate response data");
-		goto cleanup;
-	}
-	(void)memset(responseData, 0, responseSize);
-
-	// Pack the data into the newly allocated buffer
-	size_t responsePackedSize = open_response__pack(&response, responseData);
-	if (responseSize != responsePackedSize)
-	{
-		WriteLog(LL_Error, "responseSize (%llx) != responsePackedSize (%llx)", responseSize, responsePackedSize);
-		k_free(responseData);
-		goto cleanup;
-	}
-
-	// Create a pbcontainer for ref counting
-	PbContainer* responseContainer = pbcontainer_createNew(outerMessage->category, outerMessage->type, responseData, responseSize);
-	if (!responseContainer)
-	{
-		WriteLog(LL_Error, "could not allocate response container");
-		k_free(responseData);
-		goto cleanup;
-	}
-
-	// Send the response back to PC
+	// Send the response back and release this pbcontainer which should free
 	messagemanager_sendResponse(responseContainer);
-
-	// Release (which should destroy the response container)
 	pbcontainer_release(responseContainer);
 
-cleanup:
-	if (request)
-		open_request__free_unpacked(request, NULL);
-
-	pbcontainer_release(reference);
+	PB_RELEASE(container);
 }
 
-void fileexplorer_close_callback(PbContainer* reference){ }
+void fileexplorer_close_callback(PbContainer* container)
+{ 
+	if (container == NULL || container->message == NULL)
+		return;
 
-void fileexplorer_read_callback(PbContainer* reference){ }
+	PB_DECODE(container, CloseRequest, close_request, request);
 
-void fileexplorer_readfile_callback(PbContainer* reference){ }
+	WriteLog(LL_Debug, "closing handle(%d).", request->handle);
 
-void fileexplorer_write_callback(PbContainer* reference){ }
+	kclose(request->handle);
 
-void fileexplorer_writefile_callback(PbContainer* reference){ }
+	CloseResponse response = CLOSE_RESPONSE__INIT;
+	response.error = 0;
 
-void fileexplorer_getdents_callback(PbContainer* reference){ }
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, close_response, responseContainer);
 
-void fileexplorer_delete_callback(PbContainer* reference){ }
+	messagemanager_sendResponse(responseContainer);
+	pbcontainer_release(responseContainer);
 
-void fileexplorer_stat_callback(PbContainer* reference){ }
+	PB_RELEASE(container);
+}
 
-void fileexplorer_mkdir_callback(PbContainer* reference){ }
+void fileexplorer_read_callback(PbContainer* container)
+{
+	if (container == NULL || container->message == NULL)
+		return;
 
-void fileexplorer_rmdir_callback(PbContainer* reference){ }
+	PB_DECODE(container, ReadRequest, read_request, request);
 
-void fileexplorer_unlink_callback(PbContainer* reference){ }
+	WriteLog(LL_Debug, "read h(%d) offset(%llx) size(%llx).", request->handle, request->offset, request->size);
+
+	const uint32_t cMaxReadSize = PAGE_SIZE;
+	if (request->size > cMaxReadSize)
+	{
+		WriteLog(LL_Error, "requested read size (%llx) > max (%llx).", request->size, cMaxReadSize);
+		goto cleanup;
+	}
+
+	uint8_t* buffer = k_malloc(request->size);
+	if (!buffer)
+	{
+		WriteLog(LL_Error, "could not allocate buffer for reading.");
+		goto cleanup;
+	}
+	(void)memset(buffer, 0, request->size);
+
+	ssize_t bytesRead = kread(request->handle, buffer, request->size);
+	if (bytesRead != request->size)
+		WriteLog(LL_Warn, "bytes read (%llx) != bytes requested (%llx).", bytesRead, request->size);
+
+	ReadResponse response = READ_RESPONSE__INIT;
+	response.error = (bytesRead < 0 ? bytesRead : 0);
+	response.data.data = (bytesRead < 0 ? NULL : buffer);
+	response.data.len = (bytesRead < 0 ? 0 : bytesRead);
+
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Read, read_response, responseContainer);
+
+	messagemanager_sendResponse(responseContainer);
+	pbcontainer_release(responseContainer);
+
+	PB_RELEASE(container);
+}
+
+void fileexplorer_write_callback(PbContainer* container)
+{
+	if (container == NULL || container->message == NULL)
+		return;
+
+	PB_DECODE(container, WriteRequest, write_request, request);
+
+	const uint32_t cMaxWriteSize = PAGE_SIZE;
+	if (request->data.len > cMaxWriteSize)
+	{
+		WriteLog(LL_Error, "requested write size (%llx) > max allowed (%llx).", request->data.len, cMaxWriteSize);
+		goto cleanup;
+	}
+
+	// Seek to the offset that we want to write
+	(void)klseek(request->handle, request->offset, SEEK_SET);
+	ssize_t bytesWritten = kwrite(request->handle, request->data.data, request->data.len);
+	if (bytesWritten != request->data.len)
+		WriteLog(LL_Warn, "wrote only (%llx) out of (%llx) bytes", bytesWritten, request->data.len);
+
+	WriteResponse response = WRITE_RESPONSE__INIT;
+	response.error = bytesWritten < 0 ? bytesWritten : 0;
+
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, write_response, responseContainer);
+
+	messagemanager_sendResponse(responseContainer);
+	pbcontainer_release(responseContainer);
+
+	PB_RELEASE(container);
+}
+
+
+void fileexplorer_getdents_callback(PbContainer* container)
+{ 
+	if (container == NULL || container->message == NULL)
+		return;
+
+	PB_DECODE(container, GetDentsRequest, get_dents_request, request);
+
+	WriteLog(LL_Debug, "getting dents for :%s.", request->path);
+
+	struct thread_info_t threadInfo;
+	oni_threadEscape(curthread, &threadInfo);
+
+	int32_t handle = kopen(request->path, O_RDONLY | O_DIRECTORY, 0);
+	if (handle < 0)
+	{
+		WriteLog(LL_Error, "could not open the handle for path (%s).", request->path);
+		goto cleanup;
+	}
+
+	oni_threadRestore(curthread, &threadInfo);
+
+	const uint32_t cDentBufferSize = 0x8000;
+	struct dirent* dent = NULL;
+	uint8_t* dentData = k_malloc(cDentBufferSize);
+	if (dentData == NULL)
+	{
+		WriteLog(LL_Error, "could not allocate dent space");
+		goto cleanup;
+	}
+	(void)memset(dentData, 0, cDentBufferSize);
+
+	WriteLog(LL_Warn, "here");
+
+	uint64_t dentCount = 0;
+	while (kgetdents(handle, (char*)dentData, cDentBufferSize) > 0)
+	{
+		dent = (struct dirent*)dentData;
+
+		while (dent->d_fileno)
+		{
+			if (dent->d_type == DT_UNKNOWN)
+				break;
+
+			dentCount++;
+			dent = (struct dirent*)((uint8_t*)dent + dent->d_reclen);
+		}
+	}
+
+	// This resets the gedents
+	kclose(handle);
+	handle = -1;
+
+	// Allocate the dents
+	DirEnt** dents = k_malloc(dentCount * sizeof(DirEnt));
+	if (dents == NULL)
+	{
+		WriteLog(LL_Error, "could not allocate dents.");
+		goto cleanup;
+	}
+
+	// Allocate all of the directory entries
+	for (uint64_t i = 0; i < dentCount; ++i)
+	{
+		dents[i] = k_malloc(sizeof(DirEnt));
+		if (dents[i] == NULL)
+		{
+			k_free(dents);
+			dents = NULL;
+
+			WriteLog(LL_Error, "could not allocate directory entry");
+			goto cleanup;
+		}
+	}
+
+	// Re-open the path
+	oni_threadEscape(curthread, &threadInfo);
+	handle = kopen(request->path, O_RDONLY | O_DIRECTORY, 0);
+	if (handle < 0)
+	{
+		k_free(dents);
+		dents = NULL;
+
+		WriteLog(LL_Error, "could not open the handle for path (%s).", request->path);
+		goto cleanup;
+	}
+	oni_threadRestore(curthread, &threadInfo);
+
+	// Iterate again
+	uint64_t currentDentIndex = 0;
+	while (kgetdents(handle, (char*)dentData, cDentBufferSize) > 0)
+	{
+		dent = (struct dirent*)dentData;
+
+		while (dent->d_fileno)
+		{
+			if (dent->d_type == DT_UNKNOWN)
+				break;
+
+			// This shouldn't happen ever
+			if (dents[currentDentIndex] == NULL)
+			{
+				WriteLog(LL_Error, "could not get directory entry");
+				goto next;
+			}
+
+			// Initialize the message
+			dir_ent__init(dents[currentDentIndex]);
+
+			// Assign the file number
+			dents[currentDentIndex]->fileno = dent->d_fileno;
+			
+			// Set the name information
+			dents[currentDentIndex]->name = k_malloc(dent->d_namlen);
+			if (dents[currentDentIndex]->name == NULL)
+				dents[currentDentIndex]->name = "_mira_error_invalid.bin";
+			else
+			{
+				// Zero out the name buffer and copy it over
+				(void)memset(dents[currentDentIndex]->name, 0, dent->d_namlen);
+				(void)memcpy(dents[currentDentIndex]->name, dent->d_name, dent->d_namlen);
+			}
+
+			// Update the rest of the structure
+			dents[currentDentIndex]->reclen = dent->d_reclen;
+			dents[currentDentIndex]->type = dent->d_type;
+		next:
+			currentDentIndex++;
+			dent = (struct dirent*)((uint8_t*)dent + dent->d_reclen);
+		}
+	}
+
+	GetDentsResponse response = GET_DENTS_RESPONSE__INIT;
+	get_dents_response__init(&response);
+
+	response.n_entries = dentCount;
+	response.entries = dents;
+	response.error = 0;
+
+	WriteLog(LL_Warn, "here: %p", get_dents_response__pack);
+
+	
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, get_dents_response, responseContainer);
+
+	WriteLog(LL_Warn, "here");
+
+	messagemanager_sendResponse(responseContainer);
+	pbcontainer_release(responseContainer);
+
+	// Cleanup our allocation mess
+	if (dents)
+	{
+		// Free all child objects
+		for (uint64_t i = 0; i < dentCount; ++i)
+		{
+			if (dents[i] == NULL)
+				continue;
+
+			k_free(dents[i]);
+			dents[i] = NULL;
+		}
+
+		k_free(dents);
+		dents = NULL;
+	}
+
+	PB_RELEASE(container);
+}
+
+void fileexplorer_stat_callback(PbContainer* container)
+{ 
+	if (container == NULL || container->message == NULL)
+		return;
+
+	PB_DECODE(container, StatRequest, stat_request, request);
+
+	struct stat stat;
+	memset(&stat, 0, sizeof(stat));
+
+	struct thread_info_t threadInfo;
+	oni_threadEscape(curthread, &threadInfo);
+
+	int32_t ret = 0;
+	if (request->path == NULL)
+		ret = kfstat(request->handle, &stat);
+	else
+		ret = kstat(request->path, &stat);
+
+	oni_threadRestore(curthread, &threadInfo);
+
+	StatResponse response = STAT_RESPONSE__INIT;
+	stat_response__init(&response);
+	
+	// atim
+	response.atim = k_malloc(sizeof(TimeSpec));
+	if (response.atim == NULL)
+	{
+		WriteLog(LL_Error, "could not allocate time struct");
+		goto cleanup;
+	}
+	time_spec__init(response.atim);
+	response.atim->nsec = stat.st_atim.tv_nsec;
+	response.atim->sec = stat.st_atim.tv_sec;
+
+	// TODO: Allocate
+	response.birthtim = k_malloc(sizeof(TimeSpec));
+	if (response.birthtim == NULL)
+	{
+		WriteLog(LL_Error, "could not alllocate time struct");
+		goto cleanup;
+	}
+	time_spec__init(response.birthtim);
+	response.birthtim->nsec = stat.st_birthtim.tv_nsec;
+	response.birthtim->sec = stat.st_birthtim.tv_sec;
+
+	response.blksize = stat.st_blksize;
+	response.blocks = stat.st_blocks;
+
+	response.ctim = k_malloc(sizeof(TimeSpec));
+	if (response.ctim == NULL)
+	{
+		WriteLog(LL_Error, "could not alllocate time struct");
+		goto cleanup;
+	}
+	time_spec__init(response.ctim);
+	response.ctim->nsec = stat.st_ctim.tv_nsec;
+	response.ctim->sec = stat.st_ctim.tv_sec;
+
+	response.dev = stat.st_dev;
+	response.flags = stat.st_flags;
+
+	response.gen = stat.st_gen;
+	response.gid = stat.st_gid;
+	response.ino = stat.st_ino;
+	response.lspare = stat.st_lspare;
+	response.mode = stat.st_mode;
+	response.mtim = k_malloc(sizeof(TimeSpec));
+	if (response.mtim == NULL)
+	{
+		WriteLog(LL_Error, "could not alllocate time struct");
+		goto cleanup;
+	}
+	time_spec__init(response.mtim);
+	response.mtim->nsec = stat.st_mtim.tv_nsec;
+	response.mtim->sec = stat.st_mtim.tv_sec;
+
+	response.nlink = stat.st_nlink;
+
+	if (request->path == NULL)
+		response.path = NULL;
+	else
+	{
+		size_t pathLength = strlen(response.path) + 1;
+		response.path = k_malloc(pathLength);
+		if (response.path == NULL)
+		{
+			WriteLog(LL_Error, "could not allocate the path");
+			goto cleanup;
+		}
+
+		memset(response.path, 0, pathLength + 1);
+		memcpy(response.path, request->path, pathLength);
+	}
+
+	response.rdev = stat.st_rdev;
+	response.size = stat.st_size;
+	response.uid = stat.st_uid;
+
+
+	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, stat_response, responseContainer);
+
+	messagemanager_sendResponse(responseContainer);
+	pbcontainer_release(responseContainer);
+
+	PB_RELEASE(container);
+}
+//
+//void fileexplorer_mkdir_callback(PbContainer* container){ }
+//
+//void fileexplorer_rmdir_callback(PbContainer* container){ }
+//
+//void fileexplorer_unlink_callback(PbContainer* container){ }

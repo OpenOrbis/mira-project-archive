@@ -1160,10 +1160,10 @@ static const ProtobufCFieldDescriptor echo_response__field_descriptors[1] =
     "error",
     1,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_MESSAGE,
+    PROTOBUF_C_TYPE_INT32,
     0,   /* quantifier_offset */
     offsetof(EchoResponse, error),
-    &int_value__descriptor,
+    NULL,
     NULL,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
@@ -1525,12 +1525,12 @@ static const ProtobufCFieldDescriptor write_request__field_descriptors[3] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "size",
+    "data",
     3,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_UINT64,
+    PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(WriteRequest, size),
+    offsetof(WriteRequest, data),
     NULL,
     NULL,
     0,             /* flags */
@@ -1538,9 +1538,9 @@ static const ProtobufCFieldDescriptor write_request__field_descriptors[3] =
   },
 };
 static const unsigned write_request__field_indices_by_name[] = {
+  2,   /* field[2] = data */
   0,   /* field[0] = handle */
   1,   /* field[1] = offset */
-  2,   /* field[2] = size */
 };
 static const ProtobufCIntRange write_request__number_ranges[1 + 1] =
 {
@@ -2266,7 +2266,7 @@ const ProtobufCMessageDescriptor get_dents_request__descriptor =
   (ProtobufCMessageInit) get_dents_request__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor get_dents_response__field_descriptors[3] =
+static const ProtobufCFieldDescriptor get_dents_response__field_descriptors[2] =
 {
   {
     "error",
@@ -2281,20 +2281,8 @@ static const ProtobufCFieldDescriptor get_dents_response__field_descriptors[3] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "entriesLeft",
-    2,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_UINT64,
-    0,   /* quantifier_offset */
-    offsetof(GetDentsResponse, entriesleft),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-  {
     "entries",
-    3,
+    2,
     PROTOBUF_C_LABEL_REPEATED,
     PROTOBUF_C_TYPE_MESSAGE,
     offsetof(GetDentsResponse, n_entries),
@@ -2306,14 +2294,13 @@ static const ProtobufCFieldDescriptor get_dents_response__field_descriptors[3] =
   },
 };
 static const unsigned get_dents_response__field_indices_by_name[] = {
-  2,   /* field[2] = entries */
-  1,   /* field[1] = entriesLeft */
+  1,   /* field[1] = entries */
   0,   /* field[0] = error */
 };
 static const ProtobufCIntRange get_dents_response__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 3 }
+  { 0, 2 }
 };
 const ProtobufCMessageDescriptor get_dents_response__descriptor =
 {
@@ -2323,7 +2310,7 @@ const ProtobufCMessageDescriptor get_dents_response__descriptor =
   "GetDentsResponse",
   "",
   sizeof(GetDentsResponse),
-  3,
+  2,
   get_dents_response__field_descriptors,
   get_dents_response__field_indices_by_name,
   1,  get_dents_response__number_ranges,

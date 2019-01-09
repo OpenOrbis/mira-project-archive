@@ -4,7 +4,7 @@
 #ifndef PROTOBUF_C_mirabuiltin_2eproto__INCLUDED
 #define PROTOBUF_C_mirabuiltin_2eproto__INCLUDED
 
-#include "protobuf-c.h"
+#include <protobuf-c.h>
 
 PROTOBUF_C__BEGIN_DECLS
 
@@ -15,7 +15,6 @@ PROTOBUF_C__BEGIN_DECLS
 #endif
 
 
-typedef struct _IntValue IntValue;
 typedef struct _PbMessage PbMessage;
 
 
@@ -447,16 +446,6 @@ typedef enum _Errors {
 
 /* --- messages --- */
 
-struct  _IntValue
-{
-  ProtobufCMessage base;
-  int32_t value;
-};
-#define INT_VALUE__INIT \
- { PROTOBUF_C_MESSAGE_INIT (&int_value__descriptor) \
-    , 0 }
-
-
 struct  _PbMessage
 {
   ProtobufCMessage base;
@@ -471,32 +460,13 @@ struct  _PbMessage
   /*
    * The self contained protobuf message
    */
-  ProtobufCBinaryData data;
+  ProtobufCBinaryData payload;
 };
 #define PB_MESSAGE__INIT \
  { PROTOBUF_C_MESSAGE_INIT (&pb_message__descriptor) \
     , MESSAGE_CATEGORY__NONE, 0, {0,NULL} }
 
 
-/* IntValue methods */
-void   int_value__init
-                     (IntValue         *message);
-size_t int_value__get_packed_size
-                     (const IntValue   *message);
-size_t int_value__pack
-                     (const IntValue   *message,
-                      uint8_t             *out);
-size_t int_value__pack_to_buffer
-                     (const IntValue   *message,
-                      ProtobufCBuffer     *buffer);
-IntValue *
-       int_value__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data);
-void   int_value__free_unpacked
-                     (IntValue *message,
-                      ProtobufCAllocator *allocator);
 /* PbMessage methods */
 void   pb_message__init
                      (PbMessage         *message);
@@ -518,9 +488,6 @@ void   pb_message__free_unpacked
                       ProtobufCAllocator *allocator);
 /* --- per-message closures --- */
 
-typedef void (*IntValue_Closure)
-                 (const IntValue *message,
-                  void *closure_data);
 typedef void (*PbMessage_Closure)
                  (const PbMessage *message,
                   void *closure_data);
@@ -532,7 +499,6 @@ typedef void (*PbMessage_Closure)
 
 extern const ProtobufCEnumDescriptor    message_category__descriptor;
 extern const ProtobufCEnumDescriptor    errors__descriptor;
-extern const ProtobufCMessageDescriptor int_value__descriptor;
 extern const ProtobufCMessageDescriptor pb_message__descriptor;
 
 PROTOBUF_C__END_DECLS

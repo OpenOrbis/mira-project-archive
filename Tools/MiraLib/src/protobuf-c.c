@@ -45,10 +45,10 @@
  * \todo Use size_t consistently.
  */
 
-#include <stdlib.h>	/* for malloc, free */
-#include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
+//#include <stdlib.h>	/* for malloc, free */
+//#include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
 
-#include "protobuf-c.h"
+#include <protobuf-c.h>
 
 #define TRUE				1
 #define FALSE				0
@@ -1925,6 +1925,7 @@ repeated_field_pack_to_buffer(const ProtobufCFieldDescriptor *field,
 		buffer->append(buffer, rv, scratch);
 		tmp = pack_buffer_packed_payload(field, count, array, buffer);
 		assert(tmp == payload_len);
+		if (tmp) {}
 		return rv + payload_len;
 	} else {
 		size_t siz;

@@ -90,7 +90,7 @@ message WriteRequest {
 
 	uint64 offset = 2;
 
-	uint64 size = 3;
+	bytes data = 3;
 }
 
 message WriteResponse {
@@ -207,7 +207,5 @@ message GetDentsRequest {
 message GetDentsResponse {
     int32 error = 1;
 
-    uint64 entriesLeft = 2;
-
-    repeated DirEnt entries = 3;
+    repeated DirEnt entries = 2;
 }

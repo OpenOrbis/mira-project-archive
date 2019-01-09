@@ -46,8 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client\Extensions\FileExplorerExtensions.cs" />
     <Compile Include="Client\Messages\Fileexplorer.cs" />
+    <Compile Include="Client\Extensions\FileExplorerExtensions.cs" />
     <Compile Include="Client\Messages\Mirabuiltin.cs" />
     <Compile Include="Client\PbConnection.cs" />
     <Compile Include="Program.cs" />

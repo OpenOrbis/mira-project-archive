@@ -6,52 +6,8 @@
 #define PROTOBUF_C__NO_DEPRECATED
 #endif
 
-#include "mirabuiltin.pb-c.h"
-void   int_value__init
-                     (IntValue         *message)
-{
-  static const IntValue init_value = INT_VALUE__INIT;
-  *message = init_value;
-}
-size_t int_value__get_packed_size
-                     (const IntValue *message)
-{
-  assert(message->base.descriptor == &int_value__descriptor);
-  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
-}
-size_t int_value__pack
-                     (const IntValue *message,
-                      uint8_t       *out)
-{
-  assert(message->base.descriptor == &int_value__descriptor);
-  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
-}
-size_t int_value__pack_to_buffer
-                     (const IntValue *message,
-                      ProtobufCBuffer *buffer)
-{
-  assert(message->base.descriptor == &int_value__descriptor);
-  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
-}
-IntValue *
-       int_value__unpack
-                     (ProtobufCAllocator  *allocator,
-                      size_t               len,
-                      const uint8_t       *data)
-{
-  return (IntValue *)
-     protobuf_c_message_unpack (&int_value__descriptor,
-                                allocator, len, data);
-}
-void   int_value__free_unpacked
-                     (IntValue *message,
-                      ProtobufCAllocator *allocator)
-{
-  if(!message)
-    return;
-  assert(message->base.descriptor == &int_value__descriptor);
-  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
-}
+#include <mirabuiltin.pb-c.h>
+
 void   pb_message__init
                      (PbMessage         *message)
 {
@@ -97,44 +53,6 @@ void   pb_message__free_unpacked
   assert(message->base.descriptor == &pb_message__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor int_value__field_descriptors[1] =
-{
-  {
-    "value",
-    1,
-    PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
-    0,   /* quantifier_offset */
-    offsetof(IntValue, value),
-    NULL,
-    NULL,
-    0,             /* flags */
-    0,NULL,NULL    /* reserved1,reserved2, etc */
-  },
-};
-static const unsigned int_value__field_indices_by_name[] = {
-  0,   /* field[0] = value */
-};
-static const ProtobufCIntRange int_value__number_ranges[1 + 1] =
-{
-  { 1, 0 },
-  { 0, 1 }
-};
-const ProtobufCMessageDescriptor int_value__descriptor =
-{
-  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "IntValue",
-  "IntValue",
-  "IntValue",
-  "",
-  sizeof(IntValue),
-  1,
-  int_value__field_descriptors,
-  int_value__field_indices_by_name,
-  1,  int_value__number_ranges,
-  (ProtobufCMessageInit) int_value__init,
-  NULL,NULL,NULL    /* reserved[123] */
-};
 static const ProtobufCFieldDescriptor pb_message__field_descriptors[3] =
 {
   {
@@ -162,12 +80,12 @@ static const ProtobufCFieldDescriptor pb_message__field_descriptors[3] =
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
   {
-    "data",
+    "payload",
     3,
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_BYTES,
     0,   /* quantifier_offset */
-    offsetof(PbMessage, data),
+    offsetof(PbMessage, payload),
     NULL,
     NULL,
     0,             /* flags */
@@ -176,7 +94,7 @@ static const ProtobufCFieldDescriptor pb_message__field_descriptors[3] =
 };
 static const unsigned pb_message__field_indices_by_name[] = {
   0,   /* field[0] = category */
-  2,   /* field[2] = data */
+  2,   /* field[2] = payload */
   1,   /* field[1] = type */
 };
 static const ProtobufCIntRange pb_message__number_ranges[1 + 1] =

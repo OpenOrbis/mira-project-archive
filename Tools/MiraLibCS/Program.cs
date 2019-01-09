@@ -1,4 +1,5 @@
 ﻿using Google.Protobuf;
+using MiraLibCS.Client.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,18 +22,7 @@ namespace MiraLibCS
                 return;
             }
 
-            var s_RequestMessage = PbConnection.CreateMessage(MessageCategory.File, (uint)FileTransferCommands.Echo, new EchoRequest
-            {
-                Message = "Hello World",
-            }.ToByteString());
-
-            if (!s_Connection.SendMessage(s_RequestMessage))
-            {
-                Console.WriteLine("could not send message.");
-                return;
-            }
-
-            var s_Response = s_Connection.ReceiveResponse();
+            var s_DentList = s_Connection.GetDirEnts("/user");
         }
     }
 }
