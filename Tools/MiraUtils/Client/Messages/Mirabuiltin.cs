@@ -657,7 +657,9 @@ public sealed partial class PbMessage : pb::IMessage<PbMessage> {
     while ((tag = input.ReadTag()) != 0) {
       switch(tag) {
         default:
-          _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+          if (!pb::UnknownFieldSet.MergeFieldFrom(ref _unknownFields, input)) {
+            return;
+          }
           break;
         case 8: {
           Category = (global::MessageCategory) input.ReadEnum();

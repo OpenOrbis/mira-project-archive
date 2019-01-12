@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiraLibCS
+namespace MiraUtils.Client
 {
     public class PbConnection
     {

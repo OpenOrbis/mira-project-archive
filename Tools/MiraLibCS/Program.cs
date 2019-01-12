@@ -10,8 +10,12 @@ namespace MiraLibCS
 {
     class Program
     {
+        public string c_GetDirEnts = "-getDirEnts:";
+
         static void Main(string[] args)
         {
+            var s_DebugArgs = "-getDirEnts:/user -address:192.168.1.2 -port:9999".Split(null);
+
             var s_Address = "192.168.1.2";
 
             var s_Connection = new PbConnection(s_Address);
@@ -24,5 +28,7 @@ namespace MiraLibCS
 
             var s_DentList = s_Connection.GetDirEnts("/user");
         }
+
+
     }
 }

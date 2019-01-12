@@ -60,8 +60,8 @@ uint8_t fileexplorer_load(struct fileexplorer_plugin_t* plugin)
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_getdents_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);
-	/*messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_mkdir_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);*/
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Read, fileexplorer_read_callback);
+	//messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_stat_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, fileexplorer_echo_callback);
 	
@@ -75,8 +75,8 @@ uint8_t fileexplorer_unload(struct fileexplorer_plugin_t* plugin)
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, fileexplorer_close_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, fileexplorer_getdents_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Write, fileexplorer_write_callback);;
-	/*messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__MkDir, fileexplorer_mkdir_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);*/
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Read, fileexplorer_read_callback);
+	//messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__RmDir, fileexplorer_rmdir_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Stat, fileexplorer_stat_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Echo, fileexplorer_echo_callback);
 
@@ -166,7 +166,7 @@ void fileexplorer_read_callback(PbContainer* container)
 
 	PB_DECODE(container, ReadRequest, read_request, request);
 
-	WriteLog(LL_Debug, "read h(%d) offset(%llx) size(%llx).", request->handle, request->offset, request->size);
+	//WriteLog(LL_Debug, "read h(%d) offset(%llx) size(%llx).", request->handle, request->offset, request->size);
 
 	const uint32_t cMaxReadSize = PAGE_SIZE;
 	if (request->size > cMaxReadSize)
@@ -196,6 +196,9 @@ void fileexplorer_read_callback(PbContainer* container)
 
 	messagemanager_sendResponse(responseContainer);
 	pbcontainer_release(responseContainer);
+
+	k_free(buffer);
+	buffer = NULL;
 
 	PB_RELEASE(container);
 }
@@ -239,7 +242,7 @@ void fileexplorer_getdents_callback(PbContainer* container)
 
 	PB_DECODE(container, GetDentsRequest, get_dents_request, request);
 
-	WriteLog(LL_Debug, "getting dents for :%s.", request->path);
+	WriteLog(LL_Debug, "getting dents for: (%s).", request->path);
 
 	struct thread_info_t threadInfo;
 	oni_threadEscape(curthread, &threadInfo);
@@ -263,8 +266,6 @@ void fileexplorer_getdents_callback(PbContainer* container)
 	}
 	(void)memset(dentData, 0, cDentBufferSize);
 
-	WriteLog(LL_Warn, "here");
-
 	uint64_t dentCount = 0;
 	while (kgetdents(handle, (char*)dentData, cDentBufferSize) > 0)
 	{
@@ -280,16 +281,21 @@ void fileexplorer_getdents_callback(PbContainer* container)
 		}
 	}
 
+	//WriteLog(LL_Debug, "dentCount: %lld!!!!!!!!!!", dentCount);
+
 	// This resets the gedents
 	kclose(handle);
 	handle = -1;
 
 	// Allocate the dents
+	Vector s_Vector;
+	vector_initialize(&s_Vector, sizeof(DirEnt*));
+
 	DirEnt** dents = k_malloc(dentCount * sizeof(DirEnt));
 	if (dents == NULL)
 	{
 		WriteLog(LL_Error, "could not allocate dents.");
-		goto cleanup;
+		goto cleanup_dents;
 	}
 
 	// Allocate all of the directory entries
@@ -298,11 +304,8 @@ void fileexplorer_getdents_callback(PbContainer* container)
 		dents[i] = k_malloc(sizeof(DirEnt));
 		if (dents[i] == NULL)
 		{
-			k_free(dents);
-			dents = NULL;
-
 			WriteLog(LL_Error, "could not allocate directory entry");
-			goto cleanup;
+			goto cleanup_dents;
 		}
 	}
 
@@ -311,11 +314,8 @@ void fileexplorer_getdents_callback(PbContainer* container)
 	handle = kopen(request->path, O_RDONLY | O_DIRECTORY, 0);
 	if (handle < 0)
 	{
-		k_free(dents);
-		dents = NULL;
-
 		WriteLog(LL_Error, "could not open the handle for path (%s).", request->path);
-		goto cleanup;
+		goto cleanup_dents;
 	}
 	oni_threadRestore(curthread, &threadInfo);
 
@@ -366,24 +366,25 @@ void fileexplorer_getdents_callback(PbContainer* container)
 	GetDentsResponse response = GET_DENTS_RESPONSE__INIT;
 	get_dents_response__init(&response);
 
-	response.n_entries = dentCount;
+	response.n_entries = currentDentIndex;
 	response.entries = dents;
 	response.error = 0;
 
-	WriteLog(LL_Warn, "here: %p", get_dents_response__pack);
+	//WriteLog(LL_Warn, "here: %p", get_dents_response__pack);
 
 	
 	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, get_dents_response, responseContainer);
 
-	WriteLog(LL_Warn, "here");
+	//WriteLog(LL_Warn, "here");
 
 	messagemanager_sendResponse(responseContainer);
 	pbcontainer_release(responseContainer);
 
 	// Cleanup our allocation mess
+cleanup_dents:
 	if (dents)
 	{
-		// Free all child objects
+		// free all child objects
 		for (uint64_t i = 0; i < dentCount; ++i)
 		{
 			if (dents[i] == NULL)
@@ -397,6 +398,12 @@ void fileexplorer_getdents_callback(PbContainer* container)
 		dents = NULL;
 	}
 
+	if (dentData)
+	{
+		k_free(dentData);
+		dentData = NULL;
+	}
+
 	PB_RELEASE(container);
 }
 
@@ -408,7 +415,7 @@ void fileexplorer_stat_callback(PbContainer* container)
 	PB_DECODE(container, StatRequest, stat_request, request);
 
 	struct stat stat;
-	memset(&stat, 0, sizeof(stat));
+	(void)memset(&stat, 0, sizeof(stat));
 
 	struct thread_info_t threadInfo;
 	oni_threadEscape(curthread, &threadInfo);
@@ -418,6 +425,8 @@ void fileexplorer_stat_callback(PbContainer* container)
 		ret = kfstat(request->handle, &stat);
 	else
 		ret = kstat(request->path, &stat);
+
+	//WriteLog(LL_Debug, "%s returned %d", request->path == NULL ? "kfstat" : "kstat", ret);
 
 	oni_threadRestore(curthread, &threadInfo);
 
@@ -439,7 +448,7 @@ void fileexplorer_stat_callback(PbContainer* container)
 	response.birthtim = k_malloc(sizeof(TimeSpec));
 	if (response.birthtim == NULL)
 	{
-		WriteLog(LL_Error, "could not alllocate time struct");
+		WriteLog(LL_Error, "could not allocate time struct");
 		goto cleanup;
 	}
 	time_spec__init(response.birthtim);
@@ -452,7 +461,7 @@ void fileexplorer_stat_callback(PbContainer* container)
 	response.ctim = k_malloc(sizeof(TimeSpec));
 	if (response.ctim == NULL)
 	{
-		WriteLog(LL_Error, "could not alllocate time struct");
+		WriteLog(LL_Error, "could not allocate time struct");
 		goto cleanup;
 	}
 	time_spec__init(response.ctim);
@@ -470,7 +479,7 @@ void fileexplorer_stat_callback(PbContainer* container)
 	response.mtim = k_malloc(sizeof(TimeSpec));
 	if (response.mtim == NULL)
 	{
-		WriteLog(LL_Error, "could not alllocate time struct");
+		WriteLog(LL_Error, "could not allocate time struct");
 		goto cleanup;
 	}
 	time_spec__init(response.mtim);
@@ -491,8 +500,8 @@ void fileexplorer_stat_callback(PbContainer* container)
 			goto cleanup;
 		}
 
-		memset(response.path, 0, pathLength + 1);
-		memcpy(response.path, request->path, pathLength);
+		(void)memset(response.path, 0, pathLength + 1);
+		(void)memcpy(response.path, request->path, pathLength);
 	}
 
 	response.rdev = stat.st_rdev;
