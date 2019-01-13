@@ -116,6 +116,9 @@ namespace MiraUtils.Client.Extensions
             if (s_Response == null)
                 return null;
 
+            if (s_Response.Error < 0)
+                return null;
+
             return s_Response.Data.ToByteArray();
         }
 
@@ -180,6 +183,9 @@ namespace MiraUtils.Client.Extensions
             if (s_Response == null)
                 return null;
 
+            if (s_Response.Error < 0)
+                return null;
+
             return s_Response;
         }
 
@@ -196,7 +202,7 @@ namespace MiraUtils.Client.Extensions
             if (s_Handle < 0)
                 return null;
 
-            const long c_BlockSize = 0x4000;
+            const long c_BlockSize = 0x2000;
 
             var s_CurrentPos = (ulong)0;
             var s_BlockCount = s_Stat.Size / c_BlockSize;
@@ -209,7 +215,10 @@ namespace MiraUtils.Client.Extensions
                 {
                     var l_Data = Read(p_Connection, s_Handle, s_CurrentPos, c_BlockSize);
                     if (l_Data == null)
+                    {
+                        Close(p_Connection, s_Handle);
                         return null;
+                    }
 
                     s_Writer.Write(l_Data);
                     s_CurrentPos += (ulong)l_Data.LongLength;
@@ -223,6 +232,8 @@ namespace MiraUtils.Client.Extensions
                 p_ProgressCallback?.Invoke(100, false);
                 s_FinalData = ((MemoryStream)s_Writer.BaseStream).ToArray();
             }
+
+            Close(p_Connection, s_Handle);
 
             return s_FinalData;
         }

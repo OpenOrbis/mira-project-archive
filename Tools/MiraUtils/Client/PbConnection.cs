@@ -11,7 +11,7 @@ namespace MiraUtils.Client
 {
     public class PbConnection
     {
-        protected const int c_MaxBufferSize = 0x8000;
+        protected const int c_MaxBufferSize = 0x10000;
         protected const int c_DefaultPort = 9999;
 
         protected readonly string m_Address;
@@ -41,8 +41,8 @@ namespace MiraUtils.Client
             {
                 m_Client = new TcpClient(m_Address, m_Port)
                 {
-                    SendTimeout = 1000 * 10,
-                    ReceiveTimeout = 1000,
+                    SendTimeout = 1000 * 3,
+                    ReceiveTimeout = 1000 * 3,
 
                     SendBufferSize = c_MaxBufferSize,
                     ReceiveBufferSize = c_MaxBufferSize
@@ -69,7 +69,7 @@ namespace MiraUtils.Client
 
             using (var s_Writer = new BinaryWriter(m_Client.GetStream(), Encoding.ASCII, true))
             {
-                s_Writer.Write((ulong)s_PacketData.LongLength);
+                s_Writer.Write((uint)s_PacketData.Length);
                 s_Writer.Write(s_PacketData);
             }
 
@@ -84,7 +84,7 @@ namespace MiraUtils.Client
             PbMessage s_Message = null;
             using (var s_Reader = new BinaryReader(m_Client.GetStream(), Encoding.ASCII, true))
             {
-                var s_Length = s_Reader.ReadUInt64();
+                var s_Length = s_Reader.ReadUInt32();
                 if (s_Length == 0 || s_Length > c_MaxBufferSize)
                 {
                     Console.WriteLine($"length {s_Length} > max size {c_MaxBufferSize}.");

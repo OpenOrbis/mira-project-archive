@@ -24,25 +24,20 @@ uint8_t vector_append(Vector* vector, void* value)
 	if (vector == NULL || value == NULL)
 		return false;
 
-	uint32_t wantedIndex = vector->size + 1;
-
-	WriteLog(LL_Debug, "index: %d cap: %d", wantedIndex, vector->capacity);
+	uint32_t wantedIndex = vector->size;
 
 	// Validate that the next add will be in bounds, otherwise we need to increase the size
 	if (wantedIndex >= vector->capacity)
 	{
-		WriteLog(LL_Warn, "here");
-
 		if (!vector_increaseCapacity(vector))
 			return false;
 	}
 
-	WriteLog(LL_Warn, "here");
+	if (vector->data == NULL)
+		return false;
 
 	vector->data[wantedIndex] = value;
 	vector->size++;
-
-	WriteLog(LL_Warn, "here");
 
 	return true;
 }
@@ -73,22 +68,18 @@ static uint8_t vector_increaseCapacity(Vector* vector)
 		WriteLog(LL_Error, "could not allocate new array");
 		return false;
 	}
-	WriteLog(LL_Warn, "here");
 
 	(void)memset(newArray, 0, wantedTotalSize);
 
 	if (vector->data != NULL)
 	{
-		WriteLog(LL_Warn, "here");
 		(void)memcpy(newArray, vector->data, currentTotalSize);
 
-		WriteLog(LL_Warn, "here");
 		// Free the previous list
 		k_free(vector->data);
 		vector->data = NULL;
 	}
 
-	WriteLog(LL_Warn, "here");
 	vector->capacity = wantedCapacity;
 	vector->data = (void**)newArray;
 
@@ -100,12 +91,8 @@ void* vector_get(Vector* vector, uint32_t index)
 	if (vector == NULL)
 		return NULL;
 
-	WriteLog(LL_Warn, "here");
-
 	if (index >= vector->size)
 		return NULL;
-
-	WriteLog(LL_Warn, "here");
 
 	return vector->data[index];
 }
@@ -118,11 +105,9 @@ uint8_t vector_set(Vector* vector, uint32_t index, void* value)
 	if (index >= vector->size)
 		return false;
 
-	WriteLog(LL_Warn, "here");
 	void* previousObject = vector->data[index];
 	if (previousObject != NULL)
 	{
-		WriteLog(LL_Warn, "here");
 		k_free(previousObject);
 		vector->data[index] = NULL;
 	}
@@ -136,22 +121,17 @@ void vector_free(Vector* vector)
 	if (vector == NULL)
 		return;
 
-	WriteLog(LL_Warn, "here");
-
 	uint32_t currentSize = vector->size;
 	for (uint32_t i = 0; i < currentSize; ++i)
 	{
-		WriteLog(LL_Warn, "here");
 		void* currentObject = vector->data[i];
 		if (currentObject == NULL)
 			continue;
 
-		WriteLog(LL_Warn, "here");
 		k_free(currentObject);
 		vector->data[i] = NULL;
 	}
 
-	WriteLog(LL_Warn, "here");
 	// Free the data list
 	k_free(vector->data);
 	vector->data = NULL;

@@ -115,7 +115,7 @@ void fileexplorer_open_callback(PbContainer* container)
 
 	PB_DECODE(container, OpenRequest, open_request, request);
 
-	WriteLog(LL_Debug, "open: p(%s) f(%d) m(%d)", request->path, request->flags, request->mode);
+	
 
 	struct thread_info_t threadInfo;
 	oni_threadEscape(curthread, &threadInfo);
@@ -124,7 +124,10 @@ void fileexplorer_open_callback(PbContainer* container)
 
 	oni_threadRestore(curthread, &threadInfo);
 
+	WriteLog(LL_Debug, "open: p(%s) f(%d) m(%d) ret(%d)", request->path, request->flags, request->mode, ret);
+
 	OpenResponse response = OPEN_RESPONSE__INIT;
+	open_response__init(&response);
 	response.error = (ret < 0 ? ret : 0);
 	response.handle = (ret < 0 ? -1 : ret);
 
@@ -149,6 +152,7 @@ void fileexplorer_close_callback(PbContainer* container)
 	kclose(request->handle);
 
 	CloseResponse response = CLOSE_RESPONSE__INIT;
+	close_response__init(&response);
 	response.error = 0;
 
 	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__Close, close_response, responseContainer);
@@ -164,30 +168,25 @@ void fileexplorer_read_callback(PbContainer* container)
 	if (container == NULL || container->message == NULL)
 		return;
 
+	const uint32_t cMaxReadSize = 0x4000;
+	uint8_t buffer[cMaxReadSize];
+	(void)memset(buffer, 0, sizeof(buffer));
+
 	PB_DECODE(container, ReadRequest, read_request, request);
 
-	//WriteLog(LL_Debug, "read h(%d) offset(%llx) size(%llx).", request->handle, request->offset, request->size);
-
-	const uint32_t cMaxReadSize = PAGE_SIZE;
+	
 	if (request->size > cMaxReadSize)
 	{
 		WriteLog(LL_Error, "requested read size (%llx) > max (%llx).", request->size, cMaxReadSize);
 		goto cleanup;
 	}
 
-	uint8_t* buffer = k_malloc(request->size);
-	if (!buffer)
-	{
-		WriteLog(LL_Error, "could not allocate buffer for reading.");
-		goto cleanup;
-	}
-	(void)memset(buffer, 0, request->size);
-
 	ssize_t bytesRead = kread(request->handle, buffer, request->size);
 	if (bytesRead != request->size)
 		WriteLog(LL_Warn, "bytes read (%llx) != bytes requested (%llx).", bytesRead, request->size);
 
 	ReadResponse response = READ_RESPONSE__INIT;
+	read_response__init(&response);
 	response.error = (bytesRead < 0 ? bytesRead : 0);
 	response.data.data = (bytesRead < 0 ? NULL : buffer);
 	response.data.len = (bytesRead < 0 ? 0 : bytesRead);
@@ -196,9 +195,6 @@ void fileexplorer_read_callback(PbContainer* container)
 
 	messagemanager_sendResponse(responseContainer);
 	pbcontainer_release(responseContainer);
-
-	k_free(buffer);
-	buffer = NULL;
 
 	PB_RELEASE(container);
 }
@@ -242,6 +238,12 @@ void fileexplorer_getdents_callback(PbContainer* container)
 
 	PB_DECODE(container, GetDentsRequest, get_dents_request, request);
 
+	if (request->path == NULL)
+	{
+		WriteLog(LL_Error, "no path found");
+		goto cleanup;
+	}
+
 	WriteLog(LL_Debug, "getting dents for: (%s).", request->path);
 
 	struct thread_info_t threadInfo;
@@ -256,153 +258,94 @@ void fileexplorer_getdents_callback(PbContainer* container)
 
 	oni_threadRestore(curthread, &threadInfo);
 
-	const uint32_t cDentBufferSize = 0x8000;
-	struct dirent* dent = NULL;
-	uint8_t* dentData = k_malloc(cDentBufferSize);
-	if (dentData == NULL)
-	{
-		WriteLog(LL_Error, "could not allocate dent space");
-		goto cleanup;
-	}
-	(void)memset(dentData, 0, cDentBufferSize);
+	// Allocate the dents
+	Vector list;
+	vector_initialize(&list, sizeof(DirEnt*));
 
-	uint64_t dentCount = 0;
-	while (kgetdents(handle, (char*)dentData, cDentBufferSize) > 0)
+	static char buffer[0x8000];
+	(void)memset(buffer, 0, sizeof(buffer));
+
+	struct dirent* dent = 0;
+	while (kgetdents(handle, buffer, sizeof(buffer)) > 0)
 	{
-		dent = (struct dirent*)dentData;
+		dent = (struct dirent*)buffer;
 
 		while (dent->d_fileno)
 		{
-			if (dent->d_type == DT_UNKNOWN)
+			if (dent->d_type == 0)
 				break;
 
-			dentCount++;
-			dent = (struct dirent*)((uint8_t*)dent + dent->d_reclen);
+			// Allocate the message
+			DirEnt* dirEnt = k_malloc(sizeof(DirEnt));
+			if (dirEnt == NULL)
+			{
+				WriteLog(LL_Error, "could not allocate DirEnt");
+				goto cleanup;
+			}
+
+			// Initialize the message
+			dir_ent__init(dirEnt);
+
+			// Assign the file number
+			dirEnt->fileno = dent->d_fileno;
+
+			// Set the name information
+			dirEnt->name = k_malloc(dent->d_namlen + 1);
+			if (dirEnt->name == NULL)
+			{
+				WriteLog(LL_Error, "could not allocate name");
+				goto cleanup;
+			}
+			else
+			{
+				// Zero out the name buffer and copy it over
+				(void)memset(dirEnt->name, 0, dent->d_namlen + 1);
+				(void)memcpy(dirEnt->name, dent->d_name, dent->d_namlen);
+			}
+
+			// Update the rest of the structure
+			dirEnt->reclen = dent->d_reclen;
+			dirEnt->type = dent->d_type;
+
+			if (!vector_append(&list, dirEnt))
+				WriteLog(LL_Error, "could not add vector entry");
+
+			dent = (struct dirent *)((uint8_t *)dent + dent->d_reclen);
 		}
 	}
-
-	//WriteLog(LL_Debug, "dentCount: %lld!!!!!!!!!!", dentCount);
 
 	// This resets the gedents
 	kclose(handle);
 	handle = -1;
 
-	// Allocate the dents
-	Vector s_Vector;
-	vector_initialize(&s_Vector, sizeof(DirEnt*));
-
-	DirEnt** dents = k_malloc(dentCount * sizeof(DirEnt));
-	if (dents == NULL)
-	{
-		WriteLog(LL_Error, "could not allocate dents.");
-		goto cleanup_dents;
-	}
-
-	// Allocate all of the directory entries
-	for (uint64_t i = 0; i < dentCount; ++i)
-	{
-		dents[i] = k_malloc(sizeof(DirEnt));
-		if (dents[i] == NULL)
-		{
-			WriteLog(LL_Error, "could not allocate directory entry");
-			goto cleanup_dents;
-		}
-	}
-
-	// Re-open the path
-	oni_threadEscape(curthread, &threadInfo);
-	handle = kopen(request->path, O_RDONLY | O_DIRECTORY, 0);
-	if (handle < 0)
-	{
-		WriteLog(LL_Error, "could not open the handle for path (%s).", request->path);
-		goto cleanup_dents;
-	}
-	oni_threadRestore(curthread, &threadInfo);
-
-	// Iterate again
-	uint64_t currentDentIndex = 0;
-	while (kgetdents(handle, (char*)dentData, cDentBufferSize) > 0)
-	{
-		dent = (struct dirent*)dentData;
-
-		while (dent->d_fileno)
-		{
-			if (dent->d_type == DT_UNKNOWN)
-				break;
-
-			// This shouldn't happen ever
-			if (dents[currentDentIndex] == NULL)
-			{
-				WriteLog(LL_Error, "could not get directory entry");
-				goto next;
-			}
-
-			// Initialize the message
-			dir_ent__init(dents[currentDentIndex]);
-
-			// Assign the file number
-			dents[currentDentIndex]->fileno = dent->d_fileno;
-			
-			// Set the name information
-			dents[currentDentIndex]->name = k_malloc(dent->d_namlen);
-			if (dents[currentDentIndex]->name == NULL)
-				dents[currentDentIndex]->name = "_mira_error_invalid.bin";
-			else
-			{
-				// Zero out the name buffer and copy it over
-				(void)memset(dents[currentDentIndex]->name, 0, dent->d_namlen);
-				(void)memcpy(dents[currentDentIndex]->name, dent->d_name, dent->d_namlen);
-			}
-
-			// Update the rest of the structure
-			dents[currentDentIndex]->reclen = dent->d_reclen;
-			dents[currentDentIndex]->type = dent->d_type;
-		next:
-			currentDentIndex++;
-			dent = (struct dirent*)((uint8_t*)dent + dent->d_reclen);
-		}
-	}
-
+	//WriteLog(LL_Warn, "here: %d %d %p", list.size, list.capacity, list.data);
 	GetDentsResponse response = GET_DENTS_RESPONSE__INIT;
 	get_dents_response__init(&response);
 
-	response.n_entries = currentDentIndex;
-	response.entries = dents;
+	response.n_entries = list.size;
+	response.entries = (DirEnt**)list.data;
 	response.error = 0;
-
-	//WriteLog(LL_Warn, "here: %p", get_dents_response__pack);
-
 	
 	PB_ENCODE(container, response, MESSAGE_CATEGORY__FILE, FILE_TRANSFER_COMMANDS__GetDents, get_dents_response, responseContainer);
-
-	//WriteLog(LL_Warn, "here");
 
 	messagemanager_sendResponse(responseContainer);
 	pbcontainer_release(responseContainer);
 
-	// Cleanup our allocation mess
-cleanup_dents:
-	if (dents)
+	for (int i = 0; i < list.size; ++i)
 	{
-		// free all child objects
-		for (uint64_t i = 0; i < dentCount; ++i)
-		{
-			if (dents[i] == NULL)
-				continue;
+		// Cleanup the name fields
+		DirEnt* dirEnt = vector_get(&list, i);
+		if (dirEnt == NULL)
+			continue;
 
-			k_free(dents[i]);
-			dents[i] = NULL;
-		}
+		if (dirEnt->name == NULL)
+			continue;
 
-		k_free(dents);
-		dents = NULL;
+		k_free(dirEnt->name);
+		dirEnt->name = NULL;
 	}
 
-	if (dentData)
-	{
-		k_free(dentData);
-		dentData = NULL;
-	}
+	vector_free(&list);
 
 	PB_RELEASE(container);
 }
@@ -426,7 +369,7 @@ void fileexplorer_stat_callback(PbContainer* container)
 	else
 		ret = kstat(request->path, &stat);
 
-	//WriteLog(LL_Debug, "%s returned %d", request->path == NULL ? "kfstat" : "kstat", ret);
+	WriteLog(LL_Debug, "%s returned %d", request->path == NULL ? "kfstat" : "kstat", ret);
 
 	oni_threadRestore(curthread, &threadInfo);
 
@@ -513,6 +456,36 @@ void fileexplorer_stat_callback(PbContainer* container)
 
 	messagemanager_sendResponse(responseContainer);
 	pbcontainer_release(responseContainer);
+
+	if (response.path != NULL)
+	{
+		k_free(response.path);
+		response.path = NULL;
+	}
+
+	if (response.mtim != NULL)
+	{
+		k_free(response.mtim);
+		response.mtim = NULL;
+	}
+
+	if (response.ctim != NULL)
+	{
+		k_free(response.ctim);
+		response.ctim = NULL;
+	}
+
+	if (response.birthtim != NULL)
+	{
+		k_free(response.birthtim);
+		response.birthtim = NULL;
+	}
+
+	if (response.atim != NULL)
+	{
+		k_free(response.atim);
+		response.atim = NULL;
+	}
 
 	PB_RELEASE(container);
 }

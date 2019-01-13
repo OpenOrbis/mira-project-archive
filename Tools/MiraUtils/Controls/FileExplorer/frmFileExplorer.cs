@@ -224,7 +224,11 @@ namespace MiraUtils.Controls.FileExplorer
                 }
                 else if (l_Entry.Type == DirEnt.Types.DirectoryType.DtReg)
                 {
-                    File.WriteAllBytes(l_LocalPath, p_Connection.DownloadFile(l_RemotePath));
+                    var s_Data = p_Connection.DownloadFile(l_RemotePath);
+                    if (s_Data == null)
+                        continue;
+
+                    File.WriteAllBytes(l_LocalPath, s_Data);
                 }
             }
         }
