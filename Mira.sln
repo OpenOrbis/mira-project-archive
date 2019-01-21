@@ -58,13 +58,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraLoader", "Firmware\Mira
 		{73D88A70-8F6F-49A7-B921-9DB254527F92} = {73D88A70-8F6F-49A7-B921-9DB254527F92}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "proto", "proto", "{645E2BA5-2D9D-4290-9053-56CEF4582EDD}"
-	ProjectSection(SolutionItems) = preProject
-		Firmware\proto\debugger.proto = Firmware\proto\debugger.proto
-		Firmware\proto\fileexplorer.proto = Firmware\proto\fileexplorer.proto
-		Firmware\proto\mirabuiltin.proto = Firmware\proto\mirabuiltin.proto
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraUtils", "Tools\MiraUtils\MiraUtils.csproj", "{A7171E4C-1884-4D65-B71F-839FC91E6FC3}"
 EndProject
 Global
@@ -129,7 +122,6 @@ Global
 		{CE636AB2-D5A6-4426-AE32-C68E455164F5} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 		{78AFEB15-B4CA-4A56-987E-DAE7ED529BAE} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
 		{B5C14A31-FF3D-4536-AD0A-2743A17D27FE} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
-		{645E2BA5-2D9D-4290-9053-56CEF4582EDD} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 		{A7171E4C-1884-4D65-B71F-839FC91E6FC3} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

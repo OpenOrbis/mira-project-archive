@@ -44,7 +44,7 @@
 #include <sys/sysent.h>
 //#include <string.h> // memmove, memcpy
 //#include <stdlib.h> // malloc, free
-#include <assert.h>
+//#include <assert.h>
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 

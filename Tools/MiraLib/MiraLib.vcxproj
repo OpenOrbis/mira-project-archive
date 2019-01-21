@@ -116,22 +116,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\fileexplorer.pb-c.c" />
-    <ClCompile Include="src\flat_vector.c" />
-    <ClCompile Include="src\mirabuiltin.pb-c.c" />
-    <ClCompile Include="src\protobuf-c.c" />
     <ClCompile Include="src\Source.c" />
-    <ClCompile Include="src\vector.c" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\messagetest.proto" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\fileexplorer.pb-c.h" />
-    <ClInclude Include="src\flat_vector.h" />
-    <ClInclude Include="src\mirabuiltin.pb-c.h" />
-    <ClInclude Include="src\protobuf-c.h" />
-    <ClInclude Include="src\vector.h" />
+    <ClInclude Include="src\flatbuffers_common_builder.h" />
+    <ClInclude Include="src\flatbuffers_common_reader.h" />
+    <ClInclude Include="src\MiraBuiltin.idl_builder.h" />
+    <ClInclude Include="src\MiraBuiltin.idl_reader.h" />
+    <ClInclude Include="src\MiraBuiltin.idl_verifier.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
