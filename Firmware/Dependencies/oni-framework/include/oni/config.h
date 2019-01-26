@@ -28,6 +28,10 @@
 
 #define ONI_PLATFORM_ORBIS_BSD_555	555
 
+#define ONI_PLATFORM_RASPI_ZERO		998
+
+#define ONI_PLATFORM_STEAM_LINK		999
+
 // Unknown device
 #define ONI_UNKNOWN_PLATFORM		-1
 

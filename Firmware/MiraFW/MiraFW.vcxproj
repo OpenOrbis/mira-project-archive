@@ -37,13 +37,13 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(ProjectDir)src\flatbuffers;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(ProjectDir)src\capnproto;$(ProjectDir)src\flatbuffers;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;_STANDALONE;_STANDALONE_DEBUG;FLATCC_PORTABLE;FLATCC_NO_PALIGNED_ALLOC</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_STEAM_LINK.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
@@ -58,14 +58,12 @@
     <Text Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\capnproto\addressbook.capnp.c" />
+    <ClCompile Include="src\capnproto\c.capnp.c" />
+    <ClCompile Include="src\capnproto\capn-malloc.c" />
+    <ClCompile Include="src\capnproto\capn-stream.c" />
+    <ClCompile Include="src\capnproto\capn.c" />
     <ClCompile Include="src\entrypoint.c" />
-    <ClCompile Include="src\flatbuffers\builder.c" />
-    <ClCompile Include="src\flatbuffers\emitter.c" />
-    <ClCompile Include="src\flatbuffers\isinf.c" />
-    <ClCompile Include="src\flatbuffers\json_parser.c" />
-    <ClCompile Include="src\flatbuffers\json_printer.c" />
-    <ClCompile Include="src\flatbuffers\refmap.c" />
-    <ClCompile Include="src\flatbuffers\verifier.c" />
     <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
     <ClCompile Include="src\mira\plugins\appInstaller\appinstaller_plugin.c" />
@@ -86,64 +84,10 @@
     <ClCompile Include="src\mira\utils\vector.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_accessors.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_alloc.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_builder.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_emitter.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_endian.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_epilogue.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_flatbuffers.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_identifier.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_iov.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_json_parser.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_json_printer.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_portable.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_prologue.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_refmap.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_rtconfig.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_types.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_unaligned.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_verifier.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\flatcc_version.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\grisu3_math.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\grisu3_parse.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\grisu3_print.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\include\linux\endian.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\include\std\inttypes.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\include\std\stdalign.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\include\std\stdbool.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\include\std\stdint.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\paligned_alloc.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pbase64.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pdiagnostic.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pdiagnostic_pop.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pdiagnostic_push.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pendian.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pendian_detect.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pinline.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pinttypes.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\portable.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\portable_basic.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pparsefp.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pparseint.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pprintfp.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pprintint.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pstatic_assert.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pstatic_assert_scope.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pstdalign.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pstdbool.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pstdint.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\punaligned.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pversion.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\portable\pwarnings.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\reflection\flatbuffers_common_builder.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\reflection\flatbuffers_common_reader.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\reflection\reflection_builder.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\reflection\reflection_reader.h" />
-    <ClInclude Include="src\flatbuffers\flatcc\reflection\reflection_verifier.h" />
-    <ClInclude Include="src\flatbuffers\fpmath.h" />
-    <ClInclude Include="src\flatbuffers\_fpmath.h" />
+    <ClInclude Include="src\capnproto\addressbook.capnp.h" />
+    <ClInclude Include="src\capnproto\c.capnp.h" />
+    <ClInclude Include="src\capnproto\capnp_c.h" />
+    <ClInclude Include="src\capnproto\capnp_priv.h" />
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
@@ -162,6 +106,9 @@
     <ClInclude Include="src\mira\utils\injector.h" />
     <ClInclude Include="src\mira\utils\miraelf.h" />
     <ClInclude Include="src\mira\utils\vector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\capnproto\capn-list.inc" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>

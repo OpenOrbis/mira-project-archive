@@ -21,6 +21,14 @@ void oni_installPrePatches()
 		case ONI_PLATFORM_ORBIS_BSD_505:
 			install_prerunPatches_505();
 			break;
+#if ONI_PLATFORM == ONI_PLATFORM_RASPI_ZERO
+		case ONI_PLATFORM_RASPI_ZERO:
+			break;
+#elif ONI_PLATFORM == ONI_PLATFORM_STEAM_LINK
+		case ONI_PLATFORM_STEAM_LINK:
+			install_prerunPatches_SteamLink();
+			break;
+#endif
 		default:
 			break;
 	}

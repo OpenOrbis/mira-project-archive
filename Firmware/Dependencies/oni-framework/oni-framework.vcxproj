@@ -40,10 +40,10 @@
     <OutDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;_STANDALONE_DEBUG</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;_STANDALONE_DEBUG</NMakePreprocessorDefinitions>
     <NMakeIncludeSearchPath>$(ProjectDir)include;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make  ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make  ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
     <RemoteBuildOutputs>OniFramework.a</RemoteBuildOutputs>
   </PropertyGroup>
@@ -84,6 +84,7 @@
     <ClInclude Include="include\oni\utils\kdlsym\orbis474.h" />
     <ClInclude Include="include\oni\utils\kdlsym\orbis501.h" />
     <ClInclude Include="include\oni\utils\kdlsym\orbis505.h" />
+    <ClInclude Include="include\oni\utils\kdlsym\steam_link.h" />
     <ClInclude Include="include\oni\utils\kernel.h" />
     <ClInclude Include="include\oni\utils\logger.h" />
     <ClInclude Include="include\oni\utils\memory\allocator.h" />
@@ -101,6 +102,7 @@
     <ClCompile Include="src\oni\boot\patches\patches474.c" />
     <ClCompile Include="src\oni\boot\patches\patches501.c" />
     <ClCompile Include="src\oni\boot\patches\patches505.c" />
+    <ClCompile Include="src\oni\boot\patches\steam_link.c" />
     <ClCompile Include="src\oni\messaging\messagecategory.c" />
     <ClCompile Include="src\oni\messaging\messagemanager.c" />
     <ClCompile Include="src\oni\plugins\pluginmanager.c" />

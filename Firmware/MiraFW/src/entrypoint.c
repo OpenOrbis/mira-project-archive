@@ -154,14 +154,17 @@ This function handles the kernel (ring-0) mode initialization
 	if (gInitParams->process == curthread->td_proc)
 		pmap_activate(curthread);
 
+	// Create new credentials
+	(void)ksetuid_t(0, curthread);
+
+	// Root and escape our thread
+	oni_threadEscape(curthread, NULL);
+
 	// Because we have now forked into a new realm of fuckery
 	// We need to reserve the first 3 file descriptors in our process
 	int descriptor = kopen("/dev/console", 1, 0);
 	kdup2(descriptor, 1);
 	kdup2(1, 2);
-
-	// Root and escape our thread
-	oni_threadEscape(curthread, NULL);
 
 	// Show over UART that we are running in a new process
 	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");

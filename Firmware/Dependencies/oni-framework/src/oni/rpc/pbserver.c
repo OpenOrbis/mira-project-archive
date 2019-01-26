@@ -45,7 +45,7 @@ uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
 		return false;
 	}
 
-	WriteLog(LL_Warn, "here");
+	WriteLog(LL_Warn, "socket created: %d", server->socket);
 
 
 	// Set the server address information
@@ -53,9 +53,9 @@ uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
 	server->address.sin_family = AF_INET;
 	server->address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server->address.sin_port = htons(9999); // TODO: Make configurable
-	server->address.sin_len = sizeof(server->address);
+	server->address.sin_len = 0x10;//sizeof(server->address);
 
-	WriteLog(LL_Warn, "here");
+	WriteLog(LL_Warn, "filled out information");
 
 	// Bind to the port
 	int32_t ret = kbind(server->socket, (struct sockaddr*)&server->address, sizeof(server->address));
@@ -67,7 +67,7 @@ uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
 		return false;
 	}
 
-	WriteLog(LL_Warn, "here");
+	WriteLog(LL_Warn, "socket bound: %d", server->socket);
 
 	ret = klisten(server->socket, ARRAYSIZE(server->connections));
 	if (ret < 0)

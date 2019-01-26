@@ -35,7 +35,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(SRC_DIR)/flatbuffers -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I$(SRC_DIR)/flatbuffers -I$(SRC_DIR)/capnproto -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"

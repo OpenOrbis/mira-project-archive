@@ -14,13 +14,17 @@
 
 #include <fcntl.h>
 
+#include <oni/utils/syscall.h>
+
 #ifndef MAP_FAILED
 #define MAP_FAILED      ((void *)-1)
 #endif
 
 int kwait4(int pid, int *status, int options, struct rusage *rusage)
 {
-	int(*wait4)(struct thread* thread, struct wait_args*) = kdlsym(sys_wait4);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*wait4)(struct thread* thread, struct wait_args*) = (void*)sysents[SYS_WAIT4].sy_call;
 	if (!wait4)
 		return -1;
 
@@ -46,7 +50,9 @@ int kwait4(int pid, int *status, int options, struct rusage *rusage)
 
 int kmlock(void* address, uint64_t size)
 {
-	int(*mlock)(struct thread*, struct mlock_args*) = kdlsym(sys_mlock);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*mlock)(struct thread*, struct mlock_args*) = (void*)sysents[SYS_MLOCK].sy_call;
 	if (!mlock)
 		return -1;
 
@@ -70,7 +76,9 @@ int kmlock(void* address, uint64_t size)
 
 int kmlockall(int how)
 {
-	int(*sys_mlockall)(struct thread*, struct mlockall_args*) = kdlsym(sys_mlockall);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_mlockall)(struct thread*, struct mlockall_args*) = (void*)sysents[SYS_MLOCKALL].sy_call;
 	if (!sys_mlockall)
 		return -1;
 
@@ -93,7 +101,10 @@ int kmlockall(int how)
 
 off_t klseek(int fd, off_t offset, int whence)
 {
-	int(*sys_lseek)(struct thread*, struct lseek_args*) = kdlsym(sys_lseek);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_lseek)(struct thread*, struct lseek_args*) = (void*)sysents[SYS_LSEEK].sy_call;
+	
 	if (!sys_lseek)
 		return -1;
 
@@ -117,7 +128,9 @@ off_t klseek(int fd, off_t offset, int whence)
 }
 caddr_t kmmap(caddr_t addr, size_t len, int prot, int flags, int fd, off_t pos)
 {
-	int(*sys_mmap)(struct thread*, struct mmap_args*) = kdlsym(sys_mmap);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_mmap)(struct thread*, struct mmap_args*) = (void*)sysents[SYS_MMAP].sy_call;
 	if (!sys_mmap)
 		return (caddr_t)-1;
 
@@ -145,7 +158,9 @@ caddr_t kmmap(caddr_t addr, size_t len, int prot, int flags, int fd, off_t pos)
 
 int kmunmap(void *addr, size_t len)
 {
-	int(*sys_munmap)(struct thread*, struct munmap_args*) = kdlsym(sys_munmap);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_munmap)(struct thread*, struct munmap_args*) = (void*)sysents[SYS_MUNMAP].sy_call;
 	if (!sys_munmap)
 		return -1;
 
@@ -169,7 +184,9 @@ int kmunmap(void *addr, size_t len)
 
 ssize_t kread(int fd, void* buf, size_t count)
 {
-	int(*sys_read)(struct thread*, struct read_args*) = kdlsym(sys_read);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_read)(struct thread*, struct read_args*) = (void*)sysents[SYS_READ].sy_call;
 	if (!sys_read)
 		return -1;
 
@@ -195,7 +212,9 @@ ssize_t kread(int fd, void* buf, size_t count)
 
 int kfstat(int fd, struct stat* sb)
 {
-	int(*sys_fstat)(struct thread*, struct fstat_args*) = kdlsym(sys_fstat);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_fstat)(struct thread*, struct fstat_args*) = (void*)sysents[SYS_FSTAT].sy_call;
 	if (!sys_fstat)
 		return -1;
 
@@ -220,7 +239,9 @@ int kfstat(int fd, struct stat* sb)
 
 int kstat(char* path, struct stat* buf)
 {
-	int(*sys_stat)(struct thread*, struct stat_args*) = kdlsym(sys_stat);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_stat)(struct thread*, struct stat_args*) = (void*)sysents[SYS_STAT].sy_call;
 	if (!sys_stat)
 		return -1;
 
@@ -245,7 +266,9 @@ int kstat(char* path, struct stat* buf)
 
 int kstat_t(char* path, struct stat* buf, struct thread* td)
 {
-	int(*sys_stat)(struct thread*, struct stat_args*) = kdlsym(sys_stat);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_stat)(struct thread*, struct stat_args*) = (void*)sysents[SYS_STAT].sy_call;
 	if (!sys_stat)
 		return -1;
 
@@ -269,7 +292,9 @@ int kstat_t(char* path, struct stat* buf, struct thread* td)
 
 void kclose_t(int socket, struct thread* td)
 {
-	int(*ksys_close)(struct thread *, struct close_args *) = kdlsym(sys_close);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_close)(struct thread *, struct close_args *) = (void*)sysents[SYS_CLOSE].sy_call;
 	if (!ksys_close)
 		return;
 
@@ -288,7 +313,9 @@ void kclose_t(int socket, struct thread* td)
 
 void kclose(int socket)
 {
-	int(*ksys_close)(struct thread *, struct close_args *) = kdlsym(sys_close);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_close)(struct thread *, struct close_args *) = (void*)sysents[SYS_CLOSE].sy_call;
 	if (!ksys_close)
 		return;
 
@@ -308,7 +335,9 @@ void kclose(int socket)
 
 int ksocket(int a, int b, int c)
 {
-	int(*ksys_socket)(struct thread*, struct socket_args*) = kdlsym(sys_socket);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_socket)(struct thread*, struct socket_args*) = (void*)sysents[SYS_SOCKET].sy_call;
 
 	int error;
 	struct socket_args uap;
@@ -332,7 +361,9 @@ int ksocket(int a, int b, int c)
 
 ssize_t kwrite(int d, const void* buf, size_t nbytes)
 {
-	int(*ksys_write)(struct thread*, struct write_args*) = kdlsym(sys_write);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_write)(struct thread*, struct write_args*) = (void*)sysents[SYS_WRITE].sy_call;
 	if (!ksys_write)
 		return -1;
 
@@ -356,7 +387,9 @@ ssize_t kwrite(int d, const void* buf, size_t nbytes)
 }
 int kgetdents(int fd, char* buf, int nbytes)
 {
-	int(*sys_getdents)(struct thread*, struct getdents_args*) = kdlsym(sys_getdents);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_getdents)(struct thread*, struct getdents_args*) = (void*)sysents[SYS_GETDENTS].sy_call;
 
 	int error;
 	struct getdents_args uap;
@@ -377,12 +410,19 @@ int kgetdents(int fd, char* buf, int nbytes)
 	return td->td_retval[0];
 }
 
+#include <oni/utils/kernel.h>
+
 int kbind(int socket, const struct sockaddr * b, size_t c)
 {
-	int(*ksys_bind)(struct thread *, struct bind_args *) = kdlsym(sys_bind);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_bind)(struct thread *, struct bind_args *) = (void*)sysents[SYS_BIND].sy_call;
 
 	int error;
 	struct bind_args uap;
+
+	(void)memset(&uap, 0, sizeof(uap));
+
 	struct thread *td = curthread;
 
 	// clear errors
@@ -402,7 +442,9 @@ int kbind(int socket, const struct sockaddr * b, size_t c)
 
 int klisten(int sockfd, int backlog)
 {
-	int(*ksys_listen)(struct thread *, struct listen_args *) = kdlsym(sys_listen);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_listen)(struct thread *, struct listen_args *) = (void*)sysents[SYS_LISTEN].sy_call;
 	int error;
 	struct listen_args uap;
 	struct thread *td = curthread;
@@ -423,7 +465,9 @@ int klisten(int sockfd, int backlog)
 
 int kaccept(int sock, struct sockaddr * b, size_t* c)
 {
-	int(*ksys_accept)(struct thread *, struct accept_args *) = kdlsym(sys_accept);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_accept)(struct thread *, struct accept_args *) = (void*)sysents[SYS_ACCEPT].sy_call;
 	int error;
 	struct accept_args uap;
 
@@ -459,7 +503,9 @@ int kaccept(int sock, struct sockaddr * b, size_t* c)
 
 int krecv(int s, void * buf, int len, int flags)
 {
-	int(*ksys_recvfrom)(struct thread *, struct recvfrom_args *) = kdlsym(sys_recvfrom);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_recvfrom)(struct thread *, struct recvfrom_args *) = (void*)sysents[SYS_RECVFROM].sy_call;
 	if (!ksys_recvfrom)
 		return -1;
 
@@ -506,7 +552,9 @@ int krecv(int s, void * buf, int len, int flags)
 
 int ksend(int socket, caddr_t buf, size_t len, int flags)
 {
-	int(*ksys_sendto)(struct thread *, struct sendto_args *) = kdlsym(sys_sendto);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_sendto)(struct thread *, struct sendto_args *) = (void*)sysents[SYS_SENDTO].sy_call;
 	if (!ksys_sendto)
 		return -1;
 
@@ -553,7 +601,9 @@ int ksend(int socket, caddr_t buf, size_t len, int flags)
 
 int kopen_t(char* path, int flags, int mode, struct thread* td)
 {
-	int(*ksys_open)(struct thread *, struct open_args *) = kdlsym(sys_open);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_open)(struct thread *, struct open_args *) = (void*)sysents[SYS_OPEN].sy_call;
 
 	int error;
 	struct open_args uap;
@@ -577,7 +627,9 @@ int kopen_t(char* path, int flags, int mode, struct thread* td)
 
 int kopen(char* path, int flags, int mode)
 {
-	int(*ksys_open)(struct thread *, struct open_args *) = kdlsym(sys_open);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*ksys_open)(struct thread *, struct open_args *) = (void*)sysents[SYS_OPEN].sy_call;
 
 	int error;
 	struct open_args uap;
@@ -601,7 +653,9 @@ int kopen(char* path, int flags, int mode)
 
 int kdup2(int oldd, int newd)
 {
-	int(*sys_dup2)(struct thread *, struct dup2_args *) = kdlsym(sys_dup2);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_dup2)(struct thread *, struct dup2_args *) = (void*)sysents[SYS_DUP2].sy_call;
 
 	int error;
 	struct dup2_args uap;
@@ -660,7 +714,9 @@ int kmkdir_t(char * path, int mode, struct thread* td)
 
 int krmdir(char * path)
 {
-	int(*sys_rmdir)(struct thread *, struct rmdir_args *) = kdlsym(sys_rmdir);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_rmdir)(struct thread *, struct rmdir_args *) = (void*)sysents[SYS_RMDIR].sy_call;
 
 	int error;
 	struct rmdir_args uap;
@@ -682,7 +738,9 @@ int krmdir(char * path)
 
 int krmdir_t(char * path, struct thread* td)
 {
-	int(*sys_rmdir)(struct thread *, struct rmdir_args *) = kdlsym(sys_rmdir);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_rmdir)(struct thread *, struct rmdir_args *) = (void*)sysents[SYS_RMDIR].sy_call;
 
 	int error;
 	struct rmdir_args uap;
@@ -703,7 +761,9 @@ int krmdir_t(char * path, struct thread* td)
 
 int kshutdown(int s, int how)
 {
-	int(*sys_shutdown)(struct thread *, struct shutdown_args *) = kdlsym(sys_shutdown);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_shutdown)(struct thread *, struct shutdown_args *) = (void*)sysents[SYS_SHUTDOWN].sy_call;
 
 	int error;
 	struct shutdown_args uap;
@@ -726,7 +786,9 @@ int kshutdown(int s, int how)
 
 int kunlink(char* path)
 {
-	int(*sys_unlink)(struct thread *, struct unlink_args *) = kdlsym(sys_unlink);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_unlink)(struct thread *, struct unlink_args *) = (void*)sysents[SYS_UNLINK].sy_call;
 
 	int error;
 	struct unlink_args uap;
@@ -748,7 +810,9 @@ int kunlink(char* path)
 
 int ksetuid(uid_t uid)
 {
-	int(*sys_setuid)(struct thread *, struct setuid_args *) = kdlsym(sys_setuid);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_setuid)(struct thread *, struct setuid_args *) = (void*)sysents[SYS_SETUID].sy_call;
 
 	int error;
 	struct setuid_args uap;
@@ -770,7 +834,9 @@ int ksetuid(uid_t uid)
 
 int ksetuid_t(uid_t uid, struct thread* td)
 {
-	int(*sys_setuid)(struct thread *, struct setuid_args *) = kdlsym(sys_setuid);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_setuid)(struct thread *, struct setuid_args *) = (void*)sysents[SYS_SETUID].sy_call;
 
 	int error;
 	struct setuid_args uap;
@@ -791,7 +857,9 @@ int ksetuid_t(uid_t uid, struct thread* td)
 
 int kptrace(int req, pid_t pid, caddr_t addr, int data)
 {
-	int(*sys_ptrace)(struct thread *, struct ptrace_args *) = kdlsym(sys_ptrace);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_ptrace)(struct thread *, struct ptrace_args *) = (void*)sysents[SYS_PTRACE].sy_call;
 
 	int error;
 	struct ptrace_args uap;
@@ -816,7 +884,9 @@ int kptrace(int req, pid_t pid, caddr_t addr, int data)
 
 int kkill(int pid, int signum)
 {
-	int(*sys_kill)(struct thread *, struct kill_args *) = kdlsym(sys_kill);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_kill)(struct thread *, struct kill_args *) = (void*)sysents[SYS_KILL].sy_call;
 
 	int error;
 	struct kill_args uap;
@@ -841,7 +911,7 @@ int ksetsockopt(int socket, int level, int name, caddr_t val, int valsize)
 {
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
 	struct sysent* sysents = sv->sv_table;
-	int(*sys_setsockopt)(struct thread *, struct setsockopt_args *) = (void*)sysents[105].sy_call;
+	int(*sys_setsockopt)(struct thread *, struct setsockopt_args *) = (void*)sysents[SYS_SETSOCKOPT].sy_call;
 
 	int error;
 	struct setsockopt_args uap;
@@ -869,7 +939,7 @@ int kftruncate(int fd, off_t length)
 {
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
 	struct sysent* sysents = sv->sv_table;
-	int(*sys_ftruncate)(struct thread *, struct ftruncate_args *) = (void*)sysents[480].sy_call;
+	int(*sys_ftruncate)(struct thread *, struct ftruncate_args *) = (void*)sysents[SYS_FTRUNCATE].sy_call;
 
 	int error;
 	struct ftruncate_args uap;
@@ -894,7 +964,7 @@ pid_t krfork_t(int flags, struct thread* td)
 {
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
 	struct sysent* sysents = sv->sv_table;
-	int(*sys_rfork)(struct thread *, struct rfork_args *) = (void*)sysents[251].sy_call;
+	int(*sys_rfork)(struct thread *, struct rfork_args *) = (void*)sysents[SYS_RFORK].sy_call;
 
 	int error;
 	struct rfork_args uap;

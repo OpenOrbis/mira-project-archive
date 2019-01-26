@@ -562,28 +562,28 @@ struct proc {
 									/* End area that is zeroed on creation. */
 #define	p_endzero	p_magic
 
+#if ONI_PLATFORM == ONI_PLATFORM_STEAM_LINK
+	char blah[0x6C];
+#else
+	/* PS4 specific data */
 	char		*p_patchpath;	/* patch file path */
 	int		p_unk338;
 	void		*p_dynlib;      /* Sony Dynlib info */
 	char            unk348[0x58];
-
-#if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_355
-	char		p_unk3A0[0x38];
-#endif
-
-#if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_400
-	char		p_unk3D8[0x10];
-#endif
-
-#if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_455
-	char		p_unk3E8[0x54];
-#endif
-
-#if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_500
-	char		p_unk43C[0x08];
-#endif
-
 	/* PS4 specific data */
+#endif
+
+#if ONI_PLATFORM >= ONI_PLATFORM_STEAM_LINK
+	char            unk348[0x100];
+#elif ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_500
+	char            unk348[0x0FC];
+#elif ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_455
+	char            unk348[0x0F4];
+#elif ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_400
+	char            unk348[0x0A0];
+#elif ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_355
+	char            unk348[0x090];
+#endif
 
 	/* The following fields are all copied upon creation in fork. */
 #define	p_startcopy	p_endzero
@@ -632,13 +632,13 @@ struct proc {
 	uint64_t	p_prev_runtime;	/* (c) Resource usage accounting. */
 	struct racct	*p_racct;	/* (b) Resource accounting. */
 
-	char            unkA08[0x98];
+	/* PS4 specific data */
 #if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_500
-	char            unkAA0[0x18];
-#endif
-
-#if ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_355
-	char            unkAB8[0x20];
+	char            unkA08[0xB0];
+#elif ONI_PLATFORM >= ONI_PLATFORM_ORBIS_BSD_355
+	char            unkA08[0xA8];
+#else
+	char            unkA08[0x98];
 #endif
 	/* PS4 specific data */
 };

@@ -1,6 +1,7 @@
 #include "injector.h"
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
+#include <oni/utils/syscall.h>
 
 #include <oni/utils/kernel.h>
 #include <oni/utils/sys_wrappers.h>
@@ -18,8 +19,11 @@
 
 void* injector_allocateMemory(int32_t pid, uint32_t size)
 {
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+
 	struct  proc* (*pfind)(pid_t) = kdlsym(pfind);
-	int(*sys_mmap)(struct thread*, struct mmap_args*) = kdlsym(sys_mmap);
+	int(*sys_mmap)(struct thread*, struct mmap_args*) = (void*)sysents[SYS_MMAP].sy_call;
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
 
 	// Get the proc structure from pid, this will return with the lock held

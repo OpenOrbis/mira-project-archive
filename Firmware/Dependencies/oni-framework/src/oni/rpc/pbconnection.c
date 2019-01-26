@@ -7,12 +7,10 @@
 
 #include <oni/messaging/messagemanager.h>
 
-#include <protobuf-c/mirabuiltin.pb-c.h>
 #include <oni/framework.h>
 #include <oni/init/initparams.h>
 #include <string.h>
 
-#include <oni/messaging/pbcontainer.h>
 
 /// <summary>
 /// Initializes a pbconnection structure
@@ -138,40 +136,45 @@ void pbconnection_thread(struct pbconnection_t* connection)
 			bufferRecv += result;
 		}
 
+		// TODO: Fixme
 		// Decode the message header		
-		PbMessage* pbMessage = pb_message__unpack(NULL, dataLength, data);
+		/*PbMessage* pbMessage = pb_message__unpack(NULL, dataLength, data);
 		if (!pbMessage)
 		{
 			WriteLog(LL_Error, "could not decode header\n");
 			goto disconnect;
-		}
+		}*/
 
 		// We no longer need the original buffer, free it as soon as possible
 		k_free(data);
 		data = NULL;
 
-		PbContainer* container = pbcontainer_create(pbMessage, false);
+		// TODO: Fixme
+		/*PbContainer* container = pbcontainer_create(pbMessage, false);
 		if (!container)
 		{
 			pb_message__free_unpacked(pbMessage, NULL);
 			WriteLog(LL_Error, "could not allocate pbcontainer memory.");
 			goto disconnect;
-		}
+		}*/
 
 		// Validate the message category
-		MessageCategory category = pbMessage->category;
-		if (category < MESSAGE_CATEGORY__NONE || category > MESSAGE_CATEGORY__MAX) // TODO: Add Max
-		{
-			pbcontainer_release(container);
-			WriteLog(LL_Error, "invalid category (%d).", category);
-			goto disconnect;
-		}
+		// TODO: Fixme
+		//MessageCategory category = pbMessage->category;
+		//if (category < MESSAGE_CATEGORY__NONE || category > MESSAGE_CATEGORY__MAX) // TODO: Add Max
+		//{
+		//	pbcontainer_release(container);
+		//	WriteLog(LL_Error, "invalid category (%d).", category);
+		//	goto disconnect;
+		//}
 
 		// Send the protobuf request off through the message system
-		messagemanager_sendRequest(container);
+		// TODO: fixme
+		//messagemanager_sendRequest(container);
 
 		// We no longer need to hold this reference
-		pbcontainer_release(container);
+		// TODO: fixme
+		//pbcontainer_release(container);
 	}
 
 disconnect:

@@ -2,7 +2,6 @@
 #include <oni/framework.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/messaging/messagemanager.h>
-#include <oni/messaging/pbcontainer.h>
 #include <oni/utils/sys_wrappers.h>
 #include <sys/dirent.h>
 #include <sys/stat.h>
