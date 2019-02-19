@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #if defined(unix) && !defined(__APPLE__)
 #include <endian.h>
@@ -27,8 +27,6 @@ typedef intmax_t ssize_t;
 #else
 #include <stddef.h>
 #endif
-
-#include <oni/utils/types.h>
 
   // Cross-platform macro ALIGNED_(x) aligns a struct by `x` bytes.
 #ifdef _MSC_VER

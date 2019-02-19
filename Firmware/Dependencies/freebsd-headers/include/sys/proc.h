@@ -569,7 +569,6 @@ struct proc {
 	char		*p_patchpath;	/* patch file path */
 	int		p_unk338;
 	void		*p_dynlib;      /* Sony Dynlib info */
-	char            unk348[0x58];
 	/* PS4 specific data */
 #endif
 

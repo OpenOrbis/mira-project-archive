@@ -38,7 +38,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(ProjectDir)src\capnproto;$(ProjectDir)src\flatbuffers;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;_STANDALONE;_STANDALONE_DEBUG;FLATCC_PORTABLE;FLATCC_NO_PALIGNED_ALLOC</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;__LP64__=1;_M_X64;__amd64__;_STANDALONE;_STANDALONE_DEBUG;FLATCC_PORTABLE;FLATCC_NO_PALIGNED_ALLOC</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
@@ -49,20 +49,15 @@
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;__LP64__=1;_M_X64;__amd64__;PB_FIELD_16BIT;_STANDALONE</NMakePreprocessorDefinitions>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraFW_Orbis_ONI_PLATFORM_STEAM_LINK.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <ItemGroup>
     <Text Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\capnproto\addressbook.capnp.c" />
-    <ClCompile Include="src\capnproto\c.capnp.c" />
-    <ClCompile Include="src\capnproto\capn-malloc.c" />
-    <ClCompile Include="src\capnproto\capn-stream.c" />
-    <ClCompile Include="src\capnproto\capn.c" />
     <ClCompile Include="src\entrypoint.c" />
     <ClCompile Include="src\mira\fs\overlay\overlayfs.c" />
     <ClCompile Include="src\mira\miraframework.c" />
@@ -84,15 +79,12 @@
     <ClCompile Include="src\mira\utils\vector.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\capnproto\addressbook.capnp.h" />
-    <ClInclude Include="src\capnproto\c.capnp.h" />
-    <ClInclude Include="src\capnproto\capnp_c.h" />
-    <ClInclude Include="src\capnproto\capnp_priv.h" />
     <ClInclude Include="src\mira\fs\fuse\netfs.h" />
     <ClInclude Include="src\mira\fs\overlay\overlayfs.h" />
     <ClInclude Include="src\mira\miraframework.h" />
     <ClInclude Include="src\mira\plugins\appInstaller\appinstaller_plugin.h" />
     <ClInclude Include="src\mira\plugins\debugger\debugger_plugin.h" />
+    <ClInclude Include="src\mira\plugins\fileexplorer\fileexplorer_messages.h" />
     <ClInclude Include="src\mira\plugins\fileexplorer\fileexplorer_plugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
@@ -106,9 +98,6 @@
     <ClInclude Include="src\mira\utils\injector.h" />
     <ClInclude Include="src\mira\utils\miraelf.h" />
     <ClInclude Include="src\mira\utils\vector.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="src\capnproto\capn-list.inc" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>

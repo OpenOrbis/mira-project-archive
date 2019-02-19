@@ -5,13 +5,13 @@
 #include <sys/lock.h>
 #include <sys/mutex.h>
 
-struct pbconnection_t;
-struct pbserver_t;
+struct rpcconnection_t;
+struct rpcserver_t;
 struct thread;
 
-typedef void(*OnClientDisconnect_t)(struct pbserver_t* server, struct pbconnection_t* connection);
+typedef void(*OnClientDisconnect_t)(struct rpcserver_t* server, struct rpcconnection_t* connection);
 
-struct pbconnection_t
+struct rpcconnection_t
 {
 	int32_t socket;
 
@@ -22,13 +22,13 @@ struct pbconnection_t
 	struct mtx lock;
 
 	// Callback information
-	struct pbserver_t* server;
+	struct rpcserver_t* server;
 
 	volatile boolean_t running;
 
 	OnClientDisconnect_t onClientDisconnect;
 };
 
-void pbconnection_init(struct pbconnection_t* connection);
+void rpcconnection_init(struct rpcconnection_t* connection);
 
-void pbconnection_thread(struct pbconnection_t* connection);
+void rpcconnection_thread(struct rpcconnection_t* connection);

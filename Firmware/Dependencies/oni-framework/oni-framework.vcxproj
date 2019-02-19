@@ -40,8 +40,8 @@
     <OutDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;_STANDALONE_DEBUG</NMakePreprocessorDefinitions>
-    <NMakeIncludeSearchPath>$(ProjectDir)include;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;_STANDALONE_DEBUG;_DEBUG</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(ProjectDir)include;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(ProjectDir)include\capnproto</NMakeIncludeSearchPath>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make  ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
@@ -51,10 +51,10 @@
     <OutDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
     <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
-    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501;_STANDALONE</NMakePreprocessorDefinitions>
+    <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;_STANDALONE</NMakePreprocessorDefinitions>
     <NMakeIncludeSearchPath>$(ProjectDir)include;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include</NMakeIncludeSearchPath>
-    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteBuildCommandLine>
-    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make  ONI_PLATFORM=ONI_PLATFORM_ORBIS_BSD_501</RemoteReBuildCommandLine>
+    <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
+    <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make  ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
     <RemoteBuildOutputs>OniFramework.a</RemoteBuildOutputs>
   </PropertyGroup>
@@ -65,11 +65,13 @@
     <ClInclude Include="include\oni\init\framework.h" />
     <ClInclude Include="include\oni\init\initparams.h" />
     <ClInclude Include="include\oni\messaging\messagecategory.h" />
+    <ClInclude Include="include\oni\messaging\messagecontainer.h" />
+    <ClInclude Include="include\oni\messaging\messageheader.h" />
     <ClInclude Include="include\oni\messaging\messagemanager.h" />
     <ClInclude Include="include\oni\plugins\plugin.h" />
     <ClInclude Include="include\oni\plugins\pluginmanager.h" />
-    <ClInclude Include="include\oni\rpc\pbconnection.h" />
-    <ClInclude Include="include\oni\rpc\pbserver.h" />
+    <ClInclude Include="include\oni\rpc\rpcconnection.h" />
+    <ClInclude Include="include\oni\rpc\rpcserver.h" />
     <ClInclude Include="include\oni\trainers\trainer.h" />
     <ClInclude Include="include\oni\utils\cpu.h" />
     <ClInclude Include="include\oni\utils\dynlib.h" />
@@ -104,10 +106,11 @@
     <ClCompile Include="src\oni\boot\patches\patches505.c" />
     <ClCompile Include="src\oni\boot\patches\steam_link.c" />
     <ClCompile Include="src\oni\messaging\messagecategory.c" />
+    <ClCompile Include="src\oni\messaging\messagecontainer.c" />
     <ClCompile Include="src\oni\messaging\messagemanager.c" />
     <ClCompile Include="src\oni\plugins\pluginmanager.c" />
-    <ClCompile Include="src\oni\rpc\pbconnection.c" />
-    <ClCompile Include="src\oni\rpc\pbserver.c" />
+    <ClCompile Include="src\oni\rpc\rpcconnection.c" />
+    <ClCompile Include="src\oni\rpc\rpcserver.c" />
     <ClCompile Include="src\oni\utils\dynlib.c" />
     <ClCompile Include="src\oni\utils\escape.c" />
     <ClCompile Include="src\oni\utils\hde\hde64.c" />

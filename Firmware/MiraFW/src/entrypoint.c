@@ -3,7 +3,7 @@
 //
 #include <oni/plugins/pluginmanager.h>
 #include <oni/messaging/messagemanager.h>
-#include <oni/rpc/pbserver.h>
+#include <oni/rpc/rpcserver.h>
 #include <oni/init/initparams.h>
 #include <oni/framework.h>
 #include <oni/config.h>
@@ -52,7 +52,7 @@ void mira_entry(void* args)
 /*
 	This is the entry point for the userland or kernel payload
 
-	args - pointer to struct initparams_t in kernel memory or NULL if launching from userland
+	args - pointer to struct initparams_t in kernel memory
 */
 {
 	if (!args)
@@ -63,39 +63,6 @@ void mira_entry(void* args)
 	gInitParams = initParams;
 
 	oni_kernelInitialization(args);
-	// If we have args at all, we will assume that we are running in the kernel context
-	//if (args)
-	//{
-	//	// Init oni framework in kernel space
-	//	
-	//}
-	//else // Handle userland launching the old fashion way
-	//{
-	//	//struct initparams_t userParams;
-	//	//userParams.entrypoint = oni_kernelInitialization;
-	//	//userParams.process = NULL;
-	//	//userParams.payloadBase = 0x926200000;
-	//	//userParams.payloadSize = 0x80000;
-
-	//	//SelfElevateAndRun(&userParams);
-
-	//	//// Prompt the user
-	//	//int moduleId = -1;
-	//	//sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
-
-	//	//// This header doesn't work in > 5.00
-	//	//int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
-
-	//	//sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
-
-	//	//if (sceSysUtilSendSystemNotificationWithText)
-	//	//{
-	//	//	char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
-	//	//	sceSysUtilSendSystemNotificationWithText(222, initMessage);
-	//	//}
-
-	//	//sys_dynlib_unload_prx(moduleId);
-	//}
 }
 
 #include <sys/mman.h>
@@ -179,7 +146,7 @@ This function handles the kernel (ring-0) mode initialization
 	miraframework_initialize((struct miraframework_t*)gFramework);
 
 	// Set the initparams so we do not lose track of it
-	((struct miraframework_t*)gFramework)->initParams = gInitParams;
+	mira_getFramework()->initParams = gInitParams;
 
 	// At this point we don't need kernel context anymore
 	WriteLog(LL_Info, "Mira initialization complete");

@@ -7,8 +7,7 @@
 struct ref_t;
 struct messagecategory_callback_t;
 
-struct pbcontainer_t;
-typedef struct pbcontainer_t PbContainer;
+struct messagecontainer_t;
 
 struct messagecategory_t
 {
@@ -19,7 +18,7 @@ struct messagecategory_t
 struct messagecategory_callback_t
 {
 	uint32_t type;
-	void(*callback)(PbContainer* message);
+	void(*callback)(struct messagecontainer_t* container);
 };
 
 void rpccategory_init(struct messagecategory_t* dispatcherCategory, uint8_t category);

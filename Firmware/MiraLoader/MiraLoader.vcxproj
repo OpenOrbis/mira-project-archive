@@ -74,7 +74,7 @@
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build -V make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build -V make clean;make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
-    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_STEAM_LINK.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_501.elf</RemoteBuildOutputs>
+    <RemoteBuildOutputs>MiraLoader_Orbis_ONI_PLATFORM_STEAM_LINK.bin;MiraLoader_Orbis_ONI_PLATFORM_ORBIS_BSD_STEAM_LINK.elf</RemoteBuildOutputs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>

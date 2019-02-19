@@ -8,10 +8,11 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>MiraUtils</RootNamespace>
     <AssemblyName>MiraUtils</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -57,13 +58,24 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client\Extensions\FileExplorerExtensions.cs" />
-    <Compile Include="Client\Messages\Fileexplorer.cs" />
-    <Compile Include="Client\Messages\Mirabuiltin.cs" />
-    <Compile Include="Client\PbConnection.cs" />
-    <Compile Include="Controls\FileExplorer\frmFileExplorer.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Client\FileExplorer\FileExplorerClose.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerCommands.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerEcho.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerGetdents.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerMkdir.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerOpen.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerRead.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerRmdir.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerStat.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerUnlink.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerWrite.cs" />
+    <Compile Include="Client\Message.cs" />
+    <Compile Include="Client\MessageHeader.cs" />
+    <Compile Include="Client\MessageSerializable.cs" />
+    <Compile Include="Client\MiraConnection.cs" />
+    <Compile Include="Client\FileExplorer\FileExplorerExtensions.cs" />
+    <Compile Include="Client\TimeSpec.cs" />
+    <Compile Include="Controls\FileExplorer\frmFileExplorer.cs" />
     <Compile Include="Controls\FileExplorer\frmFileExplorer.Designer.cs">
       <DependentUpon>frmFileExplorer.cs</DependentUpon>
     </Compile>
@@ -123,5 +135,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

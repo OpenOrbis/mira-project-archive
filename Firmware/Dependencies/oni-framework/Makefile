@@ -34,7 +34,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -Iinclude -I$(SRC_DIR) -Iinclude/nanopb -I"$(BSD_INC)" -I"$(HDE_INC)" -Idepends/include
+I_DIRS	:=	-I. -Iinclude -I$(SRC_DIR) -Iinclude/capnproto -I"$(BSD_INC)" -I"$(HDE_INC)" -Idepends/include
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib

@@ -2,12 +2,21 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="src\Source.c" />
+    <ClCompile Include="src\mirabuiltin.capnp.c" />
+    <ClCompile Include="src\c.capnp.c" />
+    <ClCompile Include="src\capn.c" />
+    <ClCompile Include="src\capn-malloc.c" />
+    <ClCompile Include="src\capn-stream.c" />
+    <ClCompile Include="src\fileexplorer.capnp.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\MiraBuiltin.idl_reader.h" />
-    <ClInclude Include="src\MiraBuiltin.idl_verifier.h" />
-    <ClInclude Include="src\flatbuffers_common_builder.h" />
-    <ClInclude Include="src\flatbuffers_common_reader.h" />
-    <ClInclude Include="src\MiraBuiltin.idl_builder.h" />
+    <ClInclude Include="src\mirabuiltin.capnp.h" />
+    <ClInclude Include="src\c.capnp.h" />
+    <ClInclude Include="src\capnp_c.h" />
+    <ClInclude Include="src\capnp_priv.h" />
+    <ClInclude Include="src\fileexplorer.capnp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\capn-list.inc" />
   </ItemGroup>
 </Project>

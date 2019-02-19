@@ -4,7 +4,7 @@
 struct logger_t;
 struct messagemanager_t;
 struct pluginmanager_t;
-struct pbserver_t;
+struct rpcserver_t;
 
 struct framework_t
 {
@@ -15,7 +15,7 @@ struct framework_t
 
 
 	struct messagemanager_t* messageManager;
-	struct pbserver_t* rpcServer;
+	struct rpcserver_t* rpcServer;
 	struct pluginmanager_t* pluginManager;
 };
 

@@ -18,13 +18,13 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
-#include <oni/utils/memory/allocator.h>
+//#include <oni/utils/memory/allocator.h>
 
 #ifndef fread
 #define fread(x, y, z, w) 0
 #endif
 
-static int errno = 0;
+//static int errno = 0;
 
  /*
   * 8 byte alignment is required for struct capn_segment.
@@ -49,7 +49,7 @@ static struct capn_segment *create(void *u, uint32_t id, int sz) {
 	else {
 		sz = (sz + 4095) & ~4095;
 	}
-	s = (struct capn_segment*) k_calloc(1, sz);
+	s = (struct capn_segment*) calloc(1, sz);
 	s->data = (char*)(s + 1);
 	s->cap = sz - sizeof(*s);
 	s->user = s;
@@ -70,7 +70,7 @@ void capn_free(struct capn *c) {
 	struct capn_segment *s = c->seglist;
 	while (s != NULL) {
 		struct capn_segment *n = s->next;
-		k_free(s->user);
+		free(s->user);
 		s = n;
 	}
 	capn_reset_copy(c);
@@ -167,7 +167,7 @@ static int init_fp(struct capn *c, FILE *f, struct capn_stream *z, int packed) {
 	}
 
 	/* Allocate space for the data and the capn_segment structs */
-	s = (struct capn_segment*) k_calloc(1, total + (sizeof(*s) * segnum));
+	s = (struct capn_segment*) calloc(1, total + (sizeof(*s) * segnum));
 	if (!s)
 		goto err;
 

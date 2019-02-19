@@ -9,19 +9,19 @@ namespace MiraUtils
 {
     public partial class frmMain : Form
     {
-        public List<PbConnection> Connections { get; protected set; }
+        public List<MiraConnection> Connections { get; protected set; }
 
-        private frmFileExplorer m_Explorer;
+        //private frmFileExplorer m_Explorer;
 
         public frmMain()
         {
             InitializeComponent();
 
-            Connections = new List<PbConnection>();
+            Connections = new List<MiraConnection>();
 
-            m_Explorer = new frmFileExplorer(this);
+            //m_Explorer = new frmFileExplorer(this);
 
-            m_Explorer.Show(dockPanel, DockState.DockRight);
+            //m_Explorer.Show(dockPanel, DockState.DockRight);
         }
 
         private void mmuConnect_Click(object sender, System.EventArgs e)
@@ -30,7 +30,7 @@ namespace MiraUtils
             if (s_Dialog.ShowDialog() != DialogResult.OK)
                 return;
 
-            var s_Connection = new PbConnection(s_Dialog.Address);
+            var s_Connection = new MiraConnection(s_Dialog.Address);
             if (!s_Connection.Connect())
             {
                 MessageBox.Show("could not connect");
@@ -45,7 +45,9 @@ namespace MiraUtils
 
             Connections.Add(s_Connection);
 
-            m_Explorer.UpdateControls();
+            s_Connection.Echo("Nomis hax ps4s, jk");
+
+            //m_Explorer.UpdateControls();
         }
     }
 }

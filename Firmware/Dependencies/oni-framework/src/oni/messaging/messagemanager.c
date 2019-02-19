@@ -7,7 +7,9 @@
 #include <oni/utils/ref.h>
 
 #include <oni/framework.h>
-#include <oni/rpc/pbserver.h>
+#include <oni/rpc/rpcserver.h>
+
+#include <oni/messaging/messagecontainer.h>
 
 void messagemanager_init(struct messagemanager_t* manager)
 {
@@ -193,143 +195,104 @@ int32_t messagemanager_unregisterCallback(struct messagemanager_t* manager, int3
 	return false;
 }
 
-void messagemanager_sendResponse(PbContainer* container)
-/*
-	messagemanager_sendResponse
-
-	msg - Reference counted message_header_t
-
-	This function send the message header and then the payload data
-*/
+void messagemanager_sendResponse(struct messagecontainer_t* container)
 {
-//	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
-//
-//	if (!container)
-//		return;
-//
-//	if (!container->message)
-//		return;
-//
-//	struct pbserver_t* rpcServer = gFramework->rpcServer;
-//
-//	int32_t connectionSocket = pbserver_findSocketFromThread(rpcServer, curthread);
-//
-//	//WriteLog(LL_Debug, "connection socket found: %d", connectionSocket);
-//	if (connectionSocket < 0)
-//		return;
-//
-//	// Acquire a reference, from now on we need to goto cleanup
-//	pbcontainer_acquire(container);
-//
-//	PbMessage* message = container->message;
-//
-//	// Get the size of the packed message
-//	uint64_t messageSize = pb_message__get_packed_size(message);
-//	uint64_t maxMessageSize = PAGE_SIZE * 2;
-//	uint8_t* messageData = NULL;
-//	if (messageSize >= maxMessageSize)
-//	{
-//		WriteLog(LL_Error, "message size (%llx) is greater than max (%llx).", messageSize, maxMessageSize);
-//		goto cleanup;
-//	}
-//
-//	// Allocate data to send
-//	messageData = k_malloc(messageSize);
-//	if (!messageData)
-//	{
-//		WriteLog(LL_Error, "could not allocate message data");
-//		goto cleanup;
-//	}
-//	memset(messageData, 0, messageSize);
-//
-//	// Pack the message
-//	uint32_t packedMessageSize = (uint32_t)pb_message__pack(message, messageData);
-//	if(messageSize != packedMessageSize)
-//	{
-//		WriteLog(LL_Error, "message size (%llx) does not match packed message size (%llx).", messageSize, packedMessageSize);
-//		goto cleanup;
-//	}
-//
-//	// We need to write the 8 byte uint64_t
-//	ssize_t ret = kwrite(connectionSocket, &packedMessageSize, sizeof(packedMessageSize));
-//	if (ret < 0)
-//	{
-//		WriteLog(LL_Error, "could not write message size.");
-//		goto cleanup;
-//	}
-//
-//	// Write the actual data
-//	ret = kwrite(connectionSocket, messageData, messageSize);
-//	if (ret < 0)
-//	{
-//		WriteLog(LL_Error, "could not write message (%p) (%llx).", messageData, messageSize);
-//		goto cleanup;
-//	}
-//
-//cleanup:
-//	// Free the message data
-//	if (messageData)
-//		k_free(messageData);
-//
-//	// Release the container reference
-//	pbcontainer_release(container);
+	//void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
+	if (!container)
+		return;
+
+	if (gFramework == NULL || gFramework->rpcServer == NULL)
+		return;
+
+	int32_t connectionSocket = rpcserver_findSocketFromThread(gFramework->rpcServer, curthread);
+
+	//WriteLog(LL_Debug, "connection socket found: %d", connectionSocket);
+	if (connectionSocket < 0)
+		return;
+
+	// Acquire a reference, from now on we need to goto cleanup
+	messagecontainer_acquire(container);
+
+#ifdef _DEBUG
+	if (sizeof(&container->header) != sizeof(uint64_t))
+		WriteLog(LL_Debug, "sizeof(header): %x sizeof(uint64): %x, fix yer code", sizeof(&container->header), sizeof(uint64_t));
+#endif
+
+	// Write the header
+	int32_t ret = kwrite(connectionSocket, &container->header, sizeof(container->header));
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not write message (%p) (%llx).", &container->header, sizeof(container->header));
+		goto cleanup;
+	}
+
+	// Write the payload
+	ret = kwrite(connectionSocket, container->payload, container->size);
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not write message (%p) (%llx).", container->payload, container->size);
+		goto cleanup;
+	}
+
+cleanup:
+	// Release the container reference
+	messagecontainer_release(container);
 }
 
-void messagemanager_sendRequest(PbContainer* container)
+void messagemanager_sendRequest(struct messagecontainer_t* container)
 {
-//	// Verify the message manager and message are valid
-//	if (!gFramework || !gFramework->messageManager || !container)
-//		return;
-//
-//	if (!container->message)
-//		return;
-//
-//	pbcontainer_acquire(container);
-//
-//	PbMessage* header = container->message;
-//
-//	//int32_t connectionSocket = pbserver_findSocketFromThread(gFramework->rpcServer, curthread);
-//
-//	//WriteLog(LL_Debug, "connection socket found: %d", connectionSocket);
-//	//if (connectionSocket < 0)
-//	//	goto cleanup;
-//
-//	struct messagemanager_t* manager = gFramework->messageManager;
-//
-//	// Validate our message category
-//	MessageCategory headerCategory = header->category;
-//	if (headerCategory >= MESSAGE_CATEGORY__MAX)
-//	{
-//		WriteLog(LL_Error, "[-] invalid message category: %d max: %d", headerCategory, MESSAGE_CATEGORY__MAX);
-//		goto cleanup;
-//	}
-//
-//	struct messagecategory_t* category = messagemanager_getCategory(manager, headerCategory);
-//	if (!category)
-//	{
-//		WriteLog(LL_Debug, "[-] could not get dispatcher category");
-//		goto cleanup;
-//	}
-//
-//	// Iterate through all of the callbacks
-//	for (uint32_t l_CallbackIndex = 0; l_CallbackIndex < RPCCATEGORY_MAX_CALLBACKS; ++l_CallbackIndex)
-//	{
-//		// Get the category callback structure
-//		struct messagecategory_callback_t* l_Callback = category->callbacks[l_CallbackIndex];
-//
-//		// Check to see if this callback is used at all
-//		if (!l_Callback)
-//			continue;
-//
-//		// Check the type of the message
-//		if (l_Callback->type != header->type)
-//			continue;
-//
-//		// Call the callback with the provided message
-//		//WriteLog(LL_Debug, "[+] calling callback %p(%p)", l_Callback->callback, container);
-//		l_Callback->callback(container);
-//	}
-//
-//cleanup:		
-//	pbcontainer_release(container);
+	// Verify the message manager and message are valid
+	if (!gFramework || !gFramework->messageManager || !container)
+		return;
+
+	WriteLog(LL_Debug, "container: %p", container);
+
+	messagecontainer_acquire(container);
+
+	WriteLog(LL_Debug, "here");
+
+	struct messagemanager_t* manager = gFramework->messageManager;
+	WriteLog(LL_Debug, "manager: %p", manager);
+
+	// Validate our message category
+	enum MessageCategory headerCategory = container->header.category;
+	if (headerCategory < 0 || headerCategory >= MessageCategory_Max)
+	{
+		WriteLog(LL_Error, "[-] invalid message category: %d max: %d", headerCategory, MessageCategory_Max);
+		goto cleanup;
+	}
+
+	WriteLog(LL_Debug, "headerCategory: %d", headerCategory);
+
+	struct messagecategory_t* category = messagemanager_getCategory(manager, headerCategory);
+	if (!category)
+	{
+		WriteLog(LL_Debug, "[-] could not get dispatcher category");
+		goto cleanup;
+	}
+
+	WriteLog(LL_Debug, "category: %p", category);
+
+	// Iterate through all of the callbacks
+	for (uint32_t l_CallbackIndex = 0; l_CallbackIndex < RPCCATEGORY_MAX_CALLBACKS; ++l_CallbackIndex)
+	{
+		// Get the category callback structure
+		struct messagecategory_callback_t* l_Callback = category->callbacks[l_CallbackIndex];
+
+		// Check to see if this callback is used at all
+		if (!l_Callback)
+			continue;
+
+		// Check the type of the message
+		if (l_Callback->type != container->header.errorType)
+			continue;
+
+		// Call the callback with the provided message
+		WriteLog(LL_Debug, "[+] calling callback %p(%p)", l_Callback->callback, container);
+		l_Callback->callback(container);
+	}
+
+cleanup:		
+	messagecontainer_release(container);
 }

@@ -1,5 +1,5 @@
-#include <oni/rpc/pbserver.h>
-#include <oni/rpc/pbconnection.h>
+#include <oni/rpc/rpcserver.h>
+#include <oni/rpc/rpcconnection.h>
 #include <oni/utils/logger.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/kdlsym.h>
@@ -12,9 +12,9 @@
 #include <oni/framework.h>
 #include <oni/init/initparams.h>
 
-void pbserver_serverThread(void* userData);
+void rpcserver_serverThread(void* userData);
 
-void pbserver_init(struct pbserver_t* server)
+void rpcserver_init(struct rpcserver_t* server)
 {
 	void(*mtx_init)(struct mtx *m, const char *name, const char *type, int opts) = kdlsym(mtx_init);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
@@ -30,7 +30,7 @@ void pbserver_init(struct pbserver_t* server)
 	mtx_init(&server->connectionsLock, "", NULL, 0);
 }
 
-uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
+uint8_t rpcserver_startup(struct rpcserver_t* server, uint16_t port)
 {
 	int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
@@ -53,7 +53,7 @@ uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
 	server->address.sin_family = AF_INET;
 	server->address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server->address.sin_port = htons(9999); // TODO: Make configurable
-	server->address.sin_len = 0x10;//sizeof(server->address);
+	server->address.sin_len = sizeof(server->address);
 
 	WriteLog(LL_Warn, "filled out information");
 
@@ -79,14 +79,14 @@ uint8_t pbserver_startup(struct pbserver_t* server, uint16_t port)
 	}
 
 	// Create the new thread
-	int creationResult = kthread_add(pbserver_serverThread, server, gInitParams->process, (struct thread**)&server->thread, 0, 0, "pbserver");
+	int creationResult = kthread_add(rpcserver_serverThread, server, gInitParams->process, (struct thread**)&server->thread, 0, 0, "rpcserver");
 
 	WriteLog(LL_Debug, "creationResult (%d).", creationResult);
 
 	return creationResult == 0;
 }
 
-uint8_t pbserver_shutdown(struct pbserver_t* server)
+uint8_t rpcserver_shutdown(struct rpcserver_t* server)
 {
 	if (!server)
 		return false;
@@ -106,7 +106,7 @@ uint8_t pbserver_shutdown(struct pbserver_t* server)
 	// Iterate through each of the connections and force connections to error and get cleaned up
 	for (uint32_t i = 0; i < ARRAYSIZE(server->connections); ++i)
 	{
-		struct pbconnection_t* connection = server->connections[i];
+		struct rpcconnection_t* connection = server->connections[i];
 		if (!connection)
 			continue;
 
@@ -131,7 +131,7 @@ uint8_t pbserver_shutdown(struct pbserver_t* server)
 	return true;
 }
 
-void pbserver_serverThread(void* userData)
+void rpcserver_serverThread(void* userData)
 {
 	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
@@ -143,7 +143,7 @@ void pbserver_serverThread(void* userData)
 		kthread_exit();
 		return;
 	}
-	struct pbserver_t* server = (struct pbserver_t*)userData;
+	struct rpcserver_t* server = (struct rpcserver_t*)userData;
 
 	// Update our running state
 	server->running = true;
@@ -151,12 +151,12 @@ void pbserver_serverThread(void* userData)
 	// While the server is still running
 	while (server->running)
 	{
-		struct pbconnection_t* connection = k_malloc(sizeof(struct pbconnection_t));
+		struct rpcconnection_t* connection = k_malloc(sizeof(struct rpcconnection_t));
 		if (!connection)
 			goto exit;
 
 		// Initialize our structures
-		pbconnection_init(connection);
+		rpcconnection_init(connection);
 
 		// Wait for a client
 		size_t addressSize = sizeof(connection->address);
@@ -180,20 +180,24 @@ void pbserver_serverThread(void* userData)
 		_mtx_lock_flags(&server->connectionsLock, 0, "", 0);
 
 		// Handle error case
-		int32_t connectionIndex = pbserver_findFreeConnectionIndex(server);
+		int32_t connectionIndex = rpcserver_findFreeConnectionIndex(server);
 		if (connectionIndex < 0)
 		{
 			WriteLog(LL_Error, "could not find a free index.");
+			kclose(connection->socket);
 			k_free(connection);
 			connection = NULL;
 		}
 		else
 		{
+			// Set the disconnect callback
+			connection->onClientDisconnect = rpcserver_handleClientDisconnect;
+
 			// Set our connection in our server
 			server->connections[connectionIndex] = connection;
 
 			// Fire off a new connection thread
-			pbserver_handleConnection(server, connection);
+			rpcserver_handleConnection(server, connection);
 
 			WriteLog(LL_Debug, "added new connection (%p) to index (%d).", connection, connectionIndex);
 		}
@@ -210,7 +214,7 @@ exit:
 	kthread_exit();
 }
 
-void pbserver_handleConnection(struct pbserver_t* server, struct pbconnection_t* connection)
+void rpcserver_handleConnection(struct rpcserver_t* server, struct rpcconnection_t* connection)
 {
 	int(*kthread_add)(void(*func)(void*), void* arg, struct proc* procptr, struct thread** tdptr, int flags, int pages, const char* fmt, ...) = kdlsym(kthread_add);
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
@@ -229,7 +233,7 @@ void pbserver_handleConnection(struct pbserver_t* server, struct pbconnection_t*
 	// Lock the connection thread
 	_mtx_lock_flags(&connection->lock, 0, __FILE__, __LINE__);
 
-	int32_t result = kthread_add((void(*)(void*))pbconnection_thread, (void*)connection, miraProc, &connection->thread, 0, 0, "pbconn");
+	int32_t result = kthread_add((void(*)(void*))rpcconnection_thread, (void*)connection, miraProc, &connection->thread, 0, 0, "pbconn");
 
 	WriteLog(LL_Debug, "pbconn thread creation: (%d).", result);
 
@@ -240,13 +244,13 @@ void pbserver_handleConnection(struct pbserver_t* server, struct pbconnection_t*
 		WriteLog(LL_Error, "could not create new connection thread (%d).", result);
 
 		// Forcefully disconnect the client
-		pbserver_handleClientDisconnect(server, connection);
+		rpcserver_handleClientDisconnect(server, connection);
 
 		return;
 	}
 }
 
-void pbserver_handleClientDisconnect(struct pbserver_t* server, struct pbconnection_t* connection)
+void rpcserver_handleClientDisconnect(struct rpcserver_t* server, struct rpcconnection_t* connection)
 {
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
@@ -262,7 +266,7 @@ void pbserver_handleClientDisconnect(struct pbserver_t* server, struct pbconnect
 		kclose(connection->socket);
 	}
 
-	int32_t connectionIndex = pbserver_findConnectionIndex(server, connection);
+	int32_t connectionIndex = rpcserver_findConnectionIndex(server, connection);
 	// If there's a non-negative index then remove the
 	if (connectionIndex > -1)
 	{
@@ -278,7 +282,7 @@ void pbserver_handleClientDisconnect(struct pbserver_t* server, struct pbconnect
 		k_free(connection);
 }
 
-int32_t pbserver_findFreeConnectionIndex(struct pbserver_t* server)
+int32_t rpcserver_findFreeConnectionIndex(struct rpcserver_t* server)
 {
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
@@ -302,7 +306,7 @@ int32_t pbserver_findFreeConnectionIndex(struct pbserver_t* server)
 	return foundIndex;
 }
 
-int32_t pbserver_findConnectionIndex(struct pbserver_t* server, struct pbconnection_t* connection)
+int32_t rpcserver_findConnectionIndex(struct rpcserver_t* server, struct rpcconnection_t* connection)
 {
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
@@ -326,7 +330,7 @@ int32_t pbserver_findConnectionIndex(struct pbserver_t* server, struct pbconnect
 	return foundIndex;
 }
 
-int32_t pbserver_findSocketFromThread(struct pbserver_t* server, struct thread* td)
+int32_t rpcserver_findSocketFromThread(struct rpcserver_t* server, struct thread* td)
 {
 	void(*_mtx_lock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_lock_flags);
 	void(*_mtx_unlock_flags)(struct mtx *m, int opts, const char *file, int line) = kdlsym(_mtx_unlock_flags);
@@ -339,7 +343,7 @@ int32_t pbserver_findSocketFromThread(struct pbserver_t* server, struct thread* 
 	_mtx_lock_flags(&server->connectionsLock, 0, "", 0);
 	for (size_t index = 0; index < ARRAYSIZE(server->connections); index++)
 	{
-		struct pbconnection_t* connection = server->connections[index];
+		struct rpcconnection_t* connection = server->connections[index];
 		if (connection == NULL)
 			continue;
 
