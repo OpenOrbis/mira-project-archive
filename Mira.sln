@@ -60,8 +60,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiraLoader", "Firmware\Mira
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiraUtils", "Tools\MiraUtils\MiraUtils.csproj", "{A7171E4C-1884-4D65-B71F-839FC91E6FC3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiraRpcGenerator", "Tools\MiraRpcGenerator\MiraRpcGenerator.csproj", "{00C2C484-F43E-4FC9-B68E-A5293579AB39}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -108,10 +106,6 @@ Global
 		{A7171E4C-1884-4D65-B71F-839FC91E6FC3}.Debug|x64.Build.0 = Debug|x64
 		{A7171E4C-1884-4D65-B71F-839FC91E6FC3}.Release|x64.ActiveCfg = Release|x64
 		{A7171E4C-1884-4D65-B71F-839FC91E6FC3}.Release|x64.Build.0 = Release|x64
-		{00C2C484-F43E-4FC9-B68E-A5293579AB39}.Debug|x64.ActiveCfg = Debug|x64
-		{00C2C484-F43E-4FC9-B68E-A5293579AB39}.Debug|x64.Build.0 = Debug|x64
-		{00C2C484-F43E-4FC9-B68E-A5293579AB39}.Release|x64.ActiveCfg = Release|Any CPU
-		{00C2C484-F43E-4FC9-B68E-A5293579AB39}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -129,7 +123,6 @@ Global
 		{78AFEB15-B4CA-4A56-987E-DAE7ED529BAE} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
 		{B5C14A31-FF3D-4536-AD0A-2743A17D27FE} = {108E0975-87E1-4DA3-9D1A-8FC900B15521}
 		{A7171E4C-1884-4D65-B71F-839FC91E6FC3} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
-		{00C2C484-F43E-4FC9-B68E-A5293579AB39} = {ACBBEE03-2C7A-4CEF-897C-B36730F4B32E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6AF288B-CD5B-480E-A2E9-FF6B003EFBCC}
