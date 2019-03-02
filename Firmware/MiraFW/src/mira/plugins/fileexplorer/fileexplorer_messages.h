@@ -41,10 +41,15 @@ struct fileexplorer_closeRequest_t
 	int32_t handle;
 };
 
-struct fileexplorer_readRequest_t
+struct fileexplorer_seekRequest_t
 {
 	int32_t handle;
 	uint64_t offset;
+};
+
+struct fileexplorer_readRequest_t
+{
+	int32_t handle;
 	int32_t count;
 };
 

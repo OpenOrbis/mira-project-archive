@@ -173,8 +173,13 @@ void rpcserver_serverThread(void* userData)
 			connection = NULL;
 			goto exit;
 		}
+		uint32_t addr = (uint32_t)connection->address.sin_addr.s_addr;
 
-		WriteLog(LL_Debug, "got new pbconnection (%d).", connection->socket);
+		WriteLog(LL_Debug, "got new pbconnection (%d) from IP %03d.%03d.%03d.%03d .", connection->socket, 
+			(addr & 0xFF),
+			(addr >> 8) & 0xFF,
+			(addr >> 16) & 0xFF,
+			(addr >> 24) & 0xFF);
 
 		// Nothing below this should jump out in error
 		_mtx_lock_flags(&server->connectionsLock, 0, "", 0);
@@ -191,6 +196,7 @@ void rpcserver_serverThread(void* userData)
 		else
 		{
 			// Set the disconnect callback
+			connection->server = server;
 			connection->onClientDisconnect = rpcserver_handleClientDisconnect;
 
 			// Set our connection in our server
@@ -258,6 +264,8 @@ void rpcserver_handleClientDisconnect(struct rpcserver_t* server, struct rpcconn
 	// Verify that our server and connection objects are valid
 	if (!server || !connection)
 		return;
+
+	WriteLog(LL_Debug, "connection disconnecting: %p socket: %d", connection, connection->socket);
 
 	// If we have a valid socket, shutdown and close it
 	if (connection->socket > -1)

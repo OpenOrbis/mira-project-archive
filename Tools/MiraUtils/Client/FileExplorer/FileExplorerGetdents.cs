@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 
 namespace MiraUtils.Client.FileExplorer
 {
@@ -22,6 +23,8 @@ namespace MiraUtils.Client.FileExplorer
         public byte Type;
         public byte Namelen;
         public char[] Name;
+
+        public string NameString => new string(Name);
 
         public FileExplorerDent()
         {
@@ -58,6 +61,11 @@ namespace MiraUtils.Client.FileExplorer
 
                 return ((MemoryStream)s_Writer.BaseStream).ToArray();
             }
+        }
+
+        public override string ToString()
+        {
+            return $"{(FileTypes)Type}:{new string(Name)}";
         }
     }
     public class FileExplorerGetdentsRequest : MessageSerializable

@@ -5,7 +5,8 @@
 
 #include <sys/proc.h>
 
-#define AUTHID_DIAGNOSTICS	0x3800000000000007ULL
+#define AUTHID_SCESYSCORE	0x3800000000000007ULL
+#define AUTHID_DEBUGGER		0x3800000000010003ULL
 
 #define SCECAPS_MAX			0xFFFFFFFFFFFFFFFFULL
 
@@ -14,7 +15,7 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 
-	if (!td)
+	if (td == NULL || td->td_ucred == NULL || td->td_proc == NULL)
 		return;
 
 	if (outThreadInfo)
@@ -48,10 +49,12 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 	td->td_ucred->cr_ruid = 0;
 
 	// Root group
-	td->td_ucred->cr_groups[0] = 0;
+	if (td->td_ucred->cr_groups)
+		td->td_ucred->cr_groups[0] = 0;
 
 	// No prison
-	td->td_ucred->cr_prison = *(void**)kdlsym(prison0);
+	if (td->td_ucred->cr_prison)
+		td->td_ucred->cr_prison = *(void**)kdlsym(prison0);
 
 	// Get the file descriptor
 	struct filedesc* fd = td->td_proc->p_fd;
@@ -60,7 +63,7 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 	fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
 
 	// set diag auth ID flags
-	td->td_ucred->cr_sceAuthID = AUTHID_DIAGNOSTICS;
+	td->td_ucred->cr_sceAuthID = AUTHID_SCESYSCORE;
 
 	// make system credentials
 	td->td_ucred->cr_sceCaps[0] = SCECAPS_MAX;

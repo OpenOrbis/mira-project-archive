@@ -195,6 +195,20 @@ int32_t messagemanager_unregisterCallback(struct messagemanager_t* manager, int3
 	return false;
 }
 
+void messagemanager_sendErrorResponse(enum MessageCategory category, int32_t error)
+{
+	struct messagecontainer_t* responseContainer = messagecontainer_createMessage(category, (uint32_t)error, false, NULL, 0);
+	if (responseContainer == NULL)
+	{
+		WriteLog(LL_Error, "could not allocate response");
+		return;
+	}
+
+	messagemanager_sendResponse(responseContainer);
+
+	messagecontainer_release(responseContainer);
+}
+
 void messagemanager_sendResponse(struct messagecontainer_t* container)
 {
 	//void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);

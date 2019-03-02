@@ -1,4 +1,5 @@
 ﻿using MiraUtils.Client;
+using MiraUtils.Client.FileExplorer;
 using MiraUtils.Controls;
 using MiraUtils.Controls.FileExplorer;
 using System.Collections.Generic;
@@ -11,17 +12,13 @@ namespace MiraUtils
     {
         public List<MiraConnection> Connections { get; protected set; }
 
-        //private frmFileExplorer m_Explorer;
+        frmFileExplorer m_Explorer;
 
         public frmMain()
         {
             InitializeComponent();
 
             Connections = new List<MiraConnection>();
-
-            //m_Explorer = new frmFileExplorer(this);
-
-            //m_Explorer.Show(dockPanel, DockState.DockRight);
         }
 
         private void mmuConnect_Click(object sender, System.EventArgs e)
@@ -45,9 +42,12 @@ namespace MiraUtils
 
             Connections.Add(s_Connection);
 
-            s_Connection.Echo("Nomis hax ps4s, jk");
+            
+            m_Explorer = new frmFileExplorer(s_Connection);
 
-            //m_Explorer.UpdateControls();
+            m_Explorer.Show(dockPanel, DockState.DockRight);
+
+            m_Explorer.UpdateControls();
         }
     }
 }

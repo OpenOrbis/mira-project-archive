@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using static MiraUtils.Client.MessageHeader;
 
 namespace MiraUtils.Client.FileExplorer
@@ -29,7 +31,7 @@ namespace MiraUtils.Client.FileExplorer
                 new FileExplorerOpenRequest
                 {
                     PathLength = (ushort)p_Path.Length,
-                    Path = p_Path.ToCharArray(),
+                    Path = Encoding.ASCII.GetChars(Encoding.ASCII.GetBytes(p_Path)),
                     Flags = p_Flags,
                     Mode = p_Mode
                 }.Serialize());
@@ -218,6 +220,73 @@ namespace MiraUtils.Client.FileExplorer
                 new FileExplorerEcho(p_Message).Serialize());
 
             return p_Connection.SendMessage(s_Message);
+        }
+
+        public static byte[] DownloadFile(this MiraConnection p_Connection, string p_Path, Action<int, bool> p_StatusCallback = null)
+        {
+            var s_FileHandle = Open(p_Connection, p_Path, (int)OpenOnlyFlags.O_RDONLY, 0);
+            if (s_FileHandle < 0)
+            {
+                p_StatusCallback?.Invoke(0, true);
+                return null;
+            }
+
+            var s_Stat = Stat(p_Connection, s_FileHandle);
+            if (s_Stat == null)
+            {
+                p_StatusCallback?.Invoke(0, true);
+                return null;
+            }
+
+            var s_ChunkSize = 0x8000;
+            var s_Chunks = s_Stat.Size / s_ChunkSize;
+            var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
+
+            ulong s_Offset = 0;
+
+            byte[] s_ReturnData = null;
+            using (var s_Writer = new BinaryWriter(new MemoryStream()))
+            {
+                for (var i = 0; i < s_Chunks; ++i)
+                {
+                    var l_Data = Read(p_Connection, s_FileHandle, s_Offset, s_ChunkSize);
+                    if (l_Data == null)
+                    {
+                        p_StatusCallback?.Invoke(0, true);
+                        return null;
+                    }
+
+                    // Write a chunk
+                    s_Writer.Write(l_Data);
+
+                    // Increment our offset
+                    s_Offset += (ulong)l_Data.LongLength;
+
+                    // Calculate and update status
+                    p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+                }
+
+                // Write the leftover data
+                var s_Data = Read(p_Connection, s_FileHandle, s_Offset, s_Leftover);
+                if (s_Data == null)
+                {
+                    p_StatusCallback?.Invoke(0, true);
+                    return null;
+                }
+
+                // Write the leftover
+                s_Writer.Write(s_Data);
+
+                // Increment our offset
+                s_Offset += (ulong)s_Data.LongLength;
+
+                // Calculate and update status
+                p_StatusCallback?.Invoke((int)(((float)s_Offset / (float)s_Stat.Size) * 100), false);
+
+                s_ReturnData = ((MemoryStream)s_Writer.BaseStream).ToArray();
+            }
+
+            return s_ReturnData;
         }
     }
 }

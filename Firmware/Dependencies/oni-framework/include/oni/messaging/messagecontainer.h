@@ -16,9 +16,7 @@ struct messagecontainer_t
 	uint8_t payload[];
 };
 
-struct messagecontainer_t* messagecontainer_allocOutgoing(enum MessageCategory category, uint32_t type, void* internalMessageData, size_t internalMessageSize);
-struct messagecontainer_t* messagecontainer_allocIncoming(void* internalMessageData, size_t internalMessageSize);
-
+struct messagecontainer_t* messagecontainer_createMessage(enum MessageCategory category, uint32_t errorType, uint8_t isRequest, void* payload, uint32_t payloadLength);
 
 void messagecontainer_acquire(struct messagecontainer_t* reference);
 

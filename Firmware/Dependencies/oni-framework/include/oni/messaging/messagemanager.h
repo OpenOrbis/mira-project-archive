@@ -8,6 +8,7 @@
 
 struct messagecategory_t;
 struct messagecontainer_t;
+enum MessageCategory;
 
 struct messagemanager_t
 {
@@ -29,6 +30,9 @@ int32_t messagemanager_unregisterCallback(struct messagemanager_t* manager, int3
 
 // Sents a request
 void messagemanager_sendRequest(struct messagecontainer_t* container);
+
+// Sends an error response with no payload back to the socket
+void messagemanager_sendErrorResponse(enum MessageCategory category, int32_t error);
 
 // Sends the reply back to the socket
 void messagemanager_sendResponse(struct messagecontainer_t* message);

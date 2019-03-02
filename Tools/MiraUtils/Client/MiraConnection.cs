@@ -8,8 +8,7 @@ namespace MiraUtils.Client
     public class MiraConnection
     {
         private TcpClient m_Socket;
-        private string m_Address;
-        private ushort m_Port;
+        private string m_NickName;
 
         private const string c_DefaultAddress = "127.0.0.1";
         private const ushort c_DefaultPort = 9999;
@@ -18,6 +17,25 @@ namespace MiraUtils.Client
         /// Is the current connection active/connected
         /// </summary>
         public bool IsConnected => m_Socket?.Connected ?? false;
+
+        /// <summary>
+        /// Connection hostname or ip address
+        /// </summary>
+        public string Address { get; protected set; }
+
+        /// <summary>
+        /// Connection port number
+        /// </summary>
+        public ushort Port { get; protected set; }
+
+        /// <summary>
+        /// User settable nickname, or address:port
+        /// </summary>
+        public string Nickname
+        {
+            get { return string.IsNullOrWhiteSpace(m_NickName) ? $"{Address}:{Port}" : m_NickName; }
+            set { m_NickName = value; }
+        }
 
         /// <summary>
         /// Send and recv timeout for information, default 2s
@@ -39,8 +57,8 @@ namespace MiraUtils.Client
         /// <param name="p_Port">Port to connect to, default(9999)</param>
         public MiraConnection(string p_Address = c_DefaultAddress, ushort p_Port = c_DefaultPort)
         {
-            m_Address = p_Address;
-            m_Port = p_Port;
+            Address = p_Address;
+            Port = p_Port;
 
             // Allocate some space for our buffer
             m_Buffer = new byte[MaxBufferSize];
@@ -59,7 +77,7 @@ namespace MiraUtils.Client
             try
             {
                 // Attempt to connect to the host
-                m_Socket = new TcpClient(m_Address, m_Port)
+                m_Socket = new TcpClient(Address, Port)
                 {
                     ReceiveTimeout = 1000 * TimeoutInSeconds,
                     SendTimeout = 1000 * TimeoutInSeconds,
