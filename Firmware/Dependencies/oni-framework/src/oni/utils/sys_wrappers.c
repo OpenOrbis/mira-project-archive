@@ -981,3 +981,28 @@ pid_t krfork_t(int flags, struct thread* td)
 	// success
 	return (pid_t)td->td_retval[0];
 }
+
+int kreboot(int opt)
+{
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*sys_reboot)(struct thread*, struct reboot_args*) = (void*)sysents[SYS_REBOOT].sy_call;
+	if (!sys_reboot)
+		return -1;
+
+	int error;
+	struct reboot_args uap;
+	struct thread *td = curthread;
+
+	// clear errors
+	td->td_retval[0] = 0;
+
+	// call syscall
+	uap.opt = opt;
+	error = sys_reboot(td, &uap);
+	if (error)
+		return -error;
+
+	// return socket
+	return td->td_retval[0];
+}

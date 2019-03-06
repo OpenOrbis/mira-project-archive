@@ -1,5 +1,6 @@
 ﻿using MiraUtils.Client;
 using MiraUtils.Client.FileExplorer;
+using MiraUtils.Client.OrbisUtils;
 using MiraUtils.Controls;
 using MiraUtils.Controls.FileExplorer;
 using System.Collections.Generic;
@@ -40,14 +41,16 @@ namespace MiraUtils
                 return;
             }
 
-            Connections.Add(s_Connection);
+            s_Connection.Reboot();
+
+            //Connections.Add(s_Connection);
 
             
-            m_Explorer = new frmFileExplorer(s_Connection);
+            //m_Explorer = new frmFileExplorer(s_Connection);
 
-            m_Explorer.Show(dockPanel, DockState.DockRight);
+            //m_Explorer.Show(dockPanel, DockState.DockRight);
 
-            m_Explorer.UpdateControls();
+            //m_Explorer.UpdateControls();
         }
     }
 }

@@ -513,6 +513,9 @@ void fileexplorer_stat_callback(struct messagecontainer_t* container)
 	struct stat fileStat;
 	(void)memset(&fileStat, 0, sizeof(fileStat));
 
+	struct thread_info_t threadInfo;
+	oni_threadEscape(curthread, &threadInfo);
+
 	int32_t ret = 0;
 	if (request->handle < 0)
 	{
@@ -525,6 +528,8 @@ void fileexplorer_stat_callback(struct messagecontainer_t* container)
 	{
 		ret = kfstat(request->handle, &fileStat);
 	}
+
+	oni_threadRestore(curthread, &threadInfo);
 
 	if (ret < 0)
 	{

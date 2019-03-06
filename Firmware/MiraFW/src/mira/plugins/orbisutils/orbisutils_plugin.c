@@ -88,6 +88,8 @@ void orbisutils_shutdownMira_callback(struct messagecontainer_t* container)
 	if (request->rebootConsole)
 	{
 		// TODO: call reboot
+		kreboot(0);
+
 		WriteLog(LL_Debug, "rebooting console");
 		goto cleanup;
 	}

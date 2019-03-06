@@ -74,7 +74,10 @@
     <Compile Include="Client\MessageSerializable.cs" />
     <Compile Include="Client\MiraConnection.cs" />
     <Compile Include="Client\FileExplorer\FileExplorerExtensions.cs" />
+    <Compile Include="Client\OrbisUtils\OrbisUtilsCommands.cs" />
     <Compile Include="Client\TimeSpec.cs" />
+    <Compile Include="Client\OrbisUtils\OrbisUtilsShutdownMira.cs" />
+    <Compile Include="Client\OrbisUtils\OrbisUtilsExtensions.cs" />
     <Compile Include="Controls\FileExplorer\frmFileExplorer.cs" />
     <Compile Include="Controls\FileExplorer\frmFileExplorer.Designer.cs">
       <DependentUpon>frmFileExplorer.cs</DependentUpon>
