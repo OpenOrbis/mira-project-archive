@@ -496,9 +496,80 @@ cleanup:
 
 void fileexplorer_stat_callback(struct messagecontainer_t* container)
 { 
-	WriteLog(LL_Error, "stat is not implemented");
+	if (container == NULL)
+		return;
 
-	messagemanager_sendErrorResponse(MessageCategory_File, -ENOEXEC);
+	messagecontainer_acquire(container);
+
+	uint16_t payloadLength = container->header.payloadLength;
+	if (payloadLength < 6 /* sizeof the structure - the padding it adds for the path[] (8 bytes) */)
+	{
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, 6);
+		goto cleanup;
+	}
+
+	struct fileexplorer_statRequest_t* request = (struct fileexplorer_statRequest_t*)container->payload;
+
+	struct stat fileStat;
+	(void)memset(&fileStat, 0, sizeof(fileStat));
+
+	int32_t ret = 0;
+	if (request->handle < 0)
+	{
+		if (request->pathLength > payloadLength)
+			ret = -ENAMETOOLONG;
+		else
+			ret = kstat(request->path, &fileStat);
+	}
+	else
+	{
+		ret = kfstat(request->handle, &fileStat);
+	}
+
+	if (ret < 0)
+	{
+		WriteLog(LL_Error, "could not stat (%d).", ret);
+		messagemanager_sendErrorResponse(MessageCategory_File, ret);
+		goto cleanup;
+	}
+
+	// Send a success response back
+	struct fileexplorer_stat_t response;
+	response.st_atim.tv_nsec = fileStat.st_atim.tv_nsec;
+	response.st_atim.tv_sec = fileStat.st_atim.tv_sec;
+	response.st_birthtim.tv_nsec = fileStat.st_birthtim.tv_nsec;
+	response.st_birthtim.tv_sec = fileStat.st_birthtim.tv_sec;
+	response.st_blksize = fileStat.st_blksize;
+	response.st_blocks = fileStat.st_blocks;
+	response.st_ctim.tv_nsec = fileStat.st_ctim.tv_nsec;
+	response.st_ctim.tv_sec = fileStat.st_ctim.tv_sec;
+	response.st_dev = fileStat.st_dev;
+	response.st_flags = fileStat.st_flags;
+	response.st_gen = fileStat.st_gen;
+	response.st_gid = fileStat.st_gid;
+	response.st_ino = fileStat.st_ino;
+	response.st_lspare = fileStat.st_lspare;
+	response.st_mode = fileStat.st_mode;
+	response.st_mtim.tv_nsec = fileStat.st_mtim.tv_nsec;
+	response.st_mtim.tv_sec = fileStat.st_mtim.tv_sec;
+	response.st_nlink = fileStat.st_nlink;
+	response.st_rdev = fileStat.st_rdev;
+	response.st_size = fileStat.st_size;
+	response.st_uid = fileStat.st_uid;
+
+	struct messagecontainer_t* responseContainer = messagecontainer_createMessage(MessageCategory_File, (uint32_t)ret, false, &response, sizeof(response));
+	if (responseContainer == NULL)
+	{
+		WriteLog(LL_Error, "could not allocate response");
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
+		goto cleanup;
+	}
+
+	messagemanager_sendResponse(responseContainer);
+	messagecontainer_release(responseContainer);
+
+cleanup:
+	messagecontainer_release(container);
 }
 
 void fileexplorer_mkdir_callback(struct messagecontainer_t* container)

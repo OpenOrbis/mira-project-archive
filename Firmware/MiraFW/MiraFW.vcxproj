@@ -89,6 +89,7 @@
     <ClInclude Include="src\mira\plugins\hen\henplugin.h" />
     <ClInclude Include="src\mira\plugins\hen\henplugin_pkg.h" />
     <ClInclude Include="src\mira\plugins\logserver\logserver_plugin.h" />
+    <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_messages.h" />
     <ClInclude Include="src\mira\plugins\orbisutils\orbisutils_plugin.h" />
     <ClInclude Include="src\mira\plugins\pluginloader.h" />
     <ClInclude Include="src\mira\trainers\trainermanager.h" />

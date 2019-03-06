@@ -1,14 +1,18 @@
 #include "orbisutils_plugin.h"
+#include "orbisutils_messages.h"
+
 //
 // Oni-Framework includes
 //
 #include <oni/config.h>
 #include <oni/messaging/messagemanager.h>
+#include <oni/messaging/messagecontainer.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/logger.h>
-#include <oni/utils/ref.h>
 #include <oni/utils/sys_wrappers.h>
 #include <oni/utils/cpu.h>
+#include <oni/rpc/rpcserver.h>
+#include <oni/plugins/pluginmanager.h>
 
 //
 // Mira specific
@@ -29,15 +33,9 @@ struct orbisutils_toggleaslr_t
 uint8_t orbisutils_load(struct orbisutils_plugin_t* plugin);
 uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin);
 
-void orbisutils_dumpHddKeys_callback(struct ref_t* message);
-void orbisutils_toggleASLR(struct ref_t* message);
-
-enum UtilityCmds
-{
-	OrbisUtils_DumpHddKeys = 0xA5020F62,
-	OrbisUtils_ToggleASLR = 0xE6572B02,
-};
-
+void orbisutils_dumpHddKeys_callback(struct messagecontainer_t* container);
+void orbisutils_toggleASLR(struct messagecontainer_t* container);
+void orbisutils_shutdownMira_callback(struct messagecontainer_t* container);
 
 void orbisutils_init(struct orbisutils_plugin_t* plugin)
 {
@@ -55,7 +53,7 @@ uint8_t orbisutils_load(struct orbisutils_plugin_t* plugin)
 	if (!plugin)
 		return false;
 
-	//messagemanager_registerCallback(gFramework->messageManager, RPCCAT_SYSTEM, OrbisUtils_DumpHddKeys, orbisutils_dumpHddKeys_callback);
+	messagemanager_registerCallback(mira_getFramework()->framework.messageManager, MessageCategory_System, OrbisUtils_ShutdownMira, orbisutils_shutdownMira_callback);
 
 
 	return true;
@@ -66,12 +64,52 @@ uint8_t orbisutils_unload(struct orbisutils_plugin_t* plugin)
 	if (!plugin)
 		return false;
 
-	//messagemanager_unregisterCallback(gFramework->messageManager, RPCCAT_SYSTEM, OrbisUtils_DumpHddKeys, orbisutils_dumpHddKeys_callback);
+	messagemanager_unregisterCallback(mira_getFramework()->framework.messageManager, MessageCategory_System, OrbisUtils_ShutdownMira, orbisutils_shutdownMira_callback);
 
 	return true;
 }
 
-void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
+void orbisutils_shutdownMira_callback(struct messagecontainer_t* container)
+{
+	if (container == NULL)
+		return;
+
+	messagecontainer_acquire(container);
+
+	if (container->size < sizeof(struct orbisutils_shutdownMiraRequest_t))
+	{
+		WriteLog(LL_Error, "malformed message");
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
+		goto cleanup;
+	}
+
+	struct orbisutils_shutdownMiraRequest_t* request = (struct orbisutils_shutdownMiraRequest_t*)container->payload;
+	
+	if (request->rebootConsole)
+	{
+		// TODO: call reboot
+		WriteLog(LL_Debug, "rebooting console");
+		goto cleanup;
+	}
+	
+	if (request->shutdownMira)
+	{
+		// Stop the RPC server
+		WriteLog(LL_Info, "stopping RPC server.");
+		if (!rpcserver_shutdown(mira_getFramework()->framework.rpcServer))
+			WriteLog(LL_Error, "there was an error stopping the rpc server.");
+
+		// Stop the klog server
+		WriteLog(LL_Info, "Shutting down plugin manager");
+		pluginmanager_shutdown(mira_getFramework()->framework.pluginManager);
+		goto cleanup;
+	}
+
+cleanup:
+	messagecontainer_release(container);
+}
+
+void orbisutils_dumpHddKeys_callback(struct messagecontainer_t* container)
 {
 //	// This is how we decrypt the EAP Internal partition key for usage with mounting on PC
 //	//int(*sceSblGetEAPInternalPartitionKey)(unsigned char *encBuffer, unsigned char *decBzffer) = kdlsym(sceSblGetEAPInternalPartitionKey);
@@ -166,7 +204,7 @@ void orbisutils_dumpHddKeys_callback(struct ref_t* reference)
 //	ref_release(reference);
 }
 
-void orbisutils_toggleASLR(struct ref_t* reference)
+void orbisutils_toggleASLR(struct messagecontainer_t* container)
 {
 //	void(*critical_enter)(void) = kdlsym(critical_enter);
 //	void(*critical_exit)(void) = kdlsym(critical_exit);

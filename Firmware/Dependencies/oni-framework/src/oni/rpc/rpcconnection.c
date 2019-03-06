@@ -11,7 +11,7 @@
 #include <oni/framework.h>
 #include <oni/init/initparams.h>
 
-
+#include <oni/utils/escape.h>
 
 /// <summary>
 /// Initializes a pbconnection structure
@@ -59,6 +59,9 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 
 	// Do not hold this lock
 	_mtx_unlock_flags(&connection->lock, 0, __FILE__, __LINE__);
+
+	struct thread_info_t threadInfo;
+	oni_threadEscape(curthread, &threadInfo);
 
 	connection->running = true;
 
@@ -192,6 +195,8 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 
 disconnect:
 	connection->running = false;
+
+	oni_threadRestore(curthread, &threadInfo);
 
 	// Validate everything and send the disconnect message, pbserver handles cleanup
 	if (connection->server && connection->onClientDisconnect)

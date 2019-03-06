@@ -235,7 +235,13 @@ namespace MiraUtils.Controls.FileExplorer
 
         private void cmuProperties_Click(object sender, System.EventArgs e)
         {
+            var s_Node = tvExplorer.SelectedNode;
+            if (s_Node == null)
+                return;
 
+            var s_Entry = s_Node.Tag as FileExplorerDent;
+            if (s_Entry == null)
+                return;
         }
     }
 }
