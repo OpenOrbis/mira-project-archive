@@ -19,15 +19,11 @@
 //
 #include <mira/miraframework.h>
 
-struct utility_dumphddkeys_t
+enum OrbisUtilsCommands
 {
-	uint8_t encrypted[0x60];
-	uint8_t key[0x20];
-};
-
-struct orbisutils_toggleaslr_t
-{
-	uint8_t aslrEnabled;
+	OrbisUtils_GetHddKeys = 0x0411E4B9,
+	OrbisUtils_ShutdownMira = 0x7FDF47D5,
+	OrbisUtils_SetAslr = 0x554BB3F1,
 };
 
 uint8_t orbisutils_load(struct orbisutils_plugin_t* plugin);

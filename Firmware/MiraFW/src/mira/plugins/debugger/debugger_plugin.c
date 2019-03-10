@@ -20,6 +20,11 @@
 
 #include <mira/miraframework.h>
 
+struct amd64_frame {
+	struct amd64_frame      *f_frame;
+	long                    f_retaddr;
+	long                    f_arg0;
+};
 
 enum DebuggerCmds
 {
@@ -122,6 +127,13 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	char* dash = "-----------------------";
 
 	WriteLog(LL_Info, "kernel panic detected");
+
+	WriteLog(LL_Info, "call stizzack");
+	struct amd64_frame* amdFrame = (struct amd64_frame*)frame->tf_rbp;
+	while (amdFrame != NULL)
+	{
+		// TODO: Validate each frame before iterating
+	}
 
 	//const char** trap_msg = NULL;// (const char**)kdlsym(trap_msg);
 

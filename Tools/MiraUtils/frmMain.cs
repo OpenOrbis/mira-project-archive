@@ -41,16 +41,16 @@ namespace MiraUtils
                 return;
             }
 
-            s_Connection.Reboot();
+            //s_Connection.Reboot();
 
-            //Connections.Add(s_Connection);
+            Connections.Add(s_Connection);
 
-            
-            //m_Explorer = new frmFileExplorer(s_Connection);
 
-            //m_Explorer.Show(dockPanel, DockState.DockRight);
+            m_Explorer = new frmFileExplorer(s_Connection);
 
-            //m_Explorer.UpdateControls();
+            m_Explorer.Show(dockPanel, DockState.DockRight);
+
+            m_Explorer.UpdateControls();
         }
     }
 }
