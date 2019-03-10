@@ -5,20 +5,18 @@
 //	Oni-Framework core
 //
 #include <oni/messaging/messagemanager.h>
-#include <oni/rpc/rpcserver.h>
 #include <oni/init/initparams.h>
+#include <oni/rpc/rpcserver.h>
 
 //
 //	Built-in plugins
 //
 #include <oni/plugins/pluginmanager.h>
-#include <mira/plugins/filetransfer/filetransfer_plugin.h>
+#include <mira/plugins/fileexplorer/fileexplorer_plugin.h>
 #include <mira/plugins/logserver/logserver_plugin.h>
 #include <mira/plugins/debugger/debugger_plugin.h>
 #include <mira/plugins/pluginloader.h>	// Load plugins from file
 #include <mira/plugins/orbisutils/orbisutils_plugin.h>
-#include <mira/plugins/cheat/cheat_plugin.h>
-#include <mira/plugins/console/consoleplugin.h>
 #include <mira/plugins/hen/henplugin.h>
 
 //
@@ -31,6 +29,8 @@
 
 #include <oni/utils/hook.h>
 
+#include <mira/utils/injector.h>
+
 //
 //	Filesystems
 //
@@ -42,6 +42,9 @@
 #include <sys/eventhandler.h>
 #include <sys/proc.h>					// proc
 #include <sys/sysent.h>
+//#include <string.h> // memmove, memcpy
+//#include <stdlib.h> // malloc, free
+//#include <assert.h>
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 
@@ -96,11 +99,12 @@ struct miraframework_t* mira_getFramework()
 
 uint8_t miraframework_initialize(struct miraframework_t* framework)
 {
+	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+
 	if (!framework)
 		return false;
-
+	
 	// Zero initialize everything
-	void * (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	memset(framework, 0, sizeof(*framework));
 
 	// Load the settings from file if it exists
@@ -152,8 +156,6 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 		return false;
 	}*/
 	//overlayfs_init(framework->overlayfs);
-
-
 
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
@@ -225,7 +227,6 @@ static void mira_onSuspend(struct miraframework_t* framework)
 	WriteLog(LL_Info, "Disabling hooks");
 
 	WriteLog(LL_Info, "Everything *should* be stable m8");
-
 }
 
 static void mira_onResume(struct miraframework_t* framework)
@@ -243,8 +244,6 @@ static void mira_onResume(struct miraframework_t* framework)
 	WriteLog(LL_Info, "enabling hooks");
 }
 
-#include <mira/utils/injector.h>
-
 uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 {
 	// Initialize default plugins
@@ -252,11 +251,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	//	Initialize the orbis utilities plugin
 	//
 	WriteLog(LL_Info, "allocating orbis utilities");
-	if (framework->orbisUtilsPlugin)
-	{
-		kfree(framework->orbisUtilsPlugin, sizeof(*framework->orbisUtilsPlugin));
-		framework->orbisUtilsPlugin = NULL;
-	}
 	framework->orbisUtilsPlugin = (struct orbisutils_plugin_t*)kmalloc(sizeof(struct orbisutils_plugin_t));
 	if (!framework->orbisUtilsPlugin)
 	{
@@ -268,44 +262,16 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	// Register file transfer plugin
 	WriteLog(LL_Info, "allocating file transfer plugin");
-	if (framework->fileTransferPlugin)
-	{
-		kfree(framework->fileTransferPlugin, sizeof(*framework->fileTransferPlugin));
-		framework->fileTransferPlugin = NULL;
-	}
-	
-	framework->fileTransferPlugin = (struct filetransfer_plugin_t*)kmalloc(sizeof(struct filetransfer_plugin_t));
+	framework->fileTransferPlugin = (struct fileexplorer_plugin_t*)kmalloc(sizeof(struct fileexplorer_plugin_t));
 	if (!framework->fileTransferPlugin)
 	{
 		WriteLog(LL_Error, "error allocating file transfer plugin");
 		return false;
 	}
-	filetransfer_plugin_init(framework->fileTransferPlugin);
+	fileexplorer_plugin_init(framework->fileTransferPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->fileTransferPlugin->plugin);
 
-	WriteLog(LL_Warn, "allocating console plugin");
-	if (framework->consolePlugin)
-	{
-		kfree(framework->consolePlugin, sizeof(*framework->consolePlugin));
-		framework->consolePlugin = NULL;
-	}
-
-	framework->consolePlugin = (struct consoleplugin_t*)kmalloc(sizeof(struct consoleplugin_t));
-	if (!framework->consolePlugin)
-	{
-		WriteLog(LL_Error, "could not allocate console plugin");
-		return false;
-	}
-	consoleplugin_init(framework->consolePlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->consolePlugin->plugin);
-
 	WriteLog(LL_Info, "allocating logserver");
-	if (framework->logServerPlugin)
-	{
-		kfree(framework->logServerPlugin, sizeof(*framework->logServerPlugin));
-		framework->logServerPlugin = NULL;
-	}
-		
 	framework->logServerPlugin = (struct logserver_plugin_t*)kmalloc(sizeof(struct logserver_plugin_t));
 	if (!framework->logServerPlugin)
 	{
@@ -317,12 +283,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 
 	// Initialize the plugin loader to read from file
 	WriteLog(LL_Info, "allocating pluginloader");
-	if (framework->pluginLoader)
-	{
-		kfree(framework->pluginLoader, sizeof(*framework->pluginLoader));
-		framework->pluginLoader = NULL;
-	}
-
 	framework->pluginLoader = (struct pluginloader_t*)kmalloc(sizeof(struct pluginloader_t));
 	if (!framework->pluginLoader)
 	{
@@ -333,14 +293,7 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	pluginloader_loadPlugins(framework->pluginLoader);
 
 	// Debugger
-	WriteLog(LL_Debug, "allocating debugger");
-
-	if (framework->debuggerPlugin)
-	{
-		kfree(framework->debuggerPlugin, sizeof(*framework->debuggerPlugin));
-		framework->debuggerPlugin = NULL;
-	}
-		
+	WriteLog(LL_Debug, "allocating debugger");		
 	framework->debuggerPlugin = (struct debugger_plugin_t*)kmalloc(sizeof(struct debugger_plugin_t));
 	if (!framework->debuggerPlugin)
 	{
@@ -350,34 +303,23 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	debugger_plugin_init(framework->debuggerPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->debuggerPlugin->plugin);
 
-	// Cheat plugin
-	WriteLog(LL_Info, "allocating cheating plugin");
-
-	framework->cheatPlugin = (struct cheat_plugin_t*)kmalloc(sizeof(struct cheat_plugin_t));
-	if (!framework->cheatPlugin)
-	{
-		WriteLog(LL_Error, "could not allocate cheat plugin");
-		return false;
-	}
-	cheat_plugin_init(framework->cheatPlugin);
-	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->cheatPlugin->plugin);
-	
 	// Kick off the rpc server thread
 	WriteLog(LL_Debug, "allocating rpc server");
-	framework->framework.rpcServer = NULL;
+	
 	if (framework->framework.rpcServer)
 	{
 		kfree(framework->framework.rpcServer, sizeof(*framework->framework.rpcServer));
 		framework->framework.rpcServer = NULL;
 	}
 
+	// New pbserver iteration
 	framework->framework.rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
 	if (!framework->framework.rpcServer)
 	{
 		WriteLog(LL_Error, "could not allocate rpc server.");
 		return false;
 	}
-	rpcserver_init(framework->framework.rpcServer, curthread->td_proc);
+	rpcserver_init(framework->framework.rpcServer);
 
 	// Startup the server, it will kick off the thread
 	WriteLog(LL_Info, "starting rpc server");
@@ -399,22 +341,6 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 	henplugin_init(framework->henPlugin);
 	pluginmanager_registerPlugin(framework->framework.pluginManager, &framework->henPlugin->plugin);
-
-	uint8_t nopLoop[] =
-	{
-		0x90,		// nx:	nop
-		0xEB, 0xFD,	//		jmp nx
-	};
-
-	//uint8_t nullPtrDeref[] =
-	//{
-	//	0x48, 0x31, 0xC0,	// xor rax, rax
-	//	0xFF, 0xD0			// call rax
-	//};
-
-	
-	uint8_t ret = injector_injectModule(0, nopLoop, ARRAYSIZE(nopLoop), true);
-	WriteLog(LL_Debug, "injector_injectModule: %s", ret ? "success" : "failure");
 #else
 	framework->henPlugin = NULL;
 #endif

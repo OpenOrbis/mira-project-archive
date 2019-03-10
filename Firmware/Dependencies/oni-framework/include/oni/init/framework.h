@@ -1,0 +1,33 @@
+#pragma once
+#include <oni/utils/types.h>
+
+struct logger_t;
+struct messagemanager_t;
+struct pluginmanager_t;
+struct rpcserver_t;
+
+struct framework_t
+{
+	char* configPath; // /user/framework
+	char* pluginsPath; // /user/framework/plugins
+	char* downloadPath; // /user/framework/download
+
+	struct messagemanager_t* messageManager;
+	struct rpcserver_t* rpcServer;
+	struct pluginmanager_t* pluginManager;
+};
+
+// Initialization parameters
+extern struct initparams_t* gInitParams;
+
+// Global logger
+extern struct logger_t* gLogger;
+
+// Base address of the kernel
+extern uint8_t* gKernelBase;
+
+// Default userland entry point
+extern int oni_initializeFramework();
+
+// Default kernelland entry point
+extern void oni_kernelInitialization(void* loaderInitParams);

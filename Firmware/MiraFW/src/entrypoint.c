@@ -27,6 +27,7 @@
 #include <oni/utils/logger.h>
 #include <oni/utils/syscall.h>
 #include <oni/utils/types.h>
+#include <oni/utils/kernel.h>
 #include <oni/utils/kdlsym.h>
 #include <oni/utils/dynlib.h>
 #include <oni/utils/escape.h>
@@ -47,66 +48,34 @@ struct logger_t* gLogger = NULL;
 struct initparams_t* gInitParams = NULL;
 struct framework_t* gFramework = NULL;
 
-// Forward declarations
-int init_oni(struct initparams_t* userInitParams);
-
-void* mira_entry(void* args)
+void mira_entry(void* args)
 /*
-	This is the entry point for the userland payload
+	This is the entry point for the userland or kernel payload
 
-	args - pointer to struct initparams_t in userland memory
+	args - pointer to struct initparams_t in kernel memory
 */
 {
-	struct initparams_t userParams;
-	userParams.entrypoint = oni_kernelInitialization;
-	userParams.process = NULL;
-	userParams.payloadBase = 0x926200000;
-	userParams.payloadSize = 0x80000;
+	if (!args)
+		return;
 
-	// Initialize the Oni Framework
-	int result = init_oni(&userParams);
-	if (!result)
-		return NULL;
+	struct initparams_t* initParams = (struct initparams_t*)args;
 
-	// Prompt the user
-	int moduleId = -1;
-	sys_dynlib_load_prx("/system/common/lib/libSceSysUtil.sprx", &moduleId);
+	gInitParams = initParams;
 
-	// This header doesn't work in > 5.00
-	int(*sceSysUtilSendSystemNotificationWithText)(int messageType, char* message) = NULL;
-
-	sys_dynlib_dlsym(moduleId, "sceSysUtilSendSystemNotificationWithText", &sceSysUtilSendSystemNotificationWithText);
-
-	if (sceSysUtilSendSystemNotificationWithText)
-	{
-		char* initMessage = "Mira Project Loaded\nRPC Server Port: 9999\nkLog Server Port: 9998\n";
-		sceSysUtilSendSystemNotificationWithText(222, initMessage);
-	}
-
-	sys_dynlib_unload_prx(moduleId);
-
-	return NULL;
+	oni_kernelInitialization(args);
 }
 
-int init_oni(struct initparams_t* userInitParams)
-/*
-	This is the OniFramework entry where platform specific
-	configurations should be set up and the framework initialized
-*/
-{
-	// Elevate to kernel
-	SelfElevateAndRun(userInitParams);
-
-	return true;
-}
-
-struct hook_t* gHook = NULL;
+#include <sys/mman.h>
 
 void oni_kernelInitialization(void* args)
 /*
-	This function handles the kernel (ring-0) mode initialization
+This function handles the kernel (ring-0) mode initialization
 */
 {
+
+	// Fill the kernel base address
+	gKernelBase = (uint8_t*)kernelRdmsr(0xC0000082) - kdlsym_addr_Xfast_syscall;
+
 	void(*kthread_exit)(void) = kdlsym(kthread_exit);
 	struct vmspace* (*vmspace_alloc)(vm_offset_t min, vm_offset_t max) = kdlsym(vmspace_alloc);
 	void(*pmap_activate)(struct thread *td) = kdlsym(pmap_activate);
@@ -127,7 +96,7 @@ void oni_kernelInitialization(void* args)
 	logger_init(gLogger);
 
 	// Verify that our initialization parameters are correct, this is coming from the kernel copy
-	gInitParams= (struct initparams_t*)args;
+	gInitParams = (struct initparams_t*)args;
 	if (!gInitParams)
 	{
 		WriteLog(LL_Error, "invalid loader init params");
@@ -152,14 +121,17 @@ void oni_kernelInitialization(void* args)
 	if (gInitParams->process == curthread->td_proc)
 		pmap_activate(curthread);
 
+	// Create new credentials
+	(void)ksetuid_t(0, curthread);
+
+	// Root and escape our thread
+	oni_threadEscape(curthread, NULL);
+
 	// Because we have now forked into a new realm of fuckery
 	// We need to reserve the first 3 file descriptors in our process
 	int descriptor = kopen("/dev/console", 1, 0);
 	kdup2(descriptor, 1);
 	kdup2(1, 2);
-
-	// Root and escape our thread
-	oni_threadEscape(curthread, NULL);
 
 	// Show over UART that we are running in a new process
 	WriteLog(LL_Info, "oni_kernelInitialization in new process!\n");
@@ -174,7 +146,7 @@ void oni_kernelInitialization(void* args)
 	miraframework_initialize((struct miraframework_t*)gFramework);
 
 	// Set the initparams so we do not lose track of it
-	((struct miraframework_t*)gFramework)->initParams = gInitParams;
+	mira_getFramework()->initParams = gInitParams;
 
 	// At this point we don't need kernel context anymore
 	WriteLog(LL_Info, "Mira initialization complete");

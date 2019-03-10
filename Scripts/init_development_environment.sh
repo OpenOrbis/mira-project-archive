@@ -32,11 +32,12 @@ if [ $hasPlatform == false ]; then
 	echo "\t[3] 4.05 Firmware (Unsupported)";
 	echo "\t[4] 4.07 Firmware (Unsupported)";
 	echo "\t[5] 4.55 Firmware (Community Supported)";
-	echo "\t[6] 5.01 Firmware (Deprecated)";
-	echo "\t[7] 5.05 Firmware (Latest Supported)";
-	echo "\t[8] 5.50 Firmware (Prototype)";
-	echo "\t[9] 5.53 Firmware (Prototype)";
-	echo "\t[10] 5.55 Firmware (Prototype)";
+	echo "\t[6] 4.74 Firmware (Community Supported)";
+	echo "\t[7] 5.01 Firmware (Deprecated)";
+	echo "\t[8] 5.05 Firmware (Latest Supported)";
+	echo "\t[9] 5.50 Firmware (Prototype)";
+	echo "\t[10] 5.53 Firmware (Prototype)";
+	echo "\t[11] 5.55 Firmware (Prototype)";
 	read -p "Option? " firmwareVersionSelection;
 
 	# Handle the firmware version selection
@@ -60,18 +61,21 @@ if [ $hasPlatform == false ]; then
 		oniPlatform="ONI_PLATFORM_ORBIS_BSD_455";
 		;;
 		"6")
-		oniPlatform="ONI_PLATFORM_ORBIS_BSD_501";
+		oniPlatform="ONI_PLATFORM_ORBIS_BSD_474";
 		;;
 		"7")
-		oniPlatform="ONI_PLATFORM_ORBIS_BSD_505";
+		oniPlatform="ONI_PLATFORM_ORBIS_BSD_501";
 		;;
 		"8")
-		oniPlatform="ONI_PLATFORM_ORBIS_BSD_550";
+		oniPlatform="ONI_PLATFORM_ORBIS_BSD_505";
 		;;
 		"9")
-		oniPlatform="ONI_PLATFORM_ORBIS_BSD_553";
+		oniPlatform="ONI_PLATFORM_ORBIS_BSD_550";
 		;;
 		"10")
+		oniPlatform="ONI_PLATFORM_ORBIS_BSD_553";
+		;;
+		"11")
 		oniPlatform="ONI_PLATFORM_ORBIS_BSD_555";
 		;;
 	esac
@@ -104,6 +108,12 @@ make;
 
 # Navigate to the Mira core directory
 cd ../../MiraFW;
+make create;
+make clean;
+make;
+
+# Navigate to the Mira Loader directory
+cd ../MiraLoader;
 make create;
 make clean;
 make;

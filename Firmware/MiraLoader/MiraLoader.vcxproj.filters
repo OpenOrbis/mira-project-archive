@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{eb7541d5-6b55-486e-a5fe-50310de7b595}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Makefile" />
+    <ClInclude Include="src\loader\elfloader.h" />
+    <ClInclude Include="src\utils\notify.h" />
+    <ClInclude Include="src\utils\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\entrypoint.c" />
+    <ClCompile Include="src\loader\elfloader.c" />
+    <ClCompile Include="src\utils\notify.c" />
+    <ClCompile Include="src\utils\utils.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\link.x" />
+    <None Include="src\crt0.s" />
+  </ItemGroup>
+</Project>

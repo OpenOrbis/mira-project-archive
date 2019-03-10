@@ -13,6 +13,7 @@
 #include <sys/fcntl.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
+#include <string.h>
 
 #define	PLUGIN_MAXSIZE	0x200000	// 2MB hard cap
 
@@ -22,25 +23,12 @@ static uint8_t pluginloader_addPluginToList(struct pluginloader_t* loader, struc
 
 struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* loader, char* path);
 
-size_t strlen(const char * str)
-{
-	const char *s;
-	for (s = str; *s; ++s) {}
-	return(s - str);
-}
-
-int strcmp(const char * s1, const char * s2)
-{
-	for (; *s1 == *s2; ++s1, ++s2)
-		if (*s1 == 0)
-			return 0;
-	return *(unsigned char *)s1 < *(unsigned char *)s2 ? -1 : 1;
-}
 
 void pluginloader_init(struct pluginloader_t* loader)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	size_t(*strlen)(const char *str) = kdlsym(strlen);
 
 	if (!loader)
 		return;
@@ -208,6 +196,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
+	size_t(*strlen)(const char *str) = kdlsym(strlen);
 
 	if (!loader || !pluginPath)
 		return NULL;
@@ -279,6 +268,7 @@ struct loaderplugin_t* pluginloader_loadPluginFromFile(struct pluginloader_t* lo
 void pluginloader_loadPlugins(struct pluginloader_t* loader)
 {
 	void* (*memset)(void *s, int c, size_t n) = kdlsym(memset);
+	int(*strcmp)(const char *str1, const char* str2) = kdlsym(strcmp);
 
 	// Verify that the loader is valid
 	if (!loader)
