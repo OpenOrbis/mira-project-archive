@@ -26,6 +26,9 @@ AS		:=	llvm-ar
 # Objcopy
 OBJCOPY	:=	objcopy
 
+# cppcheck
+CPPCHECK := cppcheck
+
 # Output directory, by default is build
 ifeq ($(OUT_DIR),)
 OUT_DIR	:=	build
@@ -35,7 +38,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/include" -I"$(ONI_FRAMEWORK)/include/capnproto" -I"$(BSD_INC)"
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
@@ -44,7 +47,7 @@ L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
 LIBS	:= -l:OniFramework.a
 
 # Orbis flags
-ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__ -DFLATCC_PORTABLE -DFLATCC_NO_PALIGNED_ALLOC
+ORB_VER	:= -D_KERNEL=1 -D_DEBUG -D_STANDALONE -D"ONI_PLATFORM=${ONI_PLATFORM}" -D__LP64__ -D_M_X64 -D__amd64__
 
 # C++ Flags, -02 Optimizations break shit badly
 CFLAGS	:= $(I_DIRS) $(ORB_VER) -fPIE -m64 -std=c11 -O0 -fno-builtin -nodefaultlibs -nostdlib -nostdinc -fcheck-new -ffreestanding -fno-strict-aliasing -fno-exceptions -fno-asynchronous-unwind-tables -Wall -Werror -Wno-unknown-pragmas
@@ -86,10 +89,14 @@ $(TARGET): $(ALL_OBJ)
 	@$(OBJCOPY) -O binary $(TARGET) $(PAYLOAD)
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	@echo "Checking $< ..."
+	@$(CPPCHECK) --enable=all $<
 	@echo "Compiling $< ..."
 	@$(CC) $(CFLAGS) $(IDIRS) -c $< -o $@
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Checking $< ..."
+	@$(CPPCHECK) --enable=all $<
 	@echo "Compiling $< ..."
 	@$(CPPC) $(CFLAGS) $(IDIRS) -c $< -o $@
 

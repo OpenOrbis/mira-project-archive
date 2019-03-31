@@ -91,17 +91,10 @@ uint8_t rpcserver_shutdown(struct rpcserver_t* server)
 	if (!server)
 		return false;
 
-	WriteLog(LL_Warn, "here");
-
-
-	if (server->socket == -1)
+	if (server->socket < 0)
 		return false;
 
-	WriteLog(LL_Warn, "here");
-
 	server->running = false;
-
-	WriteLog(LL_Warn, "here");
 
 	// Iterate through each of the connections and force connections to error and get cleaned up
 	for (uint32_t i = 0; i < ARRAYSIZE(server->connections); ++i)
@@ -109,6 +102,8 @@ uint8_t rpcserver_shutdown(struct rpcserver_t* server)
 		struct rpcconnection_t* connection = server->connections[i];
 		if (!connection)
 			continue;
+
+		connection->running = false;
 
 		if (connection->socket < 0)
 			continue;
@@ -118,11 +113,10 @@ uint8_t rpcserver_shutdown(struct rpcserver_t* server)
 		connection->socket = -1;
 	}
 
-	WriteLog(LL_Warn, "here");
-
 	// Shut down the actual server socket
 	if (server->socket >= 0)
 	{
+		WriteLog(LL_Warn, "shutting down server socket (%d).", server->socket);
 		kshutdown(server->socket, 2);
 		kclose(server->socket);
 		server->socket = -1;
@@ -205,15 +199,13 @@ void rpcserver_serverThread(void* userData)
 			// Fire off a new connection thread
 			rpcserver_handleConnection(server, connection);
 
-			WriteLog(LL_Debug, "added new connection (%p) to index (%d).", connection, connectionIndex);
+			//WriteLog(LL_Debug, "added new connection (%p) to index (%d).", connection, connectionIndex);
 		}
 		
 		_mtx_unlock_flags(&server->connectionsLock, 0, "", 0);
 	}
 
 exit:
-	WriteLog(LL_Warn, "here");
-
 	server->running = false;
 
 	WriteLog(LL_Debug, "pbserver is shutting down.");
@@ -241,7 +233,7 @@ void rpcserver_handleConnection(struct rpcserver_t* server, struct rpcconnection
 
 	int32_t result = kthread_add((void(*)(void*))rpcconnection_thread, (void*)connection, miraProc, &connection->thread, 0, 0, "pbconn");
 
-	WriteLog(LL_Debug, "pbconn thread creation: (%d).", result);
+	//WriteLog(LL_Debug, "pbconn thread creation: (%d).", result);
 
 	_mtx_unlock_flags(&connection->lock, 0, __FILE__, __LINE__);
 
@@ -265,7 +257,7 @@ void rpcserver_handleClientDisconnect(struct rpcserver_t* server, struct rpcconn
 	if (!server || !connection)
 		return;
 
-	WriteLog(LL_Debug, "connection disconnecting: %p socket: %d", connection, connection->socket);
+	//WriteLog(LL_Debug, "connection disconnecting: %p socket: %d", connection, connection->socket);
 
 	// If we have a valid socket, shutdown and close it
 	if (connection->socket > -1)

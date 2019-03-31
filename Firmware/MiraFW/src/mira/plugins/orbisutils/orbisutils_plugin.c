@@ -72,7 +72,7 @@ void orbisutils_shutdownMira_callback(struct messagecontainer_t* container)
 
 	messagecontainer_acquire(container);
 
-	if (container->size < sizeof(struct orbisutils_shutdownMiraRequest_t))
+	if (container->header.payloadLength < sizeof(struct orbisutils_shutdownMiraRequest_t))
 	{
 		WriteLog(LL_Error, "malformed message");
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);

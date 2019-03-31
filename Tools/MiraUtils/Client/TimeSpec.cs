@@ -5,7 +5,7 @@ namespace MiraUtils.Client
     public class TimeSpec : MessageSerializable
     {
         public long Seconds;
-        public int NanoSeconds;
+        public long NanoSeconds;
 
         public TimeSpec()
         {
@@ -21,7 +21,7 @@ namespace MiraUtils.Client
         public override void Deserialize(BinaryReader p_Reader)
         {
             Seconds = p_Reader.ReadInt64();
-            NanoSeconds = p_Reader.ReadInt32();
+            NanoSeconds = p_Reader.ReadInt64();
         }
 
         public override byte[] Serialize()

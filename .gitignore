@@ -43,3 +43,5 @@ Output/**
 *.o
 *.a
 *.so
+
+strace_out

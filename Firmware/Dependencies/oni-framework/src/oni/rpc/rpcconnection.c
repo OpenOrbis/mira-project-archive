@@ -114,17 +114,16 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 		}
 
 		// Allocate some new data
-		struct messagecontainer_t* messageContainer = kmalloc(sizeof(*messageContainer) + header.payloadLength);
+		size_t allocationSize = sizeof(struct messagecontainer_t) + header.payloadLength;
+		struct messagecontainer_t* messageContainer = kmalloc(allocationSize);
 		if (messageContainer == NULL)
 		{
 			WriteLog(LL_Error, "could not allocate message container");
 			goto disconnect;
 		}
-
 		// Zero our newly allocated buffer
-		memset(messageContainer, 0, sizeof(*messageContainer));
+		memset(messageContainer, 0, allocationSize);
 
-		messageContainer->size = header.payloadLength;
 		messageContainer->count = 0;
 
 		// copy over the header
@@ -140,7 +139,7 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 		if (result <= 0)
 		{
 			// Free our messagecontainer first
-			kfree(messageContainer, sizeof(struct messagecontainer_t) + messageContainer->size);
+			kfree(messageContainer, sizeof(struct messagecontainer_t) + messageContainer->header.payloadLength);
 			messageContainer = NULL;
 
 			WriteLog(LL_Error, "could not recv message data (%d).", result);
@@ -165,7 +164,7 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 			if (result <= 0)
 			{
 				// Free our messagecontainer first
-				kfree(messageContainer, sizeof(struct messagecontainer_t) + messageContainer->size);
+				kfree(messageContainer, sizeof(struct messagecontainer_t) + messageContainer->header.payloadLength);
 				messageContainer = NULL;
 
 				WriteLog(LL_Error, "could not recv the rest of data (%d).", result);
@@ -176,15 +175,15 @@ void rpcconnection_thread(struct rpcconnection_t* connection)
 			bufferRecv += result;
 		}
 
-		WriteLog(LL_Error, "at least we got here");
+		//WriteLog(LL_Error, "at least we got here");
 
 		messagecontainer_acquire(messageContainer);
 
-		WriteLog(LL_Debug, "GOT MSG: c(%d) t(%x) m(%p) s(0x%x)", 
+		/*WriteLog(LL_Debug, "GOT MSG: c(%d) t(%x) m(%p) s(0x%x)", 
 			messageContainer->header.category,
 			messageContainer->header.errorType,
 			messageContainer->payload,
-			messageContainer->size);
+			messageContainer->header.payloadLength);*/
 
 		// Send the protobuf request off through the message system
 		messagemanager_sendRequest(messageContainer);

@@ -80,7 +80,6 @@ namespace MiraUtils.Client.FileExplorer
                 new FileExplorerReadRequest
                 {
                     Handle = p_Handle,
-                    Offset = p_Offset,
                     Count = p_Count
                 }.Serialize());
 
@@ -238,7 +237,7 @@ namespace MiraUtils.Client.FileExplorer
                 return null;
             }
 
-            var s_ChunkSize = 0x8000;
+            var s_ChunkSize = 0x4000;
             var s_Chunks = s_Stat.Size / s_ChunkSize;
             var s_Leftover = (int)s_Stat.Size % s_ChunkSize;
 

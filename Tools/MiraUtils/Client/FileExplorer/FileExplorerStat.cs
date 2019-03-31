@@ -132,6 +132,7 @@ namespace MiraUtils.Client.FileExplorer
             Blksize = p_Reader.ReadUInt32();
             Flags = p_Reader.ReadUInt32();
             Gen = p_Reader.ReadUInt32();
+            Lspare = p_Reader.ReadInt32();
             Birthtim = new TimeSpec(p_Reader);
         }
 

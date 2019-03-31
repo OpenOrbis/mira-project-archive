@@ -6,13 +6,13 @@
 
 struct messagecontainer_t
 {
-	uint64_t size;
-
+	// Current reference count
 	volatile uint64_t count;
 
+	// Message header
 	struct messageheader_t header;
 
-	// payload
+	// Message Payload
 	uint8_t payload[];
 };
 

@@ -19,7 +19,7 @@ enum FileExplorerCommands
 	FileExplorer_Echo = 0xEBDB1342,
 };
 
-struct fileexplorer_echoRequest_t
+struct MSGPACK fileexplorer_echoRequest_t
 {
 	// Length of the message
 	uint16_t length;
@@ -28,7 +28,7 @@ struct fileexplorer_echoRequest_t
 	char message[];
 };
 
-struct fileexplorer_openRequest_t
+struct MSGPACK fileexplorer_openRequest_t
 {
 	int32_t flags;
 	int32_t mode;
@@ -36,43 +36,43 @@ struct fileexplorer_openRequest_t
 	char path[];
 };
 
-struct fileexplorer_closeRequest_t
+struct MSGPACK fileexplorer_closeRequest_t
 {
 	int32_t handle;
 };
 
-struct fileexplorer_seekRequest_t
+struct MSGPACK fileexplorer_seekRequest_t
 {
 	int32_t handle;
 	uint64_t offset;
 };
 
-struct fileexplorer_readRequest_t
+struct MSGPACK fileexplorer_readRequest_t
 {
 	int32_t handle;
 	int32_t count;
 };
 
-struct fileexplorer_readResponse_t
+struct MSGPACK fileexplorer_readResponse_t
 {
 	int32_t count;
 	uint8_t data[];
 };
 
-struct fileexplorer_writeRequest_t
+struct MSGPACK fileexplorer_writeRequest_t
 {
 	int32_t handle;
 	int32_t count;
 	uint8_t data[];
 };
 
-struct fileexplorer_getdentsRequest_t
+struct MSGPACK fileexplorer_getdentsRequest_t
 {
 	uint16_t length;
 	char path[];
 };
 
-struct fileexplorer_dent_t
+struct MSGPACK fileexplorer_dent_t
 {
 	// File id
 	uint32_t fileno;
@@ -91,13 +91,13 @@ struct fileexplorer_dent_t
 };
 
 // The protocol here is on request, send back at least one of these
-struct fileexplorer_getdentsResponse_t
+struct MSGPACK fileexplorer_getdentsResponse_t
 {
 	// The total file count, if 0 there are no dents to process
 	uint64_t totalDentCount;
 };
 
-struct fileexplorer_statRequest_t
+struct MSGPACK fileexplorer_statRequest_t
 {
 	// opened file handle, -1 if checking by path
 	int32_t handle;
@@ -109,7 +109,7 @@ struct fileexplorer_statRequest_t
 	char path[];
 };
 
-struct fileexplorer_stat_t
+struct MSGPACK fileexplorer_stat_t
 {
 	uint32_t   st_dev;		/* inode's device */
 	uint32_t	  st_ino;		/* inode's number */
@@ -130,20 +130,20 @@ struct fileexplorer_stat_t
 	struct timespec st_birthtim;	/* time of file creation */
 };
 
-struct fileexplorer_mkdirRequest_t
+struct MSGPACK fileexplorer_mkdirRequest_t
 {
 	int32_t mode;
 	uint16_t pathLength;
 	char path[];
 };
 
-struct fileexplorer_rmdirRequest_t
+struct MSGPACK fileexplorer_rmdirRequest_t
 {
 	uint16_t pathLength;
 	char path[];
 };
 
-struct fileexplorer_unlinkRequest_t
+struct MSGPACK fileexplorer_unlinkRequest_t
 {
 	uint16_t pathLength;
 	char path[];
