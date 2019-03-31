@@ -6,7 +6,7 @@
 //
 #include <oni/messaging/messagemanager.h>
 #include <oni/init/initparams.h>
-#include <oni/rpc/pbserver.h>
+#include <oni/rpc/rpcserver.h>
 
 //
 //	Built-in plugins
@@ -45,7 +45,7 @@
 #include <sys/sysent.h>
 //#include <string.h> // memmove, memcpy
 //#include <stdlib.h> // malloc, free
-#include <assert.h>
+//#include <assert.h>
 
 #define MIRA_CONFIG_PATH	"/user/mira.ini"
 
@@ -158,8 +158,6 @@ uint8_t miraframework_initialize(struct miraframework_t* framework)
 	}*/
 	//overlayfs_init(framework->overlayfs);
 
-
-
 	WriteLog(LL_Info, "miraframework initialized successfully");
 
 	return true;
@@ -249,7 +247,7 @@ static void mira_onSuspend(struct miraframework_t* framework)
 
 	// Stop the RPC server
 	WriteLog(LL_Info, "stopping RPC server.");
-	if (!pbserver_shutdown(framework->framework.rpcServer))
+	if (!rpcserver_shutdown(framework->framework.rpcServer))
 		WriteLog(LL_Error, "there was an error stopping the rpc server.");
 	
 	// Stop the klog server
@@ -347,17 +345,17 @@ uint8_t __noinline mira_installDefaultPlugins(struct miraframework_t* framework)
 	}
 
 	// New pbserver iteration
-	framework->framework.rpcServer = (struct pbserver_t*)kmalloc(sizeof(struct pbserver_t));
+	framework->framework.rpcServer = (struct rpcserver_t*)kmalloc(sizeof(struct rpcserver_t));
 	if (!framework->framework.rpcServer)
 	{
 		WriteLog(LL_Error, "could not allocate rpc server.");
 		return false;
 	}
-	pbserver_init(framework->framework.rpcServer);
+	rpcserver_init(framework->framework.rpcServer);
 
 	// Startup the server, it will kick off the thread
 	WriteLog(LL_Info, "starting rpc server");
-	if (!pbserver_startup(framework->framework.rpcServer, ONI_RPC_PORT))
+	if (!rpcserver_startup(framework->framework.rpcServer, ONI_RPC_PORT))
 	{
 		WriteLog(LL_Error, "rpcserver_startup failed");
 		return false;
@@ -401,7 +399,8 @@ struct thread* mira_getMainThread()
 
 	if (process->p_numthreads > 1)
 		return process->p_threads.tqh_first;
-	else if (process->p_numthreads == 1)
+
+	if (process->p_numthreads == 1)
 		return process->p_singlethread;
 	else
 		return NULL;

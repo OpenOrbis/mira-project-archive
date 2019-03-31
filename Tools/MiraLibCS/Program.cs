@@ -1,4 +1,5 @@
 ﻿using Google.Protobuf;
+using MiraLibCS.Client.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +10,12 @@ namespace MiraLibCS
 {
     class Program
     {
+        public string c_GetDirEnts = "-getDirEnts:";
+
         static void Main(string[] args)
         {
+            var s_DebugArgs = "-getDirEnts:/user -address:192.168.1.2 -port:9999".Split(null);
+
             var s_Address = "192.168.1.2";
 
             var s_Connection = new PbConnection(s_Address);
@@ -21,18 +26,9 @@ namespace MiraLibCS
                 return;
             }
 
-            var s_RequestMessage = PbConnection.CreateMessage(MessageCategory.File, (uint)FileTransferCommands.Echo, new EchoRequest
-            {
-                Message = "Hello World",
-            }.ToByteString());
-
-            if (!s_Connection.SendMessage(s_RequestMessage))
-            {
-                Console.WriteLine("could not send message.");
-                return;
-            }
-
-            var s_Response = s_Connection.ReceiveResponse();
+            var s_DentList = s_Connection.GetDirEnts("/user");
         }
+
+
     }
 }

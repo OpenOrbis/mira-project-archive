@@ -20,6 +20,7 @@
 #include <oni/utils/ref.h>
 #include <oni/utils/cpu.h>
 #include <oni/utils/escape.h>
+#include <oni/utils/syscall.h>
 
 #include <mira/miraframework.h>
 
@@ -68,7 +69,7 @@ int kunmount_t(char* path, int flags, struct thread* td)
 {	
 	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
 	struct sysent* sysents = sv->sv_table;
-	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = (void*)sysents[22].sy_call;
+	int(*sys_unmount)(struct thread* thread, struct unmount_args*) = (void*)sysents[SYS_UNMOUNT].sy_call;
 	if (!sys_unmount)
 		return -1;
 
@@ -104,7 +105,9 @@ static int mount_nullfs(struct thread* td, char* fspath, char* target, char* pro
 	build_iovec(&iov, &iovlen, "allow_other", "", (size_t)-1); // What i want to add
 	build_iovec(&iov, &iovlen, protection, "", (size_t)-1);
 
-	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*nmount)(struct thread* thread, struct nmount_args*) = (void*)sysents[SYS_NMOUNT].sy_call;
 	if (!nmount)
 		return -1;
 
@@ -141,7 +144,9 @@ static int mount_unionfs(struct thread* td, char* fspath, char* from, char* prot
 	build_iovec(&iov, &iovlen, "allow_other", "", (size_t)-1);
 	build_iovec(&iov, &iovlen, protection, "", (size_t)-1);
 
-	int(*nmount)(struct thread* thread, struct nmount_args*) = kdlsym(sys_nmount);
+	struct sysentvec* sv = kdlsym(self_orbis_sysvec);
+	struct sysent* sysents = sv->sv_table;
+	int(*nmount)(struct thread* thread, struct nmount_args*) = (void*)sysents[SYS_NMOUNT].sy_call;
 	if (!nmount)
 		return -1;
 

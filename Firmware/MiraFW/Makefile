@@ -26,6 +26,9 @@ AS		:=	llvm-ar
 # Objcopy
 OBJCOPY	:=	objcopy
 
+# cppcheck
+CPPCHECK := cppcheck
+
 # Output directory, by default is build
 ifeq ($(OUT_DIR),)
 OUT_DIR	:=	build
@@ -35,7 +38,7 @@ endif
 SRC_DIR	:=	src
 
 # Include directory paths
-I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/depends/include" -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
+I_DIRS	:=	-I. -IInclude -I$(SRC_DIR) -I"$(ONI_FRAMEWORK)/include" -I"$(BSD_INC)"
 
 # Library directory paths
 L_DIRS	:=	-L.	-Llib -L"$(ONI_FRAMEWORK)"
@@ -86,10 +89,14 @@ $(TARGET): $(ALL_OBJ)
 	@$(OBJCOPY) -O binary $(TARGET) $(PAYLOAD)
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	@echo "Checking $< ..."
+	@$(CPPCHECK) --enable=all $<
 	@echo "Compiling $< ..."
 	@$(CC) $(CFLAGS) $(IDIRS) -c $< -o $@
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "Checking $< ..."
+	@$(CPPCHECK) --enable=all $<
 	@echo "Compiling $< ..."
 	@$(CPPC) $(CFLAGS) $(IDIRS) -c $< -o $@
 

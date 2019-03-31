@@ -7,8 +7,12 @@
 #include <oni/utils/kernel.h>
 
 #include <oni/utils/hde/hde64.h>
+#include <vm/vm.h>
+#include <vm/pmap.h>
 #include <sys/proc.h>
 #include <sys/ptrace.h>
+
+#include <machine/psl.h>
 
 #include <oni/utils/sys_wrappers.h>
 
@@ -16,8 +20,11 @@
 
 #include <mira/miraframework.h>
 
-#include <protobuf-c/mirabuiltin.pb-c.h>
-
+struct amd64_frame {
+	struct amd64_frame      *f_frame;
+	long                    f_retaddr;
+	long                    f_arg0;
+};
 
 enum DebuggerCmds
 {
@@ -38,14 +45,14 @@ uint8_t debugger_load(struct debugger_plugin_t * plugin)
 {
 	if (!plugin)
 		return false;
-
-	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	
+	/*messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_ReadMemory, debugger_readmem_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_WriteMemory, debugger_writemem_callback);
 	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Ptrace, debugger_ptrace_callback);
-	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Kill, debugger_kill_callback);
+	messagemanager_registerCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Kill, debugger_kill_callback);*/
 
-	//hook_enable(plugin->trapFatalHook);
+	hook_enable(plugin->trapFatalHook);
 
 	return true;
 }
@@ -55,11 +62,11 @@ uint8_t debugger_unload(struct debugger_plugin_t * plugin)
 	if (!plugin)
 		return false;
 
-	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
+	/*messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_GetProcesses, debugger_getprocs_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_ReadMemory, debugger_readmem_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_WriteMemory, debugger_writemem_callback);
 	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Ptrace, debugger_ptrace_callback);
-	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Kill, debugger_kill_callback);
+	messagemanager_unregisterCallback(gFramework->messageManager, MESSAGE_CATEGORY__DEBUG, DbgCmd_Kill, debugger_kill_callback);*/
 
 	hook_disable(plugin->trapFatalHook);
 
@@ -98,6 +105,11 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	gTrapFatalHook = plugin->trapFatalHook;
 }
 
+uint8_t debugger_isStackSpace(uint64_t address)
+{
+	return ((address & 0xFFFFFFFF00000000) == 0xFFFFFF8000000000);
+}
+
 void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 {
 	if (!frame)
@@ -120,23 +132,89 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	char* dash = "-----------------------";
 
 	WriteLog(LL_Info, "kernel panic detected");
-	
+
+	WriteLog(LL_Info, "call stizzack");
+	uint32_t amdFrameCount = 0;
+	struct amd64_frame* amdFrame = (struct amd64_frame*)frame->tf_rbp;
+	while (debugger_isStackSpace((uint64_t)amdFrame))
+	{
+		WriteLog(LL_Debug, "[%d] - f: %p ret: %p", amdFrameCount, amdFrame, amdFrame->f_retaddr);
+		amdFrame = amdFrame->f_frame;
+		amdFrameCount++;
+	}
+
+	//const char** trap_msg = NULL;// (const char**)kdlsym(trap_msg);
+
+	//u_int type = frame->tf_trapno;
+	//const char* msg = "UNKNOWN";
+
+	//if (type < 36)
+	//	msg = trap_msg[type];
+
+	//WriteLog(LL_Info, "\nFatal trap %d: %s while in %s mode",
+	//	frame->tf_trapno,
+	//	msg,
+	//	(frame->tf_last_branch_from & 0x8000000000000000) ? "kernel" : "user");
+
+	//WriteLog(LL_Info, "cpuid = %d; ", curthread->td_oncpu);
+
+	//int32_t code = frame->tf_err;
+
+	//if (type == T_PAGEFLT)
+	//{
+	//	WriteLog(LL_Info, "fault virtual address   = 0x%lx", eva);
+	//	WriteLog(LL_Info, "fault code              = %s %s %s, %s",
+	//		code & PGEX_U ? "user" : "supervisor",
+	//		code & PGEX_W ? "write" : "read",
+	//		code & PGEX_I ? "instruction" : "data",
+	//		code & PGEX_P ? "protection violation" : "page not present");
+	//}
+
+	//int32_t ss = frame->tf_cs & 0xffff;
+	//WriteLog(LL_Error, "instruction pointer     = 0x%lx:0x%lx",
+	//	ss, frame->tf_rip);
+	//
+	//
+	//WriteLog(LL_Info, "stack pointer           = 0x%x:0x%lx", 
+	//	ss, frame->tf_rsp);
+	//WriteLog(LL_Info, "frame pointer           = 0x%x:0x%lx",
+	//	ss, frame->tf_rbp);
+
+	//WriteLog(LL_Info, "processor eflags        = ");
+	//if (frame->tf_rflags & PSL_T)
+	//	WriteLog(LL_Info, "trace trap, ");
+	//if (frame->tf_rflags & PSL_I)
+	//	WriteLog(LL_Info, "interrupt enabled, ");
+	//if (frame->tf_rflags & PSL_NT)
+	//	WriteLog(LL_Info, "nested task, ");
+	//if (frame->tf_rflags & PSL_RF)
+	//	WriteLog(LL_Info, "resume, ");
+
+	//WriteLog(LL_Info, "IOPL = %ld", (frame->tf_rflags & PSL_IOPL) >> 12);
+	//if (curproc)
+	//	WriteLog(LL_Info, "current process         = %lu (%s)",
+	//		(u_long)curproc->p_pid,
+	//		curthread->td_name != NULL ? curthread->td_name : "");
+	//else
+	//	WriteLog(LL_Info, "current process         = Idle");
+
 	// Print extra information in case that Oni/Mira itself crashes
-	if (gInitParams && curthread->td_proc == gInitParams->process)
+	if (gInitParams /*&& curthread->td_proc == gInitParams->process*/)
 	{
 		WriteLog(LL_Info, dash);
 		WriteLog(LL_Info, "mira base: %p size: %p", gInitParams->payloadBase, gInitParams->payloadSize);
 		WriteLog(LL_Info, "mira proc: %p entrypoint: %p", gInitParams->process);
+		WriteLog(LL_Info, "mira oni_kernelInitialization: %p", oni_kernelInitialization);
 
 		if (gFramework)
 			WriteLog(LL_Info, "mira messageManager: %p pluginManager: %p rpcServer: %p", gFramework->messageManager, gFramework->pluginManager, gFramework->rpcServer);
+	
+		WriteLog(LL_Info, "OffsetFromKernelBase: %p", frame->tf_last_branch_from - (uint64_t)gKernelBase);
+		WriteLog(LL_Info, "OffsetFromMiraBase: %p", frame->tf_last_branch_from - gInitParams->payloadBase);
 	}
 
 	WriteLog(LL_Info, dash);
 	WriteLog(LL_Info, "gKernelBase: %p", gKernelBase);
-	WriteLog(LL_Info, "OffsetFromMiraBase: %p", 0);
-	WriteLog(LL_Info, "OffsetFromKernelBase: %p", 0);
-
 	WriteLog(LL_Info, "thread: %p proc: %p pid: %d path: %s", curthread, curthread->td_proc, curthread->td_proc->p_pid, curthread->td_proc->p_elfpath);
 	WriteLog(LL_Info, "eva: %p", eva);
 	WriteLog(LL_Info, "rdi: %p", frame->tf_rdi);
@@ -161,6 +239,8 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	WriteLog(LL_Info, "flags: %u", frame->tf_flags);
 	WriteLog(LL_Info, "es: %u", frame->tf_es);
 	WriteLog(LL_Info, "ds: %u", frame->tf_ds);
+	WriteLog(LL_Info, "last branch from: %p", frame->tf_last_branch_from);
+	WriteLog(LL_Info, "last branch to: %p", frame->tf_last_branch_to);
 	WriteLog(LL_Info, "err: %p", frame->tf_err);
 	WriteLog(LL_Info, "rip: %p", frame->tf_rip);
 	WriteLog(LL_Info, "cs: %p", frame->tf_cs);
