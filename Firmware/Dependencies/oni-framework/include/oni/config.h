@@ -41,7 +41,7 @@
 #endif
 
 #ifndef KEXEC_SYSCALL_NUM
-#define KEXEC_SYSCALL_NUM	17
+#define KEXEC_SYSCALL_NUM	11
 #endif
 
 // The current platform configured by oni
