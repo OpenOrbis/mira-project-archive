@@ -104,19 +104,19 @@ export ONI_FRAMEWORK="$(pwd)";
 # Create the default directories needed for oni-framework
 make create;
 make clean;
-make;
+scan-build make;
 
 # Navigate to the Mira core directory
 cd ../../MiraFW;
 make create;
 make clean;
-make;
+scan-build make;
 
 # Navigate to the Mira Loader directory
 cd ../MiraLoader;
 make create;
 make clean;
-make;
+scan-build make;
 
 echo "-----------------------------------------------";
 echo "Done!";

@@ -5,13 +5,11 @@ namespace MiraUtils.Client.FileExplorer
     public class FileExplorerReadRequest : MessageSerializable
     {
         public int Handle;
-        public ulong Offset;
         public int Count;
 
         public override void Deserialize(BinaryReader p_Reader)
         {
             Handle = p_Reader.ReadInt32();
-            Offset = p_Reader.ReadUInt64();
             Count = p_Reader.ReadInt32();
         }
 
@@ -20,7 +18,6 @@ namespace MiraUtils.Client.FileExplorer
             using (var s_Writer = new BinaryWriter(new MemoryStream()))
             {
                 s_Writer.Write(Handle);
-                s_Writer.Write(Offset);
                 s_Writer.Write(Count);
 
                 return ((MemoryStream)s_Writer.BaseStream).ToArray();

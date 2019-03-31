@@ -212,8 +212,8 @@ namespace MiraUtils.Controls.FileExplorer
                 if (l_Entry.NameString == "." || l_Entry.NameString == "..")
                     continue;
 
-                var l_LocalPath = $"{p_LocalDir}/{l_Entry.Name}";
-                var l_RemotePath = $"{p_RemoteDir}/{l_Entry.Name}";
+                var l_LocalPath = $"{p_LocalDir}/{new string(l_Entry.Name)}";
+                var l_RemotePath = $"{p_RemoteDir}/{new string(l_Entry.Name)}";
 
                 if ((FileTypes)l_Entry.Type == FileTypes.DT_DIR)
                 {

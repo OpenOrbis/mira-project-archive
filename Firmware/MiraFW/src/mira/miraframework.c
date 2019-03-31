@@ -367,7 +367,8 @@ struct thread* mira_getMainThread()
 
 	if (process->p_numthreads > 1)
 		return process->p_threads.tqh_first;
-	else if (process->p_numthreads == 1)
+
+	if (process->p_numthreads == 1)
 		return process->p_singlethread;
 	else
 		return NULL;

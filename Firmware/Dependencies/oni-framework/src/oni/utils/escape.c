@@ -18,7 +18,7 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 	if (td == NULL || td->td_ucred == NULL || td->td_proc == NULL)
 		return;
 
-	if (outThreadInfo)
+	if (outThreadInfo != NULL)
 	{
 		// Zero out the previous thread information
 		memset(outThreadInfo, 0, sizeof(*outThreadInfo));
@@ -34,7 +34,8 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 		if (sizeof(outThreadInfo->desc) != sizeof(*td->td_proc->p_fd))
 			return;
 
-		memcpy(&outThreadInfo->desc, td->td_proc->p_fd, sizeof(outThreadInfo->desc));
+		if (td->td_proc->p_fd != NULL)
+			memcpy(&outThreadInfo->desc, td->td_proc->p_fd, sizeof(outThreadInfo->desc));
 	}
 
 	// Create new cred if we don't already have one
@@ -58,9 +59,11 @@ void oni_threadEscape(struct thread* td, struct thread_info_t* outThreadInfo)
 
 	// Get the file descriptor
 	struct filedesc* fd = td->td_proc->p_fd;
-
-	// Set our file descriptor, and jail file descriptor to the root vnode '/'
-	fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
+	if (fd != NULL)
+	{
+		// Set our file descriptor, and jail file descriptor to the root vnode '/'
+		fd->fd_rdir = fd->fd_jdir = *(void**)kdlsym(rootvnode);
+	}
 
 	// set diag auth ID flags
 	td->td_ucred->cr_sceAuthID = AUTHID_SCESYSCORE;
@@ -74,20 +77,20 @@ void oni_threadRestore(struct thread* td, struct thread_info_t* threadInfo)
 {
 	void* (*memcpy)(void* dest, const void* src, size_t n) = kdlsym(memcpy);
 
-	if (!td || !threadInfo)
+	if (td == NULL || threadInfo == NULL)
 		return;
 
-	if (!td->td_ucred)
+	if (td->td_ucred == NULL)
 		return;
 
 	// Copy the cred back over
 	memcpy(td->td_ucred, &threadInfo->cred, sizeof(*td->td_ucred));
 
 	// Get the file descriptor
-	struct filedesc* fd = td->td_proc->p_fd;
-
-	if (!fd)
+	if (td->td_proc == NULL || td->td_proc->p_fd == NULL)
 		return;
+
+	struct filedesc* fd = td->td_proc->p_fd;
 
 	memcpy(fd, &threadInfo->desc, sizeof(*fd));
 }

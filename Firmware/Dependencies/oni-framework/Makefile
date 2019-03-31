@@ -25,6 +25,10 @@ LNK		:=	ld
 # Objcopy
 OBJCOPY	:=	objcopy
 
+# cppcheck
+CPPCHECK := cppcheck
+CHECKLEVEL := performance,portability,information,unusedFunction,missingInclude,
+
 # Output directory
 ifeq ($(OUT_DIR),)
 OUT_DIR	:=	build
@@ -80,10 +84,14 @@ $(TARGET): $(ALL_OBJ)
 	@$(AS) rcs $(TARGET) $(ALL_OBJ)
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+	@echo "Checking $< ..."
+	$(CPPCHECK) --enable=all $(IDIRS) $<
 	@echo "Compiling $< ..."
 	@$(CC) $(CFLAGS) $(IDIRS) -c $< -o $@
 
 $(OUT_DIR)/$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp	
+	@echo "Checking $(SRC_DIR)/%.cpp ..."
+	@$(CPPCHECK) --enable=all $(IDIRS) $<
 	@echo "Compiling $< ..."
 	@$(CPPC) $(CFLAGS) $(IDIRS) -c $< -o $@
 

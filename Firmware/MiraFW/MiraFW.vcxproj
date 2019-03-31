@@ -39,7 +39,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeIncludeSearchPath>$(SolutionDir)Firmware\Dependencies\oni-framework\include;$(SolutionDir)Firmware\Dependencies\oni-framework\include\nanopb;$(ProjectDir)src;$(ProjectDir)src\capnproto;$(ProjectDir)src\flatbuffers;$(SolutionDir)Firmware\Dependencies\freebsd-headers\include;$(SolutionDir)Firmware\Dependencies\hde</NMakeIncludeSearchPath>
     <NMakePreprocessorDefinitions>_KERNEL;ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK;__LP64__=1;_M_X64;__amd64__;_STANDALONE;_STANDALONE_DEBUG;FLATCC_PORTABLE;FLATCC_NO_PALIGNED_ALLOC</NMakePreprocessorDefinitions>
-    <AdditionalSourcesToCopyMapping>Makefile;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
+    <AdditionalSourcesToCopyMapping>Makefile;PVS-Studio.cfg;$(AdditionalSourcesToCopyMapping)</AdditionalSourcesToCopyMapping>
     <RemoteBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean;make ONI_PLATFORM=ONI_PLATFORM_STEAM_LINK</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>cd $(RemoteProjectDir);make create;scan-build make clean</RemoteCleanCommandLine>
@@ -99,6 +99,11 @@
     <ClInclude Include="src\mira\utils\injector.h" />
     <ClInclude Include="src\mira\utils\miraelf.h" />
     <ClInclude Include="src\mira\utils\vector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="scan.cfg">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>

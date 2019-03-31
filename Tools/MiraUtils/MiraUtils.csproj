@@ -78,7 +78,9 @@
     <Compile Include="Client\TimeSpec.cs" />
     <Compile Include="Client\OrbisUtils\OrbisUtilsShutdownMira.cs" />
     <Compile Include="Client\OrbisUtils\OrbisUtilsExtensions.cs" />
-    <Compile Include="Controls\FileExplorer\frmFileExplorer.cs" />
+    <Compile Include="Controls\FileExplorer\frmFileExplorer.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Controls\FileExplorer\frmFileExplorer.Designer.cs">
       <DependentUpon>frmFileExplorer.cs</DependentUpon>
     </Compile>

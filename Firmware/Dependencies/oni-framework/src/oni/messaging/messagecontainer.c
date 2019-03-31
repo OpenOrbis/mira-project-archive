@@ -34,7 +34,6 @@ struct messagecontainer_t* messagecontainer_createMessage(enum MessageCategory c
 	messageContainer->header.padding = 0;
 
 	messageContainer->count = 0;
-	messageContainer->size = payloadLength;
 
 	// Copy over the payload if we have one
 	if (payload != NULL && payloadLength > 0)
@@ -94,7 +93,7 @@ void messagecontainer_release(struct messagecontainer_t* reference)
 	// If we subtract and the reference count is zero, free the reference and data
 	if (__sync_sub_and_fetch(&reference->count, 1) == 0)
 	{
-		uint64_t allocationSize = sizeof(struct messagecontainer_t) + reference->size;
+		uint64_t allocationSize = sizeof(struct messagecontainer_t) + reference->header.payloadLength;
 
 		// Free the entire reference header + data afterwards
 		kfree(reference, allocationSize);

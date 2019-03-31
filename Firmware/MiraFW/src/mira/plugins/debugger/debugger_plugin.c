@@ -105,6 +105,11 @@ void debugger_plugin_init(struct debugger_plugin_t* plugin)
 	gTrapFatalHook = plugin->trapFatalHook;
 }
 
+uint8_t debugger_isStackSpace(uint64_t address)
+{
+	return ((address & 0xFFFFFFFF00000000) == 0xFFFFFF8000000000);
+}
+
 void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 {
 	if (!frame)
@@ -129,10 +134,13 @@ void debugger_onTrapFatal(struct trapframe* frame, vm_offset_t eva)
 	WriteLog(LL_Info, "kernel panic detected");
 
 	WriteLog(LL_Info, "call stizzack");
+	uint32_t amdFrameCount = 0;
 	struct amd64_frame* amdFrame = (struct amd64_frame*)frame->tf_rbp;
-	while (amdFrame != NULL)
+	while (debugger_isStackSpace((uint64_t)amdFrame))
 	{
-		// TODO: Validate each frame before iterating
+		WriteLog(LL_Debug, "[%d] - f: %p ret: %p", amdFrameCount, amdFrame, amdFrame->f_retaddr);
+		amdFrame = amdFrame->f_frame;
+		amdFrameCount++;
 	}
 
 	//const char** trap_msg = NULL;// (const char**)kdlsym(trap_msg);

@@ -242,10 +242,10 @@ void messagemanager_sendResponse(struct messagecontainer_t* container)
 	}
 
 	// Write the payload
-	ret = kwrite(connectionSocket, container->payload, container->size);
+	ret = kwrite(connectionSocket, container->payload, container->header.payloadLength);
 	if (ret < 0)
 	{
-		WriteLog(LL_Error, "could not write message (%p) (%llx).", container->payload, container->size);
+		WriteLog(LL_Error, "could not write message (%p) (%llx).", container->payload, container->header.payloadLength);
 		goto cleanup;
 	}
 
@@ -260,14 +260,14 @@ void messagemanager_sendRequest(struct messagecontainer_t* container)
 	if (!gFramework || !gFramework->messageManager || !container)
 		return;
 
-	WriteLog(LL_Debug, "container: %p", container);
+	//WriteLog(LL_Debug, "container: %p", container);
 
 	messagecontainer_acquire(container);
 
-	WriteLog(LL_Debug, "here");
+	//WriteLog(LL_Debug, "here");
 
 	struct messagemanager_t* manager = gFramework->messageManager;
-	WriteLog(LL_Debug, "manager: %p", manager);
+	//WriteLog(LL_Debug, "manager: %p", manager);
 
 	// Validate our message category
 	enum MessageCategory headerCategory = container->header.category;
@@ -277,7 +277,7 @@ void messagemanager_sendRequest(struct messagecontainer_t* container)
 		goto cleanup;
 	}
 
-	WriteLog(LL_Debug, "headerCategory: %d", headerCategory);
+	//WriteLog(LL_Debug, "headerCategory: %d", headerCategory);
 
 	struct messagecategory_t* category = messagemanager_getCategory(manager, headerCategory);
 	if (!category)
@@ -286,7 +286,7 @@ void messagemanager_sendRequest(struct messagecontainer_t* container)
 		goto cleanup;
 	}
 
-	WriteLog(LL_Debug, "category: %p", category);
+	//WriteLog(LL_Debug, "category: %p", category);
 
 	// Iterate through all of the callbacks
 	for (uint32_t l_CallbackIndex = 0; l_CallbackIndex < RPCCATEGORY_MAX_CALLBACKS; ++l_CallbackIndex)
@@ -302,8 +302,11 @@ void messagemanager_sendRequest(struct messagecontainer_t* container)
 		if (l_Callback->type != container->header.errorType)
 			continue;
 
+		if (l_Callback->callback == NULL)
+			continue;
+
 		// Call the callback with the provided message
-		WriteLog(LL_Debug, "[+] calling callback %p(%p)", l_Callback->callback, container);
+		//WriteLog(LL_Debug, "[+] calling callback %p(%p)", l_Callback->callback, container);
 		l_Callback->callback(container);
 	}
 

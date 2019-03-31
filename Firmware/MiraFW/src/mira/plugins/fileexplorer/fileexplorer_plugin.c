@@ -12,6 +12,7 @@
 #include <oni/utils/ref.h>
 #include <oni/utils/logger.h>
 #include <oni/utils/memory/allocator.h>
+#include <oni/utils/kernel.h>
 #include <oni/rpc/rpcserver.h>
 #include <oni/utils/escape.h>
 
@@ -95,7 +96,7 @@ void fileexplorer_echo_callback(struct messagecontainer_t* container)
 
 	messagecontainer_acquire(container);
 	
-	if (container->size < sizeof(struct fileexplorer_echoRequest_t))
+	if (container->header.payloadLength < sizeof(struct fileexplorer_echoRequest_t))
 	{
 		WriteLog(LL_Error, "malformed message");
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
@@ -103,7 +104,7 @@ void fileexplorer_echo_callback(struct messagecontainer_t* container)
 	}
 
 	struct fileexplorer_echoRequest_t* request = (struct fileexplorer_echoRequest_t*)container->payload;
-	if (request->length >= container->size)
+	if (request->length >= container->header.payloadLength)
 	{
 		WriteLog(LL_Error, "malformed length");
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
@@ -127,11 +128,17 @@ void fileexplorer_open_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
+	if (payloadLength < sizeof(struct fileexplorer_openRequest_t))
+	{
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_openRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
+		goto cleanup;
+	}
 
 	struct fileexplorer_openRequest_t* request = (struct fileexplorer_openRequest_t*)container->payload;
-	if (request->pathLength > payloadLength || request->pathLength == 0)
+	if (request->pathLength + offsetof(struct fileexplorer_openRequest_t, path) > payloadLength || request->pathLength == 0)
 	{
-		WriteLog(LL_Error, "path is out of bounds (%d) > (%d)", request->pathLength, container->size);
+		WriteLog(LL_Error, "path is out of bounds (%d) > (%d)", request->pathLength, container->header.payloadLength);
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENAMETOOLONG);
 		goto cleanup;
 	}
@@ -167,9 +174,11 @@ void fileexplorer_close_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
+
 	if (payloadLength < sizeof(struct fileexplorer_closeRequest_t))
 	{
 		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_closeRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -195,11 +204,10 @@ void fileexplorer_read_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
-	uint32_t expectedRequestSize = sizeof(struct fileexplorer_readRequest_t);
-	if (payloadLength < expectedRequestSize)
+	if (payloadLength < sizeof(struct fileexplorer_readRequest_t))
 	{
-		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, expectedRequestSize);
-		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_readRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -220,52 +228,52 @@ void fileexplorer_read_callback(struct messagecontainer_t* container)
 	}
 
 	// Sometimes PS4 doesn't like large buffers, so we allocate this one
-	uint8_t* readBuffer = (uint8_t*)k_malloc(request->count);
-	if (readBuffer == NULL)
+	size_t allocationSize = sizeof(struct fileexplorer_readResponse_t) + request->count;
+	struct fileexplorer_readResponse_t* readResponse = (struct fileexplorer_readResponse_t*)k_malloc(allocationSize);
+	if (readResponse == NULL)
 	{
 		WriteLog(LL_Error, "could not allocate buffer");
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
-	(void)memset(readBuffer, 0, request->count);
+	(void)memset(readResponse, 0, allocationSize);
 
 	// Read out the data into our buffer
-	int32_t result = kread(request->handle, readBuffer, request->count);
-	if (result < 0)
+	readResponse->count = kread(request->handle, readResponse->data, request->count);
+	if (readResponse->count < 0 || readResponse->count != request->count)
 	{
-		WriteLog(LL_Error, "could not read into the buffer (%d).", result);
+		WriteLog(LL_Error, "could not read into the buffer (%d).", readResponse->count);
+
+		messagemanager_sendErrorResponse(MessageCategory_File, readResponse->count);
 
 		// Free the buffer to prevent leaks
-		if (readBuffer)
-			k_free(readBuffer);
-		readBuffer = NULL;
-
-		messagemanager_sendErrorResponse(MessageCategory_File, result);
+		k_free(readResponse);
+		readResponse = NULL;
 		goto cleanup;
 	}
 
+	WriteLog(LL_Debug, "read request handle: %d data: %p len: %d", request->handle, readResponse->data, readResponse->count);
+
 	// Send the response back, this creates a copy of the data
-	struct messagecontainer_t* responseContainer = messagecontainer_createMessage(MessageCategory_File, (uint32_t)result, false, readBuffer, request->count);
+	struct messagecontainer_t* responseContainer = messagecontainer_createMessage(MessageCategory_File, readResponse->count, false, readResponse, allocationSize);
 	if (responseContainer == NULL)
 	{
 		WriteLog(LL_Error, "could not allocate response");
 
-		// Free the buffer to prevent leaks
-		if (readBuffer)
-			k_free(readBuffer);
-		readBuffer = NULL;
-
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
+
+		// Free the buffer to prevent leaks
+		k_free(readResponse);
+		readResponse = NULL;
 		goto cleanup;
 	}
-
 	messagemanager_sendResponse(responseContainer);
 	messagecontainer_release(responseContainer);
 
 	// Free the buffer to prevent leaks
-	if (readBuffer)
-		k_free(readBuffer);
-	readBuffer = NULL;
+	if (readResponse != NULL)
+		k_free(readResponse);
+	readResponse = NULL;
 
 cleanup:
 	messagecontainer_release(container);
@@ -279,11 +287,10 @@ void fileexplorer_write_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
-	uint32_t expectedRequestSize = sizeof(struct fileexplorer_writeRequest_t);
-	if (payloadLength < expectedRequestSize)
+	if (payloadLength < sizeof(struct fileexplorer_writeRequest_t))
 	{
-		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, expectedRequestSize);
-		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_writeRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -327,18 +334,17 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
-	uint32_t expectedRequestSize = sizeof(uint16_t); // for whatever empty array's takes memory rounded up, so it can be larger than whats on wire
-	if (payloadLength < expectedRequestSize)
+	if (payloadLength < sizeof(struct fileexplorer_getdentsRequest_t))
 	{
-		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, expectedRequestSize);
-		messagemanager_sendErrorResponse(MessageCategory_File, -ENOBUFS);
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_getdentsRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
 
 	struct fileexplorer_getdentsRequest_t* request = (struct fileexplorer_getdentsRequest_t*)container->payload;
-	if (request->length == 0 || request->length > container->size)
+	if (request->length == 0 || (sizeof(struct fileexplorer_getdentsRequest_t) + request->length) > container->header.payloadLength)
 	{
-		WriteLog(LL_Error, "invalid path length (%d) (%d).", request->length, container->size);
+		WriteLog(LL_Error, "invalid path length (%d) (%d).", request->length, container->header.payloadLength);
 		messagemanager_sendErrorResponse(MessageCategory_File, -ENOENT);
 		goto cleanup;
 	}
@@ -383,7 +389,6 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 	}
 
 	kclose(directoryHandle);
-	directoryHandle = -1;
 
 	oni_threadEscape(curthread, &threadInfo);
 	directoryHandle = kopen(request->path, 0x0000 | 0x00020000, 0777);
@@ -395,7 +400,7 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 		WriteLog(LL_Error, "could not open directory (%s) (%d).", request->path, directoryHandle);
 
 		// Free the buffer
-		if (buffer)
+		if (buffer != NULL)
 			k_free(buffer);
 		buffer = NULL;
 
@@ -415,7 +420,7 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 		WriteLog(LL_Error, "could not allocate response");
 
 		// Free the buffer
-		if (buffer)
+		if (buffer != NULL)
 			k_free(buffer);
 		buffer = NULL;
 
@@ -451,7 +456,7 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 				WriteLog(LL_Error, "could not allocate dent");
 
 				// Free the buffer
-				if (buffer)
+				if (buffer != NULL)
 					k_free(buffer);
 				buffer = NULL;
 
@@ -468,10 +473,10 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 			allocatedDent->reclen = dent->d_reclen;
 			allocatedDent->type = dent->d_type;
 			allocatedDent->namlen = dent->d_namlen;
-			memcpy(allocatedDent->name, dent->d_name, dent->d_namlen);
+			(void)memcpy(allocatedDent->name, dent->d_name, dent->d_namlen);
 
 			// Write it directly out to socket
-			WriteLog(LL_Debug, "writing dent (%s).", dent->d_name);
+			//WriteLog(LL_Debug, "writing dent (%s).", dent->d_name);
 			kwrite(connectionSocket, allocatedDent, allocatedDentSize);
 
 			// Free the allocated memory for this dent
@@ -483,7 +488,7 @@ void fileexplorer_getdents_callback(struct messagecontainer_t* container)
 	}
 
 	// Free the buffer
-	if (buffer)
+	if (buffer != NULL)
 		k_free(buffer);
 	buffer = NULL;
 
@@ -502,9 +507,10 @@ void fileexplorer_stat_callback(struct messagecontainer_t* container)
 	messagecontainer_acquire(container);
 
 	uint16_t payloadLength = container->header.payloadLength;
-	if (payloadLength < 6 /* sizeof the structure - the padding it adds for the path[] (8 bytes) */)
+	if (payloadLength < sizeof(struct fileexplorer_statRequest_t))
 	{
-		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, 6);
+		WriteLog(LL_Error, "not enough payload (%d) wanted (%d).", payloadLength, sizeof(struct fileexplorer_statRequest_t));
+		messagemanager_sendErrorResponse(MessageCategory_File, -ENOMEM);
 		goto cleanup;
 	}
 
@@ -539,28 +545,45 @@ void fileexplorer_stat_callback(struct messagecontainer_t* container)
 	}
 
 	// Send a success response back
-	struct fileexplorer_stat_t response;
-	response.st_atim.tv_nsec = fileStat.st_atim.tv_nsec;
-	response.st_atim.tv_sec = fileStat.st_atim.tv_sec;
-	response.st_birthtim.tv_nsec = fileStat.st_birthtim.tv_nsec;
-	response.st_birthtim.tv_sec = fileStat.st_birthtim.tv_sec;
-	response.st_blksize = fileStat.st_blksize;
-	response.st_blocks = fileStat.st_blocks;
-	response.st_ctim.tv_nsec = fileStat.st_ctim.tv_nsec;
-	response.st_ctim.tv_sec = fileStat.st_ctim.tv_sec;
-	response.st_dev = fileStat.st_dev;
-	response.st_flags = fileStat.st_flags;
-	response.st_gen = fileStat.st_gen;
-	response.st_gid = fileStat.st_gid;
-	response.st_ino = fileStat.st_ino;
-	response.st_lspare = fileStat.st_lspare;
-	response.st_mode = fileStat.st_mode;
-	response.st_mtim.tv_nsec = fileStat.st_mtim.tv_nsec;
-	response.st_mtim.tv_sec = fileStat.st_mtim.tv_sec;
-	response.st_nlink = fileStat.st_nlink;
-	response.st_rdev = fileStat.st_rdev;
-	response.st_size = fileStat.st_size;
-	response.st_uid = fileStat.st_uid;
+	struct fileexplorer_stat_t response = 
+	{
+		.st_dev = fileStat.st_dev,
+		.st_ino = fileStat.st_ino,
+		.st_mode = fileStat.st_mode,
+		.st_nlink = fileStat.st_nlink,
+		.st_uid = fileStat.st_uid,
+		.st_gid = fileStat.st_gid,
+		.st_rdev = fileStat.st_rdev,
+		.st_atim = 
+		{
+			.tv_sec = fileStat.st_atim.tv_sec,
+			.tv_nsec = fileStat.st_atim.tv_nsec
+		},
+		.st_mtim =
+		{
+			.tv_sec = fileStat.st_mtim.tv_sec,
+			.tv_nsec = fileStat.st_mtim.tv_nsec
+		},
+		.st_ctim = 
+		{
+			.tv_sec = fileStat.st_ctim.tv_sec,
+			.tv_nsec = fileStat.st_ctim.tv_nsec
+		},
+		.st_size = fileStat.st_size,
+		.st_blocks = fileStat.st_blocks,
+		.st_blksize = fileStat.st_blksize,
+		.st_flags = fileStat.st_flags,
+		.st_gen = fileStat.st_gen,
+		.st_lspare = fileStat.st_lspare,
+		.st_birthtim =
+		{
+			.tv_sec = fileStat.st_birthtim.tv_sec,
+			.tv_nsec = fileStat.st_birthtim.tv_nsec
+		}
+	};
+
+	//WriteLog(LL_Debug, "actualSize: %d ripSize: %d", sizeof(fileStat.st_atim.tv_nsec) + sizeof(fileStat.st_atim.tv_sec), sizeof(struct timespec));
+	//WriteLog(LL_Debug, "size: %lld blkSize: %d", response.st_size, response.st_blksize);
 
 	struct messagecontainer_t* responseContainer = messagecontainer_createMessage(MessageCategory_File, (uint32_t)ret, false, &response, sizeof(response));
 	if (responseContainer == NULL)

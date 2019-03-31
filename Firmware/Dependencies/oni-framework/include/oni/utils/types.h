@@ -17,4 +17,8 @@
 #define ARRAYSIZE(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
+#ifndef MSGPACK
+#define MSGPACK __attribute__((__packed__))
+#endif
+
 typedef uint32_t u_int32_t;
