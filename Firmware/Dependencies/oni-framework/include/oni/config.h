@@ -40,6 +40,10 @@
 #define ONI_KERN_EXEC 0x4141414141414141
 #endif
 
+#ifndef KEXEC_SYSCALL_NUM
+#define KEXEC_SYSCALL_NUM	17
+#endif
+
 // The current platform configured by oni
 #ifndef ONI_PLATFORM
 #error ONI_PLATFORM environment variable not set

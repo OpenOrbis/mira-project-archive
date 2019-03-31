@@ -105,18 +105,36 @@ export ONI_FRAMEWORK="$(pwd)";
 make create;
 make clean;
 scan-build make;
+if [ $? -eq 0 ]; then
+    echo OK
+else
+    echo FAIL
+	exit 1
+fi
 
 # Navigate to the Mira core directory
 cd ../../MiraFW;
 make create;
 make clean;
 scan-build make;
+if [ $? -eq 0 ]; then
+    echo OK
+else
+    echo FAIL
+	exit 1
+fi
 
 # Navigate to the Mira Loader directory
 cd ../MiraLoader;
 make create;
 make clean;
 scan-build make;
+if [ $? -eq 0 ]; then
+    echo OK
+else
+    echo FAIL
+	exit 1
+fi
 
 echo "-----------------------------------------------";
 echo "Done!";

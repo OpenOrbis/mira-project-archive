@@ -77,7 +77,7 @@ void mira_escape(struct thread* td, void* uap)
 void* mira_entry(void* args)
 {
 	// Escape the jail and sandbox
-	syscall2(11, mira_escape, NULL);
+	syscall2(KEXEC_SYSCALL_NUM, mira_escape, NULL);
 
 	//int32_t sysUtilModuleId = -1;
 	int32_t netModuleId = -1;
@@ -223,7 +223,7 @@ void* mira_entry(void* args)
 
 			loader.isKernel = true;
 
-			syscall2(11, miraloader_kernelInitialization, &initParams);
+			syscall2(KEXEC_SYSCALL_NUM, miraloader_kernelInitialization, &initParams);
 		}
 		else // Launch userland
 			loader.elfMain(NULL);

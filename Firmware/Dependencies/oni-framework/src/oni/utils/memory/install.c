@@ -39,7 +39,7 @@ uint8_t SelfElevateAndRun(struct initparams_t* userInitParams)
 	if (userInitParams->isElf)
 		return false;
 	else
-		syscall2(11, SelfElevateAndRunPayloadStage2, userInitParams);
+		syscall2(KEXEC_SYSCALL_NUM, SelfElevateAndRunPayloadStage2, userInitParams);
 
 	return true;
 }
