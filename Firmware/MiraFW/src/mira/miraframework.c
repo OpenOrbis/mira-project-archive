@@ -30,7 +30,6 @@
 #include <oni/utils/hook.h>
 
 #include <mira/utils/injector.h>
-#include <mira/utils/pl_ini.h>
 
 //
 //	Filesystems
@@ -195,7 +194,8 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 
 	WriteLog(LL_Info, "Writting test settings ...");
 
-	pl_ini_file write_file;
+	// TODO: Re-implement this once repo is fixed
+	/*pl_ini_file write_file;
 	pl_ini_create(&write_file);
 
 	pl_ini_set_int(&write_file, "global", "devbuild", 1);
@@ -218,7 +218,7 @@ uint8_t miraframework_loadSettings(struct miraframework_t* framework, const char
 	int is_debug = pl_ini_get_int(&read_file, "global", "debug", 0);
 	WriteLog(LL_Info, "Read debug: %i", is_debug);
 
-	pl_ini_destroy(&read_file);
+	pl_ini_destroy(&read_file);*/
 
 	WriteLog(LL_Info, "Done !");
 	

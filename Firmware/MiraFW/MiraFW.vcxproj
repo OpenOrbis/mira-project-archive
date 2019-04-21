@@ -67,6 +67,7 @@
     <ClCompile Include="src\mira\plugins\debugger\debugger_callbacks.c" />
     <ClCompile Include="src\mira\plugins\debugger\debugger_plugin.c" />
     <ClCompile Include="src\mira\plugins\fileexplorer\fileexplorer_plugin.c" />
+    <ClCompile Include="src\mira\plugins\gdbstub\gdbstub_plugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin.c" />
     <ClCompile Include="src\mira\plugins\hen\henplugin_pkg.c" />
     <ClCompile Include="src\mira\plugins\logserver\logserver_plugin.c" />
