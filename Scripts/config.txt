@@ -1,5 +1,0 @@
-MIRA_DIR=!cd!
-MIRA_REMOTE_DIR=~/mira
-MIRA_OUTPUT_DIR=!MIRA_DIR!/Output
-MIRA_REMOTE_OUTPUT_DIR=!MIRA_REMOTE_DIR!/Output
-ONI_FRAMEWORK=!MIRA_DIR!/Firmware/Dependencies/oni-framework
