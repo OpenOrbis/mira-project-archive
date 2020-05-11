@@ -1,0 +1,11 @@
+*.bin
+.vscode*
+*.o
+*.elf
+*.a
+*.so
+*SteamLink*
+*steam_link*
+build/*
+.code-workspace*
+reeee/*
