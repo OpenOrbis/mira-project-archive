@@ -1,5 +1,6 @@
 # Mira Project - PlayStation 4 Homebrew Tools
 
+## This build is *highly* experimental, user accessibility and stability will come in the next few weeks
 The Mira Project is a set of tools that grants you more power and control over your jailbroken Playstation 4. It is the result of all the hard work by the OpenOrbis team.
 
 It works differently to the custom firmware experience on Playstation 3, where CFW would be installed on the system via modified PUP files (e.g. Rebug), however once the framework is installed and ran it gives users the same functionality they were previously used to.
